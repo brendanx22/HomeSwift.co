@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700&display=swap');
+
+@import 'tailwindcss';
+@import 'tailwindcss/utilities' layer(utilities);
+
+@layer base {
+  html {
+    font-family: 'Raleway', sans-serif;
+  }
+  
+  body {
+    background-color: white;
+    color: theme('colors.gray.900');
+  }
+}
+
+/* Add any custom styles below */
