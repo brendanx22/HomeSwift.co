@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Search, 
@@ -28,51 +28,175 @@ import {
   FolderOpen,
   AlertCircle,
   Menu,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useDashboard } from '../contexts/DashboardContext';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 
-const Dashboard = () => {
+const LandlordDashboard = () => {
+  const { user, isAuthenticated, loading: authLoading, logout, hasRole } = useAuth();
   const navigate = useNavigate();
+  
+  // State for dashboard
   const [activeTab, setActiveTab] = useState('dashboard');
   const [compactMode, setCompactMode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { properties, loading, stats, removeProperty, getRecentProperties } = useDashboard();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalListings: 0,
+    totalViews: 0,
+    activeRentals: 0,
+    propertiesSold: 0,
+    activeLeads: 0,
+    inquiries: 0
+  });
+  
+  // Check if user is authenticated and has landlord role
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!authLoading) {
+        if (!isAuthenticated) {
+          navigate('/landlord/login', { 
+            state: { from: '/landlord/dashboard' } 
+          });
+          return;
+        }
+        
+        // Check if user has landlord role
+        const isLandlord = await hasRole('landlord');
+        if (!isLandlord) {
+          navigate('/unauthorized');
+          return;
+        }
+        
+        // Load dashboard data
+        await loadDashboardData();
+        setLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, [isAuthenticated, authLoading]);
+  
+  // Load dashboard data
+  const loadDashboardData = async () => {
+    try {
+      // TODO: Replace with actual data fetching logic
+      // For now, we'll use mock data
+      setStats({
+        totalListings: 12,
+        totalViews: 1245,
+        activeRentals: 8,
+        propertiesSold: 24,
+        activeLeads: 5,
+        inquiries: 18
+      });
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    }
+  };
+  
+  // Handle logout
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+  
+  // Show loading state
+  if (authLoading || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex flex-col items-center">
+          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // If not authenticated, redirect to login
+  if (!isAuthenticated) {
+    return <Navigate to="/landlord/login" state={{ from: '/landlord/dashboard' }} />;
+  }
 
   // Dynamic stats data based on actual properties
   const statsData = [
-    { title: 'TOTAL LISTINGS', value: stats.totalListings.toString(), trend: '+0% today', trendColor: 'text-green-400', icon: Building },
-    { title: 'TOTAL VIEWS', value: stats.totalViews.toLocaleString(), trend: '+0% today', trendColor: 'text-green-400', icon: Eye },
-    { title: 'ACTIVE RENTALS', value: stats.activeRentals.toString(), status: '0 Pending', statusColor: 'text-yellow-400', icon: Home },
-    { title: 'PROPERTIES SOLD', value: stats.propertiesSold.toString(), trend: '+0% today', trendColor: 'text-green-400', icon: Building },
-    { title: 'ACTIVE LEADS', value: stats.activeLeads.toString(), status: '0 new leads today', statusColor: 'text-green-400', icon: Users },
-    { title: 'INQUIRIES', value: stats.inquiries.toString(), trend: '+0% today', trendColor: 'text-green-400', icon: MessageSquare }
+    { 
+      title: 'TOTAL LISTINGS', 
+      value: stats.totalListings.toString(), 
+      trend: '+0% today', 
+      trendColor: 'text-green-400', 
+      icon: Building 
+    },
+    { 
+      title: 'TOTAL VIEWS', 
+      value: stats.totalViews.toLocaleString(), 
+      trend: '+0% today', 
+      trendColor: 'text-green-400', 
+      icon: Eye 
+    },
+    { 
+      title: 'ACTIVE RENTALS', 
+      value: stats.activeRentals.toString(), 
+      status: '0 Pending', 
+      statusColor: 'text-yellow-400', 
+      icon: Home 
+    },
+    { 
+      title: 'PROPERTIES SOLD', 
+      value: stats.propertiesSold.toString(), 
+      trend: '+0% today', 
+      trendColor: 'text-green-400', 
+      icon: Building 
+    },
+    { 
+      title: 'ACTIVE LEADS', 
+      value: stats.activeLeads.toString(), 
+      status: '0 new leads today', 
+      statusColor: 'text-green-400', 
+      icon: Users 
+    },
+    { 
+      title: 'INQUIRIES', 
+      value: stats.inquiries.toString(), 
+      trend: '+0% today', 
+      trendColor: 'text-green-400', 
+      icon: MessageSquare 
+    }
+  ];
+  
+  // Mock recent properties data
+  const recentProperties = [
+    {
+      id: 1,
+      title: 'Modern Apartment',
+      location: 'New York, NY',
+      price: 2500,
+      image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
+      beds: 2,
+      baths: 2,
+      area: 1200
+    }
+    // Add more mock properties as needed
   ];
 
+  // Mock recent leads data
   const recentLeads = [
     {
       id: 1,
-      name: 'Divine Edike',
-      email: 'eikedivine7@gmail.com',
-      time: '52mins ago',
-      message: 'I\'m interested in scheduling a viewing this weekend. Please check out my inquiry and get back to me. I would...',
-      phone: '+234 813 3010 989',
-      avatar: 'DE'
-    },
-    {
-      id: 2,
-      name: 'Nwanze Brendan',
-      email: 'nwanzebrendan@gmail.com',
-      time: '52mins ago',
-      message: 'Is the monthly rent including utilities or it is a different pay entirely. And also, are pets allowed?',
-      phone: '+234 901 234 567',
+      name: 'John Smith',
+      email: 'john.smith@example.com',
+      time: '2 hours ago',
+      message: 'I would like to schedule a viewing for this weekend. Please let me know your availability.',
+      phone: '+1 (555) 123-4567',
       avatar: 'NB'
     }
   ];
 
-  // Get recent properties from context
-  const recentListings = getRecentProperties();
+  // Get recent properties from context with null check
+  const recentListings = getRecentProperties ? getRecentProperties() : [];
 
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -593,4 +717,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default LandlordDashboard;

@@ -1,183 +1,185 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { Mail, Lock, Eye, EyeOff, Users } from 'lucide-react';
-import { useGoogleAuth } from '../lib/googleAuth';
+import { authAPI } from '../utils/api';
+import { Toaster, toast } from 'react-hot-toast';
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState({ message: '', needsVerification: false });
-  const [isVerified, setIsVerified] = useState(false);
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const { signIn, isAuthenticated, loading: authLoading } = useAuth();
-  const googleAuth = useGoogleAuth();
+  const [error, setError] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { login, isAuthenticated } = useAuth();
+  const from = location.state?.from?.pathname || '/';
+  const [searchParams] = useSearchParams();
+  const isVerified = searchParams.get('verified') === 'true';
+  const isLandlord = searchParams.get('type') === 'landlord';
 
-  // Handle authentication state and redirects
+  // Redirect if already authenticated
   useEffect(() => {
-    // Only proceed if we're done loading
-    if (authLoading) return;
-    
-    const redirectPath = searchParams.get('redirect');
-    const verified = searchParams.get('verified') === 'true';
-    const host = window.location.hostname;
-    const isChatDomain = host === 'chat.homeswift.co' || host === 'localhost';
-    const isMainDomain = host === 'homeswift.co' || host === 'www.homeswift.co';
-    
-    // Handle email verification success
-    if (verified) {
-      setIsVerified(true);
-      // Clear the URL params
-      window.history.replaceState({}, document.title, window.location.pathname);
-      return;
-    }
-    
-    // Handle authenticated state
     if (isAuthenticated) {
-      // Small delay to ensure state is consistent
-      const timer = setTimeout(() => {
-        // If we have a valid redirect path that's not an auth page, use it
-        if (redirectPath) {
-          try {
-            // If redirect is to chat domain but we're on main domain, update the URL
-            const redirectUrl = new URL(redirectPath, window.location.origin);
-            if (redirectUrl.hostname === 'chat.homeswift.co' && isMainDomain) {
-              window.location.href = redirectPath;
-              return;
-            }
-            
-            // If redirect is within the same domain, use navigate
-            if (!['/login', '/signup', '/verify-email'].some(p => redirectPath.includes(p))) {
-              navigate(redirectPath, { replace: true });
-              return;
-            }
-          } catch (e) {
-            console.error('Invalid redirect URL:', redirectPath);
-          }
-        }
-        
-        // Default redirect based on domain
-        if (isMainDomain) {
-          window.location.href = 'https://chat.homeswift.co/';
-        } else if (isChatDomain) {
-          navigate('/', { replace: true });
-        } else {
-          navigate('/', { replace: true });
-        }
-      }, 100);
-      
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, from, navigate]);
+
+  // Handle resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, authLoading, navigate, searchParams]);
+  }, [resendCooldown]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError({ message: '', needsVerification: false });
+    setError('');
+    setShowResendVerification(false);
 
     // Basic validation
     if (!email || !password) {
-      setError({
-        message: 'Please enter both email and password.',
-        needsVerification: false
-      });
+      setError('Please enter both email and password');
       setLoading(false);
       return;
     }
 
     try {
-      console.log('Login attempt with:', { email, password: '***' });
+      const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/signin`;
       
-      // Use the signIn function from AuthContext (it will handle navigation)
-      const userData = await signIn(email, password);
-      console.log('Login successful:', userData);
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      console.log('Login response:', { status: response.status, data });
+
+      if (!response.ok) {
+        const errorMessage = data?.error || data?.message || 'Login failed. Please check your credentials and try again.';
+        
+        // Check for unverified email error
+        if (data?.code === 'email_not_verified' || 
+            errorMessage.toLowerCase().includes('not verified') || 
+            errorMessage.toLowerCase().includes('not confirmed')) {
+          setUnverifiedEmail(email);
+          setShowResendVerification(true);
+          setError('Please verify your email before signing in. Check your email or click below to resend the verification email.');
+          setResendCooldown(60); // Set cooldown to 60 seconds
+        } else {
+          setError(errorMessage);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // If we get here, login was successful
+      toast.success('Login successful!');
+      
+      // Use the login function from AuthContext to update the auth state
+      const loginResult = await login({ email, password });
+      
+      if (loginResult?.success) {
+        // The AuthProvider's useEffect will handle the redirection based on user type
+        // No need to navigate here as the AppLayout will handle it
+      } else {
+        setError(loginResult?.error || 'Login failed. Please try again.');
+      }
       
     } catch (err) {
       console.error('Login error:', err);
+      setError('An error occurred during login. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleResendVerification = async () => {
+    if (!unverifiedEmail || resendCooldown > 0) return;
+    
+    try {
+      setLoading(true);
+      setError('');
       
-      // Handle email verification required case
-      if (err.needsVerification) {
-        setError({
-          message: 'Please verify your email before logging in.',
-          needsVerification: true,
-          email: err.email || email
-        });
-      } else {
-        // Handle other login errors
-        let errorMessage = 'Login failed. Please check your credentials and try again.';
+      console.log('Sending verification email to:', unverifiedEmail);
+      const response = await authAPI.resendVerification(unverifiedEmail);
+      
+      // If we get here, the email was sent successfully
+      console.log('Verification email response:', response);
+      setResendCooldown(60); // Set cooldown to 60 seconds
+      
+      // Show success message from the backend or a default one
+      const successMessage = response.data?.message || 'Verification email sent! Please check your inbox.';
+      toast.success(successMessage, { duration: 5000 });
+      
+      // Clear any previous errors
+      setError('');
+      
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      
+      // Handle different types of errors
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Error response data:', error.response.data);
+        console.error('Error status:', error.response.status);
         
-        // More specific error messages based on status code
-        if (err.response?.status === 401) {
-          errorMessage = 'Invalid email or password. Please try again.';
-        } else if (err.response?.status === 429) {
-          errorMessage = 'Too many login attempts. Please try again later.';
-        } else if (err.message) {
-          errorMessage = err.message;
+        // Handle rate limiting specifically
+        if (error.response.status === 429) {
+          setResendCooldown(60);
+          setError('Please wait before requesting another verification email.');
+        } else {
+          // Show error message from the backend or a generic one
+          const errorMessage = error.response.data?.message || 
+                             error.response.data?.error || 
+                             `Failed to resend verification email (${error.response.status}). Please try again.`;
+          setError(errorMessage);
         }
-        
-        setError({
-          message: errorMessage,
-          needsVerification: false
-        });
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received:', error.request);
+        setError('Unable to connect to the server. Please check your internet connection.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error setting up request:', error.message);
+        setError(error.message || 'Failed to resend verification email. Please try again.');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResendVerification = async (emailToVerify) => {
+  const handleGoogleLogin = async () => {
     try {
       setLoading(true);
-      await api.post('/auth/resend-verification', { email: emailToVerify });
-      setError({
-        message: `Verification email sent to ${emailToVerify}! Please check your inbox.`,
-        needsVerification: false
-      });
+      setError('');
+      
+      // This will be handled by the backend's OAuth flow
+      window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/auth/google?returnTo=${encodeURIComponent(window.location.pathname)}`;
     } catch (err) {
-      console.error('Failed to resend verification email:', err);
-      setError({
-        message: 'Failed to resend verification email. Please try again later.',
-        needsVerification: true,
-        email: emailToVerify
-      });
+      console.error('Google login error:', err);
+      setError('Failed to sign in with Google. Please try again.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    setGoogleLoading(true);
-    setError({ message: '', needsVerification: false });
-
-    try {
-      // Determine the correct redirect URL based on the current domain
-      const host = window.location.hostname;
-      const isChatDomain = host === 'chat.homeswift.co' || host === 'localhost';
-      const redirectTo = isChatDomain 
-        ? `${window.location.origin}/auth/callback`
-        : 'https://chat.homeswift.co/auth/callback';
-
-      console.log('Initiating Google OAuth with redirectTo:', redirectTo);
-      
-      await googleAuth.signInWithGoogle({
-        redirectTo,
-        userType: 'renter'
-      });
-      
-      // The redirect will happen automatically via Supabase OAuth
-    } catch (error) {
-      console.error('Google login error:', error);
-      setError({
-        message: error.message || 'Google sign-in failed. Please try again.',
-        needsVerification: false
-      });
-    } finally {
-      setGoogleLoading(false);
     }
   };
 
@@ -231,24 +233,52 @@ export default function LoginPage() {
             )}
           </div>
 
-          {error.message && (
-            <div className={`mt-4 p-3 rounded-md text-sm ${
-              error.needsVerification ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'
-            }`}>
-              {error.needsVerification ? (
+          {error && (
+            <div className="flex flex-col gap-3 p-4 mb-4 text-sm rounded-lg" style={{
+              backgroundColor: showResendVerification ? '#FFFBEB' : '#FEF2F2',
+              borderColor: showResendVerification ? '#FCD34D' : '#FECACA',
+              color: showResendVerification ? '#92400E' : '#991B1B',
+              borderWidth: '1px'
+            }}>
+              <div className="flex items-start">
+                {showResendVerification ? (
+                  <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
+                )}
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
+
+          {showResendVerification && (
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-start">
+                <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
                 <div>
-                  <p>{error.message}</p>
-                  <button 
-                    onClick={() => handleResendVerification(error.email)}
-                    className="mt-2 text-sm font-medium text-yellow-700 hover:text-yellow-800 focus:outline-none"
-                    disabled={loading}
+                  <p className="text-sm text-yellow-700 mb-2">Please verify your email address. Check your inbox or spam folder.</p>
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={loading || resendCooldown > 0}
+                    className="px-4 py-2 text-sm font-medium rounded-md transition-colors"
+                    style={{
+                      backgroundColor: (loading || resendCooldown > 0) ? '#F3F4F6' : '#F59E0B',
+                      color: (loading || resendCooldown > 0) ? '#9CA3AF' : '#FFFFFF',
+                      opacity: (loading || resendCooldown > 0) ? 0.7 : 1,
+                      cursor: (loading || resendCooldown > 0) ? 'not-allowed' : 'pointer'
+                    }}
                   >
-                    {loading ? 'Sending...' : 'Resend verification email'}
+                    {loading ? 'Sending...' : 
+                     resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 
+                     'Resend verification email'}
                   </button>
                 </div>
-              ) : (
-                error.message
-              )}
+              </div>
             </div>
           )}
 
@@ -275,7 +305,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div>
+            
               <label className="block text-[#2C3E50] text-sm font-medium mb-2">
                 Password
               </label>
@@ -299,20 +329,6 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                <span className="ml-2 text-gray-300 text-sm">Remember me</span>
-              </label>
-              <a href="#" className="text-blue-400 hover:text-blue-300 text-sm transition-colors">
-                Forgot password?
-              </a>
-            </div>
 
             <motion.button
               type="submit"
@@ -373,7 +389,7 @@ export default function LoginPage() {
           <div className="mt-6 text-center">
             <p className="text-gray-400">
               Looking for landlord tools?{' '}
-              <button     
+              <button 
                 onClick={() => navigate('/user-type')} 
                 className="text-blue-400 hover:text-blue-300 transition-colors underline"
               >
