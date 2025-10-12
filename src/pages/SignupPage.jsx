@@ -11,9 +11,19 @@ export default function SignupPage() {
   const location = useLocation();
   const { signup: signUp, isAuthenticated, loading: authLoading, checkEmailExists } = useAuth();
   
-  // Determine if this is a landlord signup from the URL
-  const isLandlordSignup = location.pathname.includes('landlord');
-  const userType = isLandlordSignup ? 'landlord' : 'renter';
+  // Determine user type from localStorage first, then URL
+  const [userType, setUserType] = useState('renter');
+  
+  useEffect(() => {
+    // Get user type from localStorage or URL
+    const storedUserType = localStorage.getItem('userType');
+    const isLandlordSignup = storedUserType === 'landlord' || location.pathname.includes('landlord');
+    const newUserType = isLandlordSignup ? 'landlord' : 'renter';
+    
+    // Update state and localStorage
+    setUserType(newUserType);
+    localStorage.setItem('userType', newUserType);
+  }, [location.pathname]);
   
   const [formData, setFormData] = useState({
     firstName: '',

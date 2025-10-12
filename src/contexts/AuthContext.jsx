@@ -113,60 +113,71 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Sign up a new user
-  const signup = async (userData) => {
-    try {
-      console.log('Sending signup request with data:', userData);
-      const response = await authAPI.signup(userData);
-      console.log('Signup response:', response);
+  // Sign up a new user using Supabase client-side auth
+const signup = async (userData) => {
+  try {
+    console.log('Starting signup with data:', userData);
+    
+    // Use Supabase's client-side auth for signup to trigger email verification
+    const { data, error } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: {
+          full_name: userData.full_name || `${userData.firstName} ${userData.lastName}`,
+          user_type: userData.user_type || 'renter',
+        },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      console.error('Signup error:', error);
+      let userFriendlyError = 'We encountered an issue creating your account. ';
       
-      if (response.success) {
-        // The user data is in response.data in the backend response
-        const user = response.data || response.user;
-        
-        if (!user) {
-          console.error('No user data in response:', response);
-          return { success: false, error: 'No user data received' };
-        }
-        
-        console.log('User created successfully:', user);
-        
-        // Store user data in localStorage
-        localStorage.setItem('user', JSON.stringify(user));
-        
-        // Set auth state
-        setUser(user);
-        setIsAuthenticated(true);
-        
-        // Add default role based on signup type
-        const role = userData.user_type || 'renter';
-        console.log('Adding role:', role, 'for user:', user.id);
-        
-        const roleResult = await addRole(role, user.id);
-        
-        if (!roleResult.success) {
-          console.warn('Role assignment failed, but user was created:', roleResult.error);
-          // Continue even if role assignment fails, as the user is still created
-        }
-        
-        // Refresh user data to include roles
-        await fetchUserRoles(user.id);
-        
-        return { success: true, user };
+      // Map common Supabase errors to friendly messages
+      if (error.message.includes('already registered')) {
+        userFriendlyError = 'This email is already registered. Please try logging in or use a different email.';
+      } else if (error.message.includes('password')) {
+        userFriendlyError = 'Please choose a stronger password (minimum 6 characters).';
+      } else if (error.message.includes('email')) {
+        userFriendlyError = 'Please enter a valid email address.';
+      } else if (error.message.includes('network')) {
+        userFriendlyError = 'Unable to connect to our servers. Please check your internet connection and try again.';
       }
       
       return { 
         success: false, 
-        error: response.error || response.message || 'Signup failed' 
-      };
-    } catch (error) {
-      console.error('Signup error:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.error || error.message || 'An error occurred during signup' 
+        error: userFriendlyError,
+        technicalError: error.message // Include original error for debugging
       };
     }
-  };
+
+    // Check if email confirmation is required
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      return { 
+        success: false, 
+        error: 'This email is already registered. Please check your inbox for a verification email or try resetting your password.'
+      };
+    }
+
+    console.log('Signup successful, check your email for verification');
+    
+    return { 
+      success: true, 
+      message: 'Almost there! We\'ve sent a verification link to your email. Please check your inbox (and spam folder) to complete your registration.',
+      requiresVerification: true
+    };
+    
+  } catch (error) {
+    console.error('Signup error:', error);
+    return { 
+      success: false, 
+      error: 'We apologize, but we encountered an unexpected error while creating your account. Our team has been notified. Please try again in a few minutes.',
+      technicalError: error.message // Include original error for debugging
+    };
+  }
+};
 
   // Sign out the current user
   const logout = async () => {
@@ -395,60 +406,70 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Login user
+  // Login user with Supabase
   const login = async (credentials) => {
     try {
-      const response = await authAPI.signin(credentials);
-      
-      if (response.data.success) {
-        const { user, token } = response.data;
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      });
+
+      if (error) {
+        console.error('Login error:', error);
+        let errorMessage = 'Invalid email or password. Please try again.';
         
-        // First, set the user data in localStorage
-        localStorage.setItem('token', token);
+        // Provide more specific error messages when possible
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'The email or password you entered is incorrect.';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Please verify your email before logging in. Check your inbox for the verification link.';
+        } else if (error.message.includes('too many requests')) {
+          errorMessage = 'Too many login attempts. Please try again later.';
+        }
+        
+        return { success: false, error: errorMessage };
+      }
+
+      if (data?.user) {
+        const user = {
+          id: data.user.id,
+          email: data.user.email,
+          ...data.user.user_metadata // Include any additional user metadata
+        };
+
+        // Store the user in localStorage
         localStorage.setItem('user', JSON.stringify(user));
         
-        try {
-          // Try to fetch user roles
-          let hasRoles = await fetchUserRoles(user.id);
-          
-          // If no roles found, assign default 'renter' role
-          if (!hasRoles) {
-            console.log('No roles found, assigning default renter role');
-            const roleResult = await addRole('renter', user.id);
-            if (roleResult.success) {
-              hasRoles = await fetchUserRoles(user.id);
-            }
-          }
-          
-          if (hasRoles) {
-            // Now that we have roles, update the state
-            setUser(user);
-            setIsAuthenticated(true);
-            return { success: true, user };
-          } else {
-            console.error('Failed to assign default role to user');
-            throw new Error('Failed to assign default role');
-          }
-        } catch (roleError) {
-          console.error('Role assignment error:', roleError);
-          // Clean up on error
-          logout();
-          return { 
-            success: false, 
-            error: 'Unable to set up your account. Please contact support.' 
-          };
+        // Fetch user roles
+        const hasRoles = await fetchUserRoles(user.id);
+        
+        if (!hasRoles) {
+          console.log('No roles found, assigning default renter role');
+          await addRole('renter', user.id);
+          await fetchUserRoles(user.id); // Refresh roles
         }
+        
+        // Update auth state
+        setUser(user);
+        setIsAuthenticated(true);
+        
+        return { 
+          success: true, 
+          user,
+          message: 'Login successful! Redirecting...'
+        };
       }
       
       return { 
         success: false, 
-        error: response.data.error || 'Login failed' 
+        error: 'Login failed. Please try again.' 
       };
+      
     } catch (error) {
       console.error('Login error:', error);
       return { 
         success: false, 
-        error: error.response?.data?.error || 'An error occurred during login' 
+        error: 'An unexpected error occurred. Please try again later.'
       };
     }
   };

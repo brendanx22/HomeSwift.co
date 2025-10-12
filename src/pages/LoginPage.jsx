@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [showResendVerification, setShowResendVerification] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [hasRequestedResend, setHasRequestedResend] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
@@ -54,49 +55,19 @@ export default function LoginPage() {
     }
 
     try {
-      const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/signin`;
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email, password })
-      });
-      
-      const data = await response.json();
-      console.log('Login response:', { status: response.status, data });
-
-      if (!response.ok) {
-        const errorMessage = data?.error || data?.message || 'Login failed. Please check your credentials and try again.';
-        
-        // Check for unverified email error
-        if (data?.code === 'email_not_verified' || 
-            errorMessage.toLowerCase().includes('not verified') || 
-            errorMessage.toLowerCase().includes('not confirmed')) {
-          setUnverifiedEmail(email);
-          setShowResendVerification(true);
-          setError('Please verify your email before signing in. Check your email or click below to resend the verification email.');
-          setResendCooldown(60); // Set cooldown to 60 seconds
-        } else {
-          setError(errorMessage);
-        }
-        setLoading(false);
-        return;
-      }
-
-      // If we get here, login was successful
-      toast.success('Login successful!');
-      
-      // Use the login function from AuthContext to update the auth state
+      // Use the login function from AuthContext which now uses Supabase
       const loginResult = await login({ email, password });
       
       if (loginResult?.success) {
+        toast.success(loginResult.message || 'Login successful!');
         // The AuthProvider's useEffect will handle the redirection based on user type
-        // No need to navigate here as the AppLayout will handle it
       } else {
+        // Handle specific error cases
+        if (loginResult?.error?.includes('verify your email')) {
+          setUnverifiedEmail(email);
+          setShowResendVerification(true);
+          setResendCooldown(60);
+        }
         setError(loginResult?.error || 'Login failed. Please try again.');
       }
       
@@ -113,55 +84,41 @@ export default function LoginPage() {
   };
 
   const handleResendVerification = async () => {
-    if (!unverifiedEmail || resendCooldown > 0) return;
+    if (!unverifiedEmail) return;
     
     try {
       setLoading(true);
       setError('');
       
-      console.log('Sending verification email to:', unverifiedEmail);
-      const response = await authAPI.resendVerification(unverifiedEmail);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/resend-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: unverifiedEmail })
+      });
       
-      // If we get here, the email was sent successfully
-      console.log('Verification email response:', response);
-      setResendCooldown(60); // Set cooldown to 60 seconds
+      const data = await response.json();
       
-      // Show success message from the backend or a default one
-      const successMessage = response.data?.message || 'Verification email sent! Please check your inbox.';
-      toast.success(successMessage, { duration: 5000 });
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to resend verification email');
+      }
       
-      // Clear any previous errors
-      setError('');
-      
+      toast.success('Verification email sent! Please check your inbox.');
+      setResendCooldown(60); // 60 seconds cooldown
+      setShowResendVerification(true);
+      setHasRequestedResend(true);
     } catch (error) {
       console.error('Resend verification error:', error);
       
-      // Handle different types of errors
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error('Error response data:', error.response.data);
-        console.error('Error status:', error.response.status);
-        
-        // Handle rate limiting specifically
         if (error.response.status === 429) {
           setResendCooldown(60);
+          setHasRequestedResend(true);
           setError('Please wait before requesting another verification email.');
         } else {
-          // Show error message from the backend or a generic one
-          const errorMessage = error.response.data?.message || 
-                             error.response.data?.error || 
-                             `Failed to resend verification email (${error.response.status}). Please try again.`;
-          setError(errorMessage);
+          setError(error.response.data?.error || 'Failed to resend verification email');
         }
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error('No response received:', error.request);
-        setError('Unable to connect to the server. Please check your internet connection.');
       } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error('Error setting up request:', error.message);
-        setError(error.message || 'Failed to resend verification email. Please try again.');
+        setError(error.message || 'Failed to resend verification email');
       }
     } finally {
       setLoading(false);
@@ -233,25 +190,7 @@ export default function LoginPage() {
             )}
           </div>
 
-          {error && (
-            <div className="flex flex-col gap-3 p-4 mb-4 text-sm rounded-lg" style={{
-              backgroundColor: showResendVerification ? '#FFFBEB' : '#FEF2F2',
-              borderColor: showResendVerification ? '#FCD34D' : '#FECACA',
-              color: showResendVerification ? '#92400E' : '#991B1B',
-              borderWidth: '1px'
-            }}>
-              <div className="flex items-start">
-                {showResendVerification ? (
-                  <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                ) : (
-                  <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
-                )}
-                <span>{error}</span>
-              </div>
-            </div>
-          )}
+          
 
           {showResendVerification && (
             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -259,23 +198,16 @@ export default function LoginPage() {
                 <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
-                <div>
-                  <p className="text-sm text-yellow-700 mb-2">Please verify your email address. Check your inbox or spam folder.</p>
+                <div className="text-sm text-yellow-700">
+                  <p className="mb-2">Please verify your email before signing in. Check your email or click below to resend the verification email.</p>
                   <button
-                    type="button"
                     onClick={handleResendVerification}
-                    disabled={loading || resendCooldown > 0}
-                    className="px-4 py-2 text-sm font-medium rounded-md transition-colors"
-                    style={{
-                      backgroundColor: (loading || resendCooldown > 0) ? '#F3F4F6' : '#F59E0B',
-                      color: (loading || resendCooldown > 0) ? '#9CA3AF' : '#FFFFFF',
-                      opacity: (loading || resendCooldown > 0) ? 0.7 : 1,
-                      cursor: (loading || resendCooldown > 0) ? 'not-allowed' : 'pointer'
-                    }}
+                    disabled={loading || (hasRequestedResend && resendCooldown > 0)}
+                    className="text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                   >
-                    {loading ? 'Sending...' : 
-                     resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 
-                     'Resend verification email'}
+                    {hasRequestedResend && resendCooldown > 0 
+                      ? `Resend in ${resendCooldown}s`
+                      : 'Resend verification email'}
                   </button>
                 </div>
               </div>

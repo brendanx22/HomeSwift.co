@@ -7,9 +7,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 const Home = React.lazy(() => import('./pages/Home'));
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const SignupPage = React.lazy(() => import('./pages/SignupPage'));
-const LandlordLoginPage = React.lazy(() => 
-  import(/* @vite-ignore */ './pages/LandlordLoginPage')
-);
+const LandlordLoginPage = React.lazy(() => import('./pages/LandlordLoginPage.jsx'));
+const LandlordSignupPage = React.lazy(() => import('./pages/LandlordSignupPage.jsx'));
 const LandlordDashboard = React.lazy(() => import('./pages/LandlordDashboard'));
 const ChatPage = React.lazy(() => import('./pages/ChatPage'));
 const UserTypeSelection = React.lazy(() => import('./pages/UserTypeSelection'));
@@ -193,6 +192,7 @@ const AppLayout = () => {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/landlord/login" element={<LandlordLoginPage />} />
+            <Route path="/landlord/signup" element={<LandlordSignupPage />} />
             
             {/* Protected Routes */}
             <Route
