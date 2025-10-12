@@ -5,11 +5,13 @@ A modern property management platform built with React, Vite, Tailwind CSS, and 
 ## Features
 
 - **User Authentication**
+
   - Renter and landlord signup/login
   - Email/password and social authentication
   - Protected routes based on user type
 
 - **Property Management**
+
   - List and manage properties (landlords)
   - Browse and filter properties (renters)
   - Property details and image galleries
@@ -36,27 +38,33 @@ A modern property management platform built with React, Vite, Tailwind CSS, and 
 ## Getting Started
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/yourusername/homeswift-starter-fixed.git
    cd homeswift-starter-fixed
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    - Create a `.env` file in the root directory
    - Copy the contents from `.env.example` and update with your Supabase credentials
+
    ```env
    VITE_SUPABASE_URL=your-supabase-url
    VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
    ```
 
 4. **Set up Supabase**
+
    - Create a new project in Supabase
    - Set up the following tables:
+
      ```sql
      -- Create a table for properties
      create table properties (
@@ -77,19 +85,20 @@ A modern property management platform built with React, Vite, Tailwind CSS, and 
      alter table properties enable row level security;
 
      -- Allow public read access
-     create policy "Public properties are viewable by everyone." 
+     create policy "Public properties are viewable by everyone."
      on properties for select using (true);
 
      -- Allow authenticated users to insert their own properties
-     create policy "Users can insert their own properties." 
+     create policy "Users can insert their own properties."
      on properties for insert with check (auth.uid() = landlord_id);
 
      -- Allow users to update their own properties
-     create policy "Users can update their own properties." 
+     create policy "Users can update their own properties."
      on properties for update using (auth.uid() = landlord_id);
      ```
 
 5. **Start the development server**
+
    ```bash
    npm run dev
    ```
@@ -134,10 +143,10 @@ The backend is already set up with Supabase. Just make sure to update the CORS s
 
 ## Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `VITE_SUPABASE_URL` | Your Supabase project URL | Yes |
-| `VITE_SUPABASE_ANON_KEY` | Your Supabase anon/public key | Yes |
+| Variable                 | Description                   | Required |
+| ------------------------ | ----------------------------- | -------- |
+| `VITE_SUPABASE_URL`      | Your Supabase project URL     | Yes      |
+| `VITE_SUPABASE_ANON_KEY` | Your Supabase anon/public key | Yes      |
 
 ## Contributing
 
@@ -154,3 +163,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For support, please open an issue in the GitHub repository.
+
+# HomeSwift.co
+
+HomeSwift is a modern web app for property seekers and landlords, offering seamless property browsing, real-time communication, and AI-powered tools to simplify renting, buying, and managing properties.
