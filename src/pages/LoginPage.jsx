@@ -41,6 +41,16 @@ export default function LoginPage() {
     }
   }, [resendCooldown]);
 
+  // Handle email verification callback
+  useEffect(() => {
+    const { state } = location;
+    if (state?.verified) {
+      setIsVerified(true);
+      // Clear the state to prevent showing the message again
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);

@@ -25,10 +25,21 @@ const LandlordLoginPage = () => {
   const from = location.state?.from?.pathname || '/landlord/dashboard';
   const isVerified = searchParams.get('verified') === 'true';
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated AND we have proper role data
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(from, { replace: true });
+      // Check if we have the user data in localStorage with proper user_type
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const userType = storedUser?.user_metadata?.user_type || storedUser?.user_type;
+      const storedRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
+      const currentRole = storedRoles.find(r => r.is_primary)?.role || storedRoles[0]?.role || userType || 'renter';
+
+      console.log('LandlordLoginPage Auth Check:', { isAuthenticated, currentRole, userType });
+
+      if (currentRole === 'landlord') {
+        navigate(from, { replace: true });
+      }
+      // If not landlord role, don't redirect - let App.jsx handle it
     }
   }, [isAuthenticated, from, navigate]);
 
@@ -39,6 +50,16 @@ const LandlordLoginPage = () => {
       return () => clearTimeout(timer);
     }
   }, [resendCooldown]);
+
+  // Handle email verification callback
+  useEffect(() => {
+    const { state } = location;
+    if (state?.verified) {
+      setIsVerified(true);
+      // Clear the state to prevent showing the message again
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
@@ -142,76 +163,32 @@ const LandlordLoginPage = () => {
     setShowResendVerification(false);
 
     try {
-      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+      // Use AuthContext login function which handles Supabase authentication and role assignment
+      console.log('Attempting landlord login for:', formData.email);
+      const loginResult = await login({
         email: formData.email,
         password: formData.password,
+        userType: 'landlord'
       });
 
-      if (signInError) {
-        if (signInError.message.includes('Email not confirmed')) {
+      console.log('Login result:', loginResult);
+
+      if (loginResult?.success) {
+        console.log('Login successful:', loginResult.message);
+        // The App.jsx useEffect will handle the redirect based on role detection
+      } else {
+        // Handle specific error cases
+        if (loginResult?.error?.includes('verify your email')) {
           setShowResendVerification(true);
           setErrors({
             general: 'Please verify your email before signing in. Check your email or resend the verification link.'
           });
-          return;
-        } else if (signInError.message.includes('Invalid login credentials')) {
-          throw new Error('Invalid email or password');
+        } else {
+          setErrors({
+            general: loginResult?.error || 'Login failed. Please try again.'
+          });
         }
-        throw signInError;
       }
-
-      if (!authData.user?.email_confirmed_at) {
-        setShowResendVerification(true);
-        setErrors({
-          general: 'Please verify your email before signing in. Check your email or resend the verification link.'
-        });
-        return;
-      }
-
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .upsert(
-          { 
-            user_id: authData.user.id, 
-            role: 'landlord', 
-            is_primary: true 
-          },
-          { onConflict: 'user_id,role' }
-        )
-        .select();
-
-      if (roleError) {
-        console.error('Error assigning landlord role:', roleError);
-        throw new Error('Failed to assign landlord role');
-      }
-
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .upsert(
-          { 
-            id: authData.user.id,
-            email: authData.user.email,
-            user_type: 'landlord',
-            updated_at: new Date().toISOString()
-          },
-          { onConflict: 'id' }
-        )
-        .select();
-
-      if (profileError) {
-        console.error('Error updating user profile:', profileError);
-      }
-
-      await login({
-        email: authData.user.email,
-        user: {
-          id: authData.user.id,
-          email: authData.user.email,
-          user_type: 'landlord'
-        }
-      });
-      
-      window.location.href = '/landlord/dashboard';
     } catch (error) {
       console.error('Login error:', error);
       setErrors({

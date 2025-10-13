@@ -14,46 +14,83 @@ export const AuthProvider = ({ children }) => {
   // Load user data from localStorage on initial load
   const loadUserData = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
+      setLoading(true);
       const userData = JSON.parse(localStorage.getItem('user') || '{}');
       const savedRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
       const savedRole = localStorage.getItem('currentRole');
-      
-      if (token && userData?.id) {
+
+      console.log('🔍 loadUserData - Loading from localStorage:', {
+        hasUserData: !!userData?.id,
+        userData: userData,
+        savedRoles: savedRoles.length,
+        savedRole,
+        userType: userData?.user_metadata?.user_type || userData?.user_type
+      });
+
+      // If we have cached user data, try to validate the session
+      if (userData?.id) {
         try {
-          // Verify the token is still valid
+          // First try to get the current session from Supabase
           const { data: { session }, error } = await supabase.auth.getSession();
-          
-          if (error) throw error;
-          
-          if (session) {
-            // If we have saved roles, use them, otherwise fetch fresh
+
+          if (error) {
+            console.warn('⚠️ Session validation error, using cached data:', error.message);
+            // Don't logout immediately - continue with cached data for better UX
+          }
+
+          // If we have a session and it's for the same user, use it
+          if (session?.user?.id === userData.id) {
+            console.log('✅ Active session matches cached user, using session data');
+            setUser(session.user);
+            setIsAuthenticated(true);
+
+            // Use cached roles if available, otherwise fetch fresh
             if (savedRoles?.length > 0) {
               setRoles(savedRoles);
               setCurrentRole(savedRole || (savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role));
-              setUser(userData);
-              setIsAuthenticated(true);
-              return true;
+              console.log('✅ Using cached roles:', savedRoles);
+            } else {
+              await fetchUserRoles(userData.id);
             }
-            
-            // Fetch fresh roles if we don't have them
-            const hasRoles = await fetchUserRoles(userData.id);
-            if (hasRoles) {
-              setUser(userData);
-              setIsAuthenticated(true);
-              return true;
-            }
+            return true;
           }
+
+          // No active session but we have cached data - try to restore
+          console.log('🔄 No active session but have cached data, attempting to restore');
+          if (savedRoles?.length > 0) {
+            // Check if user has landlord role in cached data
+            const hasLandlordRole = savedRoles.some(role => role.role === 'landlord');
+            console.log('🏠 User has landlord role in cached data:', hasLandlordRole);
+
+            setRoles(savedRoles);
+            setCurrentRole(savedRole || (savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role));
+            setUser(userData);
+            setIsAuthenticated(true);
+            console.log('✅ Restored authentication using cached data');
+            return true;
+          }
+
         } catch (error) {
-          console.error('Session validation error:', error);
-          // If there's an error validating the session, log the user out
-          logout();
+          console.error('❌ Session validation error:', error);
+          // If session validation fails, try to continue with cached data
+          if (savedRoles?.length > 0) {
+            console.log('🔄 Using cached data despite session error');
+            setRoles(savedRoles);
+            setCurrentRole(savedRole || (savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role));
+            setUser(userData);
+            setIsAuthenticated(true);
+            return true;
+          }
         }
       }
+
+      console.log('❌ No valid authentication data found');
       return false;
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error('💥 Error loading user data:', error);
       return false;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -117,7 +154,12 @@ export const AuthProvider = ({ children }) => {
 const signup = async (userData) => {
   try {
     console.log('Starting signup with data:', userData);
-    
+
+    // Generate a unique agent ID for the user
+    const { generateUniqueAgentId } = await import('../utils/agentId.js');
+    const agentId = await generateUniqueAgentId();
+    console.log('Generated agent ID:', agentId);
+
     // Use Supabase's client-side auth for signup to trigger email verification
     const { data, error } = await supabase.auth.signUp({
       email: userData.email,
@@ -126,6 +168,7 @@ const signup = async (userData) => {
         data: {
           full_name: userData.full_name || `${userData.firstName} ${userData.lastName}`,
           user_type: userData.user_type || 'renter',
+          agent_id: agentId, // Store the agent ID in user metadata
         },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -134,7 +177,7 @@ const signup = async (userData) => {
     if (error) {
       console.error('Signup error:', error);
       let userFriendlyError = 'We encountered an issue creating your account. ';
-      
+
       // Map common Supabase errors to friendly messages
       if (error.message.includes('already registered')) {
         userFriendlyError = 'This email is already registered. Please try logging in or use a different email.';
@@ -145,9 +188,9 @@ const signup = async (userData) => {
       } else if (error.message.includes('network')) {
         userFriendlyError = 'Unable to connect to our servers. Please check your internet connection and try again.';
       }
-      
-      return { 
-        success: false, 
+
+      return {
+        success: false,
         error: userFriendlyError,
         technicalError: error.message // Include original error for debugging
       };
@@ -155,24 +198,24 @@ const signup = async (userData) => {
 
     // Check if email confirmation is required
     if (data.user && data.user.identities && data.user.identities.length === 0) {
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: 'This email is already registered. Please check your inbox for a verification email or try resetting your password.'
       };
     }
 
     console.log('Signup successful, check your email for verification');
-    
-    return { 
-      success: true, 
+
+    return {
+      success: true,
       message: 'Almost there! We\'ve sent a verification link to your email. Please check your inbox (and spam folder) to complete your registration.',
       requiresVerification: true
     };
-    
+
   } catch (error) {
     console.error('Signup error:', error);
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: 'We apologize, but we encountered an unexpected error while creating your account. Our team has been notified. Please try again in a few minutes.',
       technicalError: error.message // Include original error for debugging
     };
@@ -305,17 +348,27 @@ const signup = async (userData) => {
       console.log('Direct insert response:', { data, error });
 
       if (error) {
-        // If duplicate key error, the role already exists
-        if (error.code === '23505') {
+        console.log('Insert error details:', { code: error.code, message: error.message, details: error.details });
+        // If duplicate key error or conflict error, the role already exists
+        if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('conflict')) {
           console.log('Role already exists, updating to primary');
-          const { data: updateData, error: updateError } = await supabase
+          // Update all roles for this user to set is_primary correctly
+          const { error: updateError } = await supabase
+            .from('user_roles')
+            .update({ is_primary: false })
+            .eq('user_id', targetUserId);
+
+          if (updateError) throw updateError;
+
+          // Set the selected role as primary
+          const { error: setPrimaryError } = await supabase
             .from('user_roles')
             .update({ is_primary: true })
             .eq('user_id', targetUserId)
-            .eq('role', role)
-            .select();
+            .eq('role', role);
 
-          if (updateError) throw updateError;
+          if (setPrimaryError) throw setPrimaryError;
+
           console.log('Updated existing role to primary');
         } else {
           throw error;
@@ -325,6 +378,12 @@ const signup = async (userData) => {
       // Refresh roles
       const rolesUpdated = await fetchUserRoles(targetUserId);
       console.log('Roles after update:', rolesUpdated ? 'Updated' : 'Failed to update');
+
+      // If this is the current user, ensure React state is updated
+      if (!userId && targetUserId === user?.id) {
+        console.log('Updating React state for current user');
+        // fetchUserRoles already updated localStorage and state
+      }
 
       return { success: true };
     } catch (error) {
@@ -343,6 +402,7 @@ const signup = async (userData) => {
         // Refresh roles if this is the current user
         if (!userId) {
           await fetchUserRoles(targetUserId);
+          console.log('Roles refreshed via RPC for current user');
         }
         
         return { success: true };
@@ -409,15 +469,17 @@ const signup = async (userData) => {
   // Login user with Supabase
   const login = async (credentials) => {
     try {
+      console.log('AuthContext login called with:', { email: credentials.email, userType: credentials.userType });
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
       });
 
       if (error) {
-        console.error('Login error:', error);
+        console.error('Supabase login error:', error);
         let errorMessage = 'Invalid email or password. Please try again.';
-        
+
         // Provide more specific error messages when possible
         if (error.message.includes('Invalid login credentials')) {
           errorMessage = 'The email or password you entered is incorrect.';
@@ -426,49 +488,193 @@ const signup = async (userData) => {
         } else if (error.message.includes('too many requests')) {
           errorMessage = 'Too many login attempts. Please try again later.';
         }
-        
+
         return { success: false, error: errorMessage };
       }
 
+      console.log('Supabase login successful, user:', data.user?.email);
+
       if (data?.user) {
-        const user = {
+        // Use the updated user object if provided, otherwise use the auth data
+        const user = credentials.user || {
           id: data.user.id,
           email: data.user.email,
           ...data.user.user_metadata // Include any additional user metadata
         };
 
+        console.log('🔍 Login - User object before processing:', {
+          id: user.id,
+          email: user.email,
+          metadata: user.user_metadata,
+          fullMetadata: data.user
+        });
+
+        console.log('User object before metadata update:', user);
+
+        // Ensure user_type is included in metadata if provided
+        if (credentials.userType && !user.user_metadata?.user_type) {
+          user.user_metadata = {
+            ...user.user_metadata,
+            user_type: credentials.userType
+          };
+          console.log('Updated user metadata with user_type:', credentials.userType);
+        }
+
+        // Ensure name fields are properly populated for display
+        if (!user.user_metadata?.first_name || !user.user_metadata?.full_name) {
+          // Try to derive names from stored data or create fallbacks
+          let firstName = user.user_metadata?.first_name;
+          let fullName = user.user_metadata?.full_name;
+
+          if (!firstName && !fullName) {
+            // If no name data exists, we need to handle this differently
+            // For now, we'll leave it empty and let the dashboard handle it
+            console.log('⚠️ No name data found in user metadata');
+          } else if (!firstName && fullName) {
+            // Derive first_name from full_name
+            firstName = fullName.split(' ')[0];
+            user.user_metadata = {
+              ...user.user_metadata,
+              first_name: firstName
+            };
+            console.log('✅ Derived first_name from full_name:', firstName);
+          }
+
+          // Update the user metadata in Supabase to persist any changes
+          if (user.user_metadata && (user.user_metadata.first_name !== data.user.user_metadata?.first_name || user.user_metadata.full_name !== data.user.user_metadata?.full_name)) {
+            try {
+              const { error: updateError } = await supabase.auth.updateUser({
+                data: user.user_metadata
+              });
+              if (updateError) {
+                console.warn('Failed to update user metadata:', updateError);
+              }
+            } catch (updateError) {
+              console.warn('Error updating user metadata:', updateError);
+            }
+          }
+        }
+
+        // Ensure agent_id is included in metadata for existing users
+        if (!user.user_metadata?.agent_id) {
+          const { generateUniqueAgentId } = await import('../utils/agentId.js');
+          const agentId = await generateUniqueAgentId();
+          user.user_metadata = {
+            ...user.user_metadata,
+            agent_id: agentId
+          };
+          console.log('Generated agent ID for existing user:', agentId);
+
+          // Update the user metadata in Supabase to persist the agent ID
+          try {
+            const { error: updateError } = await supabase.auth.updateUser({
+              data: user.user_metadata
+            });
+            if (updateError) {
+              console.warn('Failed to update user metadata with agent ID:', updateError);
+            }
+          } catch (updateError) {
+            console.warn('Error updating user metadata:', updateError);
+          }
+        }
+
+        console.log('🔍 Final user object before storage:', {
+          id: user.id,
+          email: user.email,
+          metadata: user.user_metadata
+        });
+
         // Store the user in localStorage
         localStorage.setItem('user', JSON.stringify(user));
-        
+        console.log('User stored in localStorage');
+
         // Fetch user roles
         const hasRoles = await fetchUserRoles(user.id);
-        
+        console.log('Has roles:', hasRoles);
+
+        // Get the current roles for comparison
+        const currentRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
+
         if (!hasRoles) {
-          console.log('No roles found, assigning default renter role');
-          await addRole('renter', user.id);
-          await fetchUserRoles(user.id); // Refresh roles
+          // Assign default role based on userType or default to renter
+          const defaultRole = credentials.userType === 'landlord' ? 'landlord' : 'renter';
+          console.log(`No roles found, assigning default ${defaultRole} role`);
+          await addRole(defaultRole, user.id);
+
+          // After adding role, fetch and update state
+          await fetchUserRoles(user.id);
+          console.log('Roles updated after role assignment');
+        } else {
+          console.log('User already has roles:', hasRoles);
+          // Check if the current primary role matches the expected role based on user_type
+          const expectedRole = credentials.userType === 'landlord' ? 'landlord' : 'renter';
+          const primaryRole = currentRoles.find(r => r.is_primary)?.role || currentRoles[0]?.role;
+
+          if (primaryRole !== expectedRole) {
+            console.log(`Primary role '${primaryRole}' doesn't match expected role '${expectedRole}' based on user_type`);
+
+            // If the user has the expected role but it's not primary, make it primary
+            const hasExpectedRole = currentRoles.some(r => r.role === expectedRole);
+
+            if (hasExpectedRole) {
+              console.log(`User has ${expectedRole} role but it's not primary, updating to primary`);
+              // Update all roles to not be primary, then set expected role as primary
+              await supabase
+                .from('user_roles')
+                .update({ is_primary: false })
+                .eq('user_id', user.id);
+
+              await supabase
+                .from('user_roles')
+                .update({ is_primary: true })
+                .eq('user_id', user.id)
+                .eq('role', expectedRole);
+
+              await fetchUserRoles(user.id);
+            } else {
+              console.log(`User doesn't have ${expectedRole} role, adding it`);
+              // Try using the RPC function first as it's more reliable for role management
+              try {
+                const { error: rpcError } = await supabase.rpc('add_user_role', {
+                  p_user_id: user.id,
+                  p_role: expectedRole,
+                  p_is_primary: true
+                });
+
+                if (rpcError) throw rpcError;
+
+                console.log('Successfully added role via RPC');
+              } catch (rpcError) {
+                console.error('RPC failed, falling back to direct insert:', rpcError);
+                // Fall back to direct insert if RPC fails
+                await addRole(expectedRole, user.id);
+              }
+
+              await fetchUserRoles(user.id);
+            }
+          }
         }
-        
+
         // Update auth state
         setUser(user);
         setIsAuthenticated(true);
-        
-        return { 
-          success: true, 
+
+        return {
+          success: true,
           user,
           message: 'Login successful! Redirecting...'
         };
       }
-      
-      return { 
-        success: false, 
-        error: 'Login failed. Please try again.' 
+
+      return {
+        success: false,
+        error: 'Login failed. Please try again.'
       };
-      
+
     } catch (error) {
       console.error('Login error:', error);
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: 'An unexpected error occurred. Please try again later.'
       };
     }
