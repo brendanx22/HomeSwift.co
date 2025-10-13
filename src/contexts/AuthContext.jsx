@@ -24,7 +24,8 @@ export const AuthProvider = ({ children }) => {
         userData: userData,
         savedRoles: savedRoles.length,
         savedRole,
-        userType: userData?.user_metadata?.user_type || userData?.user_type
+        userType: userData?.user_metadata?.user_type || userData?.user_type,
+        hasBackendToken: !!localStorage.getItem('backendToken')
       });
 
       // If we have cached user data, try to validate the session
@@ -98,7 +99,7 @@ export const AuthProvider = ({ children }) => {
   const fetchUserRoles = async (userId) => {
     try {
       console.log(`Fetching roles for user ${userId}`);
-      
+
       // First, try to get roles directly from the user_roles table
       const { data: directRoles, error: directError } = await supabase
         .from('user_roles')
@@ -119,11 +120,10 @@ export const AuthProvider = ({ children }) => {
       // If direct query failed or returned no results, try the function
       console.log('No roles found via direct query, trying RPC function');
       const { data: roles, error } = await supabase
-        .rpc('get_current_user_roles')
-        .select('*');
-      
+        .rpc('get_user_roles', { user_id_param: userId });
+
       console.log('Roles from database function:', roles);
-      
+
       if (error) {
         console.error('Error fetching roles via RPC:', {
           code: error.code,
@@ -141,7 +141,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('currentRole', primaryRole);
         return true;
       }
-      
+
       console.log('No roles found for user');
       return false;
     } catch (error) {
@@ -230,6 +230,7 @@ const signup = async (userData) => {
       localStorage.removeItem('user');
       localStorage.removeItem('userRoles');
       localStorage.removeItem('currentRole');
+      localStorage.removeItem('backendToken'); // Clear backend token
       
       // Clear the Supabase session
       const { error } = await supabase.auth.signOut();
@@ -250,6 +251,7 @@ const signup = async (userData) => {
       localStorage.removeItem('user');
       localStorage.removeItem('userRoles');
       localStorage.removeItem('currentRole');
+      localStorage.removeItem('backendToken'); // Clear backend token
       setUser(null);
       setRoles([]);
       setCurrentRole(null);
@@ -269,6 +271,7 @@ const signup = async (userData) => {
           localStorage.removeItem('token');
           localStorage.removeItem('userRoles');
           localStorage.removeItem('currentRole');
+          localStorage.removeItem('backendToken'); // Clear backend token
           setUser(null);
           setRoles([]);
           setCurrentRole(null);
@@ -392,9 +395,9 @@ const signup = async (userData) => {
       // Fallback to RPC if direct insert fails
       try {
         const { data, error: rpcError } = await supabase.rpc('add_user_role', {
-          p_user_id: targetUserId,
-          p_role: role,
-          p_is_primary: true
+          user_id_param: targetUserId,
+          role_name: role,
+          make_primary: true
         });
         
         if (rpcError) throw rpcError;
@@ -438,27 +441,27 @@ const signup = async (userData) => {
   const switchRole = async (newRole) => {
     try {
       if (!user?.id) throw new Error('No user logged in');
-      
-      // Update the role in the database
-      const { error } = await supabase.rpc('set_user_role', {
-        p_user_id: user.id,
-        p_role: newRole
+
+      // Update the role in the database using the new function
+      const { error } = await supabase.rpc('set_primary_role', {
+        user_id_param: user.id,
+        role_name: newRole
       });
-      
+
       if (error) throw error;
-      
+
       // Update local state
       setCurrentRole(newRole);
       localStorage.setItem('currentRole', newRole);
-      
+
       // Update the primary role in the roles list
-      setRoles(prevRoles => 
+      setRoles(prevRoles =>
         prevRoles.map(role => ({
           ...role,
           is_primary: role.role === newRole
         }))
       );
-      
+
       return { success: true };
     } catch (error) {
       console.error('Error switching role:', error);
@@ -658,6 +661,33 @@ const signup = async (userData) => {
         // Update auth state
         setUser(user);
         setIsAuthenticated(true);
+
+        // Get backend JWT token for API calls
+        try {
+          console.log('🔐 Getting backend JWT token...');
+          const backendResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/signin`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: user.email,
+              password: credentials.password // Note: This is a security issue - should use a different approach
+            })
+          });
+
+          const backendData = await backendResponse.json();
+
+          if (backendResponse.ok && backendData.success) {
+            console.log('✅ Backend JWT token obtained:', backendData.token ? 'Token received' : 'No token in response');
+            // Store backend token in localStorage for API calls
+            localStorage.setItem('backendToken', backendData.token);
+          } else {
+            console.warn('⚠️ Failed to get backend JWT token:', backendData.error);
+            // Continue without backend token - some features may not work
+          }
+        } catch (backendError) {
+          console.warn('⚠️ Error getting backend JWT token:', backendError);
+          // Continue without backend token - some features may not work
+        }
 
         return {
           success: true,

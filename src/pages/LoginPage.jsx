@@ -65,12 +65,36 @@ export default function LoginPage() {
     }
 
     try {
-      // Use the login function from AuthContext which now uses Supabase
-      const loginResult = await login({ email, password });
+      // First, try to log in with Supabase
+      const loginResult = await login({ 
+        email, 
+        password,
+        userType: isLandlord ? 'landlord' : 'renter' 
+      });
       
       if (loginResult?.success) {
+        // After successful Supabase login, get the backend token
+        try {
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/auth/signin`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.token) {
+              localStorage.setItem('backendToken', data.token);
+              console.log('Backend token stored successfully');
+            }
+          }
+        } catch (err) {
+          console.warn('Could not get backend token, continuing with Supabase auth only:', err);
+        }
+        
         toast.success(loginResult.message || 'Login successful!');
-        // The AuthProvider's useEffect will handle the redirection based on user type
       } else {
         // Handle specific error cases
         if (loginResult?.error?.includes('verify your email')) {
@@ -78,7 +102,7 @@ export default function LoginPage() {
           setShowResendVerification(true);
           setResendCooldown(60);
         }
-        setError(loginResult?.error || 'Login failed. Please try again.');
+        setError(loginResult?.error || 'Login failed. Please check your credentials and try again.');
       }
       
     } catch (err) {

@@ -89,19 +89,24 @@ exports.signup = async (req, res) => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
-      .select()
-      .single();
+      .select();
 
     if (profileError) {
       console.error('Error creating user profile:', profileError);
       throw new Error(`Failed to create user profile: ${profileError.message}`);
     }
 
-    console.log('Profile created successfully:', newProfile);
+    if (!newProfile || newProfile.length === 0) {
+      console.error('No profile returned after insertion');
+      throw new Error('Failed to create user profile - no data returned');
+    }
+
+    const profile = newProfile[0];
+    console.log('Profile created successfully:', profile);
     return res.status(201).json({
       success: true,
       message: 'Signup successful',
-      user: newProfile
+      user: profile
     });
 
   } catch (error) {
@@ -129,7 +134,7 @@ exports.signup = async (req, res) => {
   }
 };
 
-// =========================
+// =============================
 // @desc    Authenticate user & get token
 // @route   POST /api/auth/signin
 // @access  Public
@@ -253,14 +258,13 @@ exports.signin = async (req, res) => {
 
     // At this point, the user is authenticated and email is confirmed
 
-    // Fetch user profile
+    // Check if user profile exists, create if missing
     const { data: userProfile, error: profileError } = await supabase
       .from("user_profiles")
       .select("*")
-      .eq("id", authData.user.id)
-      .single();
+      .eq("id", authData.user.id);
 
-    if (profileError || !userProfile) {
+    if (profileError) {
       console.error("Error fetching user profile:", profileError);
       return res.status(500).json({
         success: false,
@@ -270,12 +274,23 @@ exports.signin = async (req, res) => {
       });
     }
 
+    if (!userProfile || userProfile.length === 0) {
+      console.error("No user profile found for user ID:", authData.user.id);
+      return res.status(404).json({
+        success: false,
+        message: "User profile not found. Please complete your registration.",
+        code: "profile_not_found",
+      });
+    }
+
+    const profile = userProfile[0];
+
     // Generate JWT token
     const token = jwt.sign(
       {
         id: authData.user.id,
         email: authData.user.email,
-        user_type: userProfile.user_type,
+        user_type: profile.user_type,
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
@@ -296,8 +311,8 @@ exports.signin = async (req, res) => {
       user: {
         id: authData.user.id,
         email: authData.user.email,
-        user_type: userProfile.user_type,
-        full_name: userProfile.full_name,
+        user_type: profile.user_type,
+        full_name: profile.full_name,
         email_confirmed: authData.user.email_confirmed_at !== null,
       },
     });
@@ -314,19 +329,27 @@ exports.signin = async (req, res) => {
 // =============================
 // @desc    Logout user
 // @route   POST /api/auth/signout
-// @access  Private
+// @access  Public
 // =============================
 exports.signout = async (req, res) => {
   try {
-    await supabase.auth.signOut();
-    return res
-      .status(200)
-      .json({ success: true, message: "Logged out successfully" });
+    // Clear the HTTP-only cookie if it exists
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully"
+    });
   } catch (error) {
     console.error("Logout error:", error);
-    return res
-      .status(500)
-      .json({ success: false, error: "Error during logout" });
+    return res.status(500).json({
+      success: false,
+      error: "Error during logout"
+    });
   }
 };
 
@@ -458,22 +481,30 @@ exports.generateToken = async (req, res) => {
     const { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')
       .select('*')
-      .eq('id', user_id)
-      .single();
+      .eq('id', user_id);
 
-    if (profileError || !userProfile) {
+    if (profileError) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch user profile',
+      });
+    }
+
+    if (!userProfile || userProfile.length === 0) {
       return res.status(404).json({
         success: false,
         error: 'User profile not found',
       });
     }
 
+    const profile = userProfile[0];
+
     // Generate JWT token with user_type
     const token = jwt.sign(
       {
         id: userData.user.id,
         email: userData.user.email,
-        user_type: userProfile.user_type || 'renter',
+        user_type: profile.user_type || 'renter',
       },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
@@ -493,7 +524,7 @@ exports.generateToken = async (req, res) => {
       user: {
         id: userData.user.id,
         email: userData.user.email,
-        user_type: userProfile.user_type || 'renter',
+        user_type: profile.user_type || 'renter',
         email_confirmed: userData.user.email_confirmed_at !== null,
       },
     });
@@ -526,18 +557,59 @@ exports.getSession = async (req, res) => {
     const { data: userProfile, error: profileError } = await supabase
       .from("user_profiles")
       .select("*")
-      .eq("id", user.id)
-      .single();
+      .eq("id", user.id);
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error("Error fetching user profile:", profileError);
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching user profile",
+        code: "profile_error",
+        error: profileError?.message,
+      });
+    }
+
+    let profile;
+    if (!userProfile || userProfile.length === 0) {
+      // Profile doesn't exist, create it
+      console.log("No user profile found, creating one for user:", user.id);
+
+      const { data: newProfile, error: createError } = await supabase
+        .from("user_profiles")
+        .insert({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || user.email.split('@')[0],
+          user_type: user.user_metadata?.user_type || 'renter',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select();
+
+      if (createError) {
+        console.error("Error creating user profile:", createError);
+        return res.status(500).json({
+          success: false,
+          message: "Error creating user profile",
+          code: "profile_creation_error",
+          error: createError?.message,
+        });
+      }
+
+      profile = newProfile[0];
+      console.log("Profile created successfully:", profile);
+    } else {
+      profile = userProfile[0];
+      console.log("Profile found:", profile);
+    }
 
     return res.json({
       success: true,
       user: {
         id: user.id,
         email: user.email,
-        full_name: userProfile.full_name,
-        user_type: userProfile.user_type,
+        full_name: profile.full_name,
+        user_type: profile.user_type,
       },
     });
   } catch (error) {

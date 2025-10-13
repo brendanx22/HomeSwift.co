@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import PropertyImageUpload from './PropertyImageUpload';
 import PropertyFeatures from './PropertyFeatures';
-import { API } from '../api';
+import { PropertyAPI } from '../lib/propertyAPI';
 
 const inputBase = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:border-[#FF6B35] transition-colors';
 
@@ -38,35 +38,40 @@ const ListPropertyForm = ({ onSubmit, submitting, errorMessage, successMessage, 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Basic validation
+    if (!values.title || !values.locationCity || !values.price) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
 
     try {
       const payload = {
         title: values.title,
-        location: {
-          city: values.locationCity,
-          state: values.locationState,
-          country: values.locationCountry
-        },
+        location: `${values.locationCity}, ${values.locationState}, ${values.locationCountry}`,
         price: Number(values.price),
-        propertyType: values.propertyType,
-        rooms: Number(values.rooms),
-        bathrooms: Number(values.bathrooms),
-        amenities: values.amenities,
-        description: values.description,
-        images: values.images
+        property_type: values.propertyType,
+        rooms: Number(values.rooms) || 1,
+        bathrooms: Number(values.bathrooms) || 1,
+        amenities: values.amenities || [],
+        description: values.description || '',
+        images: values.images || [],
+        status: 'active'  // Default status
       };
 
-      const result = await API.createProperty(payload);
+        console.log('Creating property with payload:', payload);
+      const result = await PropertyAPI.createProperty(payload);
 
       if (result.success) {
         toast.success('Property listed successfully!');
+        // Redirect to the property details page or properties list
         navigate('/properties');
       } else {
-        toast.error(result.error || 'Failed to create property listing');
+        throw new Error(result.error || 'Failed to create property');
       }
     } catch (error) {
       console.error('Error creating property:', error);
-      toast.error('Failed to create property listing. Please try again.');
+      toast.error(error.message || 'Failed to create property. Please try again.');
     }
   };
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Building, MapPin, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { API } from '../api';
+import { PropertyAPI } from '../lib/propertyAPI';
 
 export default function Properties() {
   const [properties, setProperties] = useState([]);
@@ -14,8 +14,12 @@ export default function Properties() {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-        const data = await API.getMyProperties(); // Get current user's properties
-        setProperties(data.properties || []);
+        const { success, properties: propertiesData } = await PropertyAPI.getMyProperties();
+        if (success) {
+          setProperties(propertiesData);
+        } else {
+          setError('Failed to load properties. Please try again.');
+        }
       } catch (err) {
         console.error('Error fetching properties:', err);
         setError('Failed to load properties. Please try again.');
@@ -29,12 +33,45 @@ export default function Properties() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading properties...</p>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-4"
+      >
+        <div className="relative">
+          {/* Animated logo */}
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0]
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="mb-8"
+          >
+            <img
+              src="/images/logo.png"
+              alt="HomeSwift"
+              className="w-20 h-20 object-cover rounded-2xl shadow-lg"
+            />
+          </motion.div>
+
+          {/* Animated spinner */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{
+              duration: 1,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full mx-auto"
+          />
         </div>
-      </div>
+      </motion.div>
     );
   }
 

@@ -3,8 +3,19 @@ import { supabase } from './lib/supabaseClient';
 export const API = {
   baseUrl: import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000',
 
-  // Get auth token from Supabase
+  // Get auth token from backend (preferred) or Supabase (fallback)
   async getAuthHeaders() {
+    // First try to get backend JWT token from localStorage
+    const backendToken = localStorage.getItem('backendToken');
+
+    if (backendToken) {
+      return {
+        'Authorization': `Bearer ${backendToken}`,
+        'Content-Type': 'application/json'
+      };
+    }
+
+    // Fallback to Supabase access token
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token ? {
       'Authorization': `Bearer ${session.access_token}`,

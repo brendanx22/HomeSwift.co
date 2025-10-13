@@ -32,8 +32,8 @@ router.post(
 
 // @route   POST /api/auth/signout
 // @desc    Logout user
-// @access  Private
-router.post('/signout', authenticateToken, authController.signout);
+// @access  Public (no authentication required for logout)
+router.post('/signout', authController.signout);
 
 // @route   GET /api/auth/session
 // @desc    Get current user session

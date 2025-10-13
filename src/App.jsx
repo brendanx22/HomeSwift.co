@@ -1,67 +1,32 @@
 import React, { Suspense } from 'react';
+import { motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Lazy load pages for better performance
 const Home = React.lazy(() => import('./pages/Home'));
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const SignupPage = React.lazy(() => import('./pages/SignupPage'));
-const LandlordLoginPage = React.lazy(() => import('./pages/LandlordLoginPage.jsx'));
-const LandlordSignupPage = React.lazy(() => import('./pages/LandlordSignupPage.jsx'));
+const RenterDashboard = React.lazy(() => import('./pages/RenterDashboard'));
+const PropertyBrowse = React.lazy(() => import('./pages/PropertyBrowse'));
+const LandlordLoginPage = React.lazy(() => import('./pages/LandlordLoginPage'));
+const LandlordSignupPage = React.lazy(() => import('./pages/LandlordSignupPage'));
 const LandlordDashboard = React.lazy(() => import('./pages/LandlordDashboard'));
 const ChatPage = React.lazy(() => import('./pages/ChatPage'));
+const Properties = React.lazy(() => import('./pages/Properties'));
+const ListPropertyForm = React.lazy(() => import('./pages/ListPropertyForm'));
+const Messages = React.lazy(() => import('./pages/Messages'));
+const VerifyEmail = React.lazy(() => import('./pages/VerifyEmail'));
+const AuthCallback = React.lazy(() => import('./pages/AuthCallback'));
 const UserTypeSelection = React.lazy(() => import('./pages/UserTypeSelection'));
 const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
-const VerifyEmail = React.lazy(() => import('./pages/VerifyEmail'));
-const AuthCallback = React.lazy(() => import('./pages/AuthCallback'));
-const Messages = React.lazy(() => import('./pages/Messages'));
-const Properties = React.lazy(() => import('./pages/Properties'));
-const ListPropertyForm = React.lazy(() => import('./pages/ListPropertyForm'));
-
-// Protected Route Component
-const ProtectedRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, loading, roles, currentRole } = useAuth();
-  const location = useLocation();
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary mx-auto mb-4"></div>
-            <div className="absolute inset-0 rounded-full h-16 w-16 border-2 border-primary/10 animate-pulse"></div>
-          </div>
-          <h2 className="text-xl font-semibold text-secondary mb-2">Checking Access</h2>
-          <p className="text-gray-600">Verifying your permissions...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // Check roles from multiple sources for consistency
-  const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const userType = storedUser?.user_metadata?.user_type || storedUser?.user_type;
-  const storedRoles = roles || JSON.parse(localStorage.getItem('userRoles') || '[]');
-  const detectedRole = currentRole || storedRoles.find(r => r.is_primary)?.role || storedRoles[0]?.role || userType || 'renter';
-
-  console.log('ProtectedRoute Check:', { requiredRole, detectedRole, currentRole, userType, storedRoles });
-
-  if (requiredRole && detectedRole !== requiredRole) {
-    // Redirect to a default route based on the user's role
-    const defaultRoute = detectedRole === 'landlord'
-      ? '/landlord/dashboard'
-      : '/chat';
-    return <Navigate to={defaultRoute} replace />;
-  }
-
-  return children;
-};
+const MarketAnalysis = React.lazy(() => import('./pages/MarketAnalysis'));
+const NeighborhoodInfo = React.lazy(() => import('./pages/NeighborhoodInfo'));
+const PriceCalculator = React.lazy(() => import('./pages/PriceCalculator'));
+const VirtualTours = React.lazy(() => import('./pages/VirtualTours'));
 
 // Main App Layout Component
 const AppLayout = () => {
@@ -142,17 +107,17 @@ const AppLayout = () => {
         return;
       }
 
-      // If user is on a landlord route but not a landlord, redirect to chat
+      // If user is on a landlord route but not a landlord, redirect to renter dashboard
       if (isLandlordRoute && detectedRole !== 'landlord') {
         console.log('Not a landlord, redirecting to chat');
         navigate('/chat', { replace: true });
         return;
       }
 
-      // If user is a landlord but on a non-landlord route, redirect to landlord dashboard
-      if (detectedRole === 'landlord' && !isLandlordRoute && !publicRoutes.includes(path)) {
-        console.log('Landlord on non-landlord route, redirecting to landlord dashboard');
-        navigate('/landlord/dashboard', { replace: true });
+      // If user is a renter but on a landlord route, redirect to renter dashboard
+      if (detectedRole === 'renter' && isLandlordRoute) {
+        console.log('Renter on landlord route, redirecting to chat');
+        navigate('/chat', { replace: true });
         return;
       }
     }
@@ -182,23 +147,108 @@ const AppLayout = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-20 w-20 border-4 border-primary/20 border-t-primary mx-auto mb-6"></div>
-            <div className="absolute inset-0 rounded-full h-20 w-20 border-2 border-primary/10 animate-pulse"></div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-4"
+      >
+        <div className="relative">
+          {/* Animated logo */}
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0]
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="mb-8"
+          >
+            <img
+              src="/images/logo.png"
+              alt="HomeSwift"
+              className="w-20 h-20 object-cover rounded-2xl shadow-lg"
+            />
+          </motion.div>
+
+          {/* Animated spinner */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{
+              duration: 1,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full mx-auto mb-6"
+          />
+
+          {/* Pulsing dots */}
+          <div className="flex justify-center space-x-2 mb-4">
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                animate={{
+                  scale: [1, 1.5, 1],
+                  opacity: [0.5, 1, 0.5]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: i * 0.2,
+                  ease: "easeInOut"
+                }}
+                className="w-3 h-3 bg-[#FF6B35] rounded-full"
+              />
+            ))}
           </div>
-          <h2 className="text-2xl font-bold text-secondary mb-3">Loading HomeSwift</h2>
-          <p className="text-gray-600 text-lg">Please wait while we prepare your experience...</p>
-          <div className="mt-6 flex justify-center">
-            <div className="flex space-x-2">
-              <div className="w-3 h-3 bg-primary rounded-full animate-bounce"></div>
-              <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-              <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-            </div>
-          </div>
+
+          {/* Loading text with typewriter effect */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="text-center"
+          >
+            <motion.h2
+              className="text-2xl font-bold text-[#2C3E50] mb-2"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              Loading HomeSwift
+            </motion.h2>
+            <motion.p
+              className="text-gray-600 text-lg"
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
+            >
+              Preparing your AI real estate experience...
+            </motion.p>
+          </motion.div>
+
+          {/* Progress bar */}
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 3, ease: "easeInOut" }}
+            className="mt-8 w-64 h-1 bg-gray-200 rounded-full overflow-hidden mx-auto"
+          >
+            <motion.div
+              animate={{
+                x: ["0%", "100%", "0%"]
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="h-full bg-gradient-to-r from-[#FF6B35] to-[#e85e2f] rounded-full"
+            />
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -208,16 +258,108 @@ const AppLayout = () => {
         <Toaster position="top-right" />
         <Suspense 
           fallback={
-            <div className="flex items-center justify-center min-h-screen bg-gray-50">
-              <div className="text-center">
-                <div className="relative">
-                  <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary mx-auto mb-4"></div>
-                  <div className="absolute inset-0 rounded-full h-16 w-16 border-2 border-primary/10 animate-pulse"></div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-4"
+            >
+              <div className="relative">
+                {/* Animated logo */}
+                <motion.div
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    rotate: [0, 5, -5, 0]
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  className="mb-8"
+                >
+                  <img
+                    src="/images/logo.png"
+                    alt="HomeSwift"
+                    className="w-20 h-20 object-cover rounded-2xl shadow-lg"
+                  />
+                </motion.div>
+
+                {/* Animated spinner */}
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{
+                    duration: 1,
+                    repeat: Infinity,
+                    ease: "linear"
+                  }}
+                  className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full mx-auto mb-6"
+                />
+
+                {/* Pulsing dots */}
+                <div className="flex justify-center space-x-2 mb-4">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={{
+                        scale: [1, 1.5, 1],
+                        opacity: [0.5, 1, 0.5]
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        delay: i * 0.2,
+                        ease: "easeInOut"
+                      }}
+                      className="w-3 h-3 bg-[#FF6B35] rounded-full"
+                    />
+                  ))}
                 </div>
-                <h2 className="text-xl font-semibold text-secondary mb-2">Loading Page</h2>
-                <p className="text-gray-600">Please wait...</p>
+
+                {/* Loading text with typewriter effect */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-center"
+                >
+                  <motion.h2
+                    className="text-2xl font-bold text-[#2C3E50] mb-2"
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    Loading Page
+                  </motion.h2>
+                  <motion.p
+                    className="text-gray-600 text-lg"
+                    animate={{ opacity: [0.6, 1, 0.6] }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
+                  >
+                    Please wait...
+                  </motion.p>
+                </motion.div>
+
+                {/* Progress bar */}
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 3, ease: "easeInOut" }}
+                  className="mt-8 w-64 h-1 bg-gray-200 rounded-full overflow-hidden mx-auto"
+                >
+                  <motion.div
+                    animate={{
+                      x: ["0%", "100%", "0%"]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                    className="h-full bg-gradient-to-r from-[#FF6B35] to-[#e85e2f] rounded-full"
+                  />
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
           }
         >
           <Routes>
@@ -259,11 +401,30 @@ const AppLayout = () => {
             <Route path="/landlord/login" element={<LandlordLoginPage />} />
             <Route path="/landlord/signup" element={<LandlordSignupPage />} />
             
+            {/* Renter Routes */}
+            <Route
+              path="/renter/dashboard"
+              element={
+                <ProtectedRoute requiredRoles={['renter']}>
+                  <RenterDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/properties"
+              element={
+                <ProtectedRoute requiredRoles={['renter']}>
+                  <PropertyBrowse />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Protected Routes */}
             <Route
               path="/chat"
               element={
-                <ProtectedRoute requiredRole="renter">
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
                   <ChatPage />
                 </ProtectedRoute>
               }
@@ -272,16 +433,16 @@ const AppLayout = () => {
             <Route
               path="/landlord/dashboard"
               element={
-                <ProtectedRoute requiredRole="landlord">
+                <ProtectedRoute requiredRoles={['landlord']}>
                   <LandlordDashboard />
                 </ProtectedRoute>
               }
             />
-
+            
             <Route
               path="/properties"
               element={
-                <ProtectedRoute requiredRole="landlord">
+                <ProtectedRoute requiredRoles={['landlord']}>
                   <Properties />
                 </ProtectedRoute>
               }
@@ -290,7 +451,7 @@ const AppLayout = () => {
             <Route
               path="/list-property"
               element={
-                <ProtectedRoute requiredRole="landlord">
+                <ProtectedRoute requiredRoles={['landlord']}>
                   <ListPropertyForm />
                 </ProtectedRoute>
               }
@@ -299,8 +460,45 @@ const AppLayout = () => {
             <Route
               path="/messages"
               element={
-                <ProtectedRoute requiredRole="landlord">
+                <ProtectedRoute requiredRoles={['landlord']}>
                   <Messages />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* AI-Powered Real Estate Pages */}
+            <Route
+              path="/market-analysis"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <MarketAnalysis />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/neighborhoods"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <NeighborhoodInfo />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/calculator"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <PriceCalculator />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/virtual-tours"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <VirtualTours />
                 </ProtectedRoute>
               }
             />

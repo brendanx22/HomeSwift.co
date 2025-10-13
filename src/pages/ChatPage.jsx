@@ -15,6 +15,7 @@ function debounce(func, wait) {
     timeout = setTimeout(later, wait);
   };
 }
+
 import { supabase } from "../lib/supabaseClient";
 import {
   Menu,
@@ -38,7 +39,8 @@ import {
   Plus,
   ArrowUp,
   House,
-  LogOut
+  LogOut,
+  TrendingUp
 } from "lucide-react";
 
 export default function ChatPage() {
@@ -55,25 +57,99 @@ export default function ChatPage() {
   const getUserDisplayName = useCallback(() => {
     if (!user) return 'User';
 
-    // Try to get first name from the user object (camelCase or snake_case)
-    let firstName = user.firstName || user.first_name || 
-                   user.user_metadata?.firstName || user.user_metadata?.first_name ||
-                   user.name?.split(' ')[0] || 
-                   user.displayName?.split(' ')[0] ||
-                   user.email?.split('@')[0] || 
-                   'User';
-    
-    // If we have a full name, extract just the first name
-    if (user.full_name) {
-      firstName = user.full_name.split(' ')[0];
+    console.log('🔍 getUserDisplayName - User object:', user);
+
+    // Comprehensive search for first name across all possible user data structures
+    let firstName = null;
+
+    // Check all possible first name fields
+    const possibleFirstNameFields = [
+      'firstName',
+      'first_name',
+      'given_name',
+      'name'
+    ];
+
+    // Check direct user object properties
+    for (const field of possibleFirstNameFields) {
+      if (user[field]) {
+        firstName = user[field];
+        console.log(`🔍 getUserDisplayName - Found in user.${field}:`, firstName);
+        break;
+      }
     }
-    
-    // Format the first name (capitalize first letter of each word)
-    return firstName
-      .replace(/\./g, ' ')
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
+
+    // Check user_metadata if not found in main object
+    if (!firstName && user.user_metadata) {
+      for (const field of possibleFirstNameFields) {
+        if (user.user_metadata[field]) {
+          firstName = user.user_metadata[field];
+          console.log(`🔍 getUserDisplayName - Found in user_metadata.${field}:`, firstName);
+          break;
+        }
+      }
+    }
+
+    // Check app_metadata as well
+    if (!firstName && user.app_metadata) {
+      for (const field of possibleFirstNameFields) {
+        if (user.app_metadata[field]) {
+          firstName = user.app_metadata[field];
+          console.log(`🔍 getUserDisplayName - Found in app_metadata.${field}:`, firstName);
+          break;
+        }
+      }
+    }
+
+    // If we have a full name in any format, extract just the first name
+    const fullNameFields = ['full_name', 'fullName', 'display_name', 'displayName'];
+
+    for (const field of fullNameFields) {
+      if (user[field] && !firstName) {
+        firstName = user[field].split(' ')[0];
+        console.log(`🔍 getUserDisplayName - Extracted from ${field}:`, firstName);
+        break;
+      }
+      if (user.user_metadata?.[field] && !firstName) {
+        firstName = user.user_metadata[field].split(' ')[0];
+        console.log(`🔍 getUserDisplayName - Extracted from user_metadata.${field}:`, firstName);
+        break;
+      }
+    }
+
+    // Fallback to email username if nothing else found
+    if (!firstName && user.email) {
+      firstName = user.email.split('@')[0];
+      console.log('🔍 getUserDisplayName - Using email username:', firstName);
+    }
+
+    // Final fallback
+    if (!firstName) {
+      firstName = 'User';
+      console.log('🔍 getUserDisplayName - Using fallback: User');
+    }
+
+    // Clean up the first name - ensure it's only the first word
+    let cleanedFirstName = firstName;
+
+    // Remove any dots or special characters
+    cleanedFirstName = cleanedFirstName.replace(/[.-]/g, ' ').trim();
+
+    // Take only the first word if there are still spaces
+    if (cleanedFirstName.includes(' ')) {
+      cleanedFirstName = cleanedFirstName.split(' ')[0];
+    }
+
+    // Remove any remaining special characters
+    cleanedFirstName = cleanedFirstName.replace(/[^a-zA-Z]/g, '');
+
+    console.log('🔍 getUserDisplayName - Final cleaned result:', cleanedFirstName);
+
+    // Format the first name (capitalize first letter only)
+    const result = cleanedFirstName.charAt(0).toUpperCase() + cleanedFirstName.slice(1).toLowerCase();
+    console.log('🔍 getUserDisplayName - Final formatted result:', result);
+
+    return result;
   }, [user]);
   
   // UI state
@@ -122,10 +198,45 @@ export default function ChatPage() {
   // Show loading state while checking auth
   if (authLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#FF6B35] mb-4"></div>
-        <p className="text-gray-600">Loading your session...</p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-4"
+      >
+        <div className="relative">
+          {/* Animated logo */}
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0]
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="mb-8"
+          >
+            <img
+              src="/images/logo.png"
+              alt="HomeSwift"
+              className="w-20 h-20 object-cover rounded-2xl shadow-lg"
+            />
+          </motion.div>
+
+          {/* Animated spinner */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{
+              duration: 1,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full mx-auto"
+          />
+        </div>
+      </motion.div>
     );
   }
 
@@ -246,46 +357,47 @@ export default function ChatPage() {
   
   // Navigation items with their respective routes
   const navItems = [
-    { id: 'properties', label: 'Browse Homes', icon: <Home className="w-5 h-5" /> },
-    { id: 'search', label: 'Property Search', icon: <SearchIcon className="w-5 h-5" /> },
-    { id: 'saved', label: 'Saved Properties', icon: <Heart className="w-5 h-5" /> },
-    { id: 'neighborhoods', label: 'Neighborhood Guide', icon: <MapPin className="w-5 h-5" /> },
-    { id: 'calculator', label: 'Mortgage Calculator', icon: <Calculator className="w-5 h-5" /> },
-    { id: 'tours', label: 'Virtual Tours', icon: <Camera className="w-5 h-5" /> },
-    { id: 'filters', label: 'Advanced Filters', icon: <Filter className="w-5 h-5" /> },
-    { id: 'recent', label: 'Recent Searches', icon: <Clock className="w-5 h-5" /> },
+    { id: 'ai-assistant', label: 'AI Assistant', icon: <MessageSquare className="w-5 h-5" /> },
+    { id: 'property-search', label: 'Property Search', icon: <Home className="w-5 h-5" /> },
+    { id: 'market-analysis', label: 'Market Analysis', icon: <TrendingUp className="w-5 h-5" /> },
+    { id: 'neighborhood-info', label: 'Neighborhood Info', icon: <MapPin className="w-5 h-5" /> },
+    { id: 'price-calculator', label: 'Price Calculator', icon: <Calculator className="w-5 h-5" /> },
+    { id: 'virtual-tours', label: 'Virtual Tours', icon: <Camera className="w-5 h-5" /> },
+    { id: 'favorites', label: 'Favorites', icon: <Heart className="w-5 h-5" /> },
+    { id: 'search-history', label: 'Search History', icon: <Clock className="w-5 h-5" /> },
   ];
 
   // Handle navigation to different sections
   const handleNavigation = (id) => {
     setActiveTab(id);
     setIsMobileMenuOpen(false);
-    
+
     // Handle navigation based on the selected item
     switch(id) {
-      case 'search':
+      case 'ai-assistant':
+        // Stay on current page (chat)
+        break;
+      case 'property-search':
         navigate('/properties');
         break;
-      case 'properties':
-        navigate('/properties');
+      case 'market-analysis':
+        navigate('/market-analysis');
         break;
-      case 'saved':
-        navigate(`${isChat ? '' : '/app'}/saved`);
+      case 'neighborhood-info':
+        navigate('/neighborhoods');
         break;
-      case 'neighborhoods':
-        navigate(`${isChat ? '' : '/app'}/neighborhoods`);
+      case 'price-calculator':
+        navigate('/calculator');
         break;
-      case 'calculator':
-        navigate(`${isChat ? '' : '/app'}/calculator`);
+      case 'virtual-tours':
+        navigate('/virtual-tours');
         break;
-      case 'tours':
-        navigate(`${isChat ? '' : '/app'}/tours`);
+      case 'favorites':
+        navigate('/saved');
         break;
-      case 'filters':
-        navigate(`${isChat ? '' : '/app'}/filters`);
-        break;
-      case 'recent':
-        navigate(`${isChat ? '' : '/app'}/recent`);
+      case 'search-history':
+        // Navigate to search history page (placeholder)
+        console.log('Search History navigation clicked - implement history page');
         break;
       default:
         // For other items, just update the active tab
@@ -656,11 +768,19 @@ export default function ChatPage() {
     };
   }, [previewItem]);
 
-  // Property search handler
-  const handleSearch = () => {
-    // Handle property search logic here
-    console.log('Searching for:', { location: searchLocation, type: propertyType });
-    setShowPlusDropdown(false);
+  // File upload handlers
+  const handleFileUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageUploadClick = () => {
+    imageInputRef.current?.click();
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) setUploadedFiles((p) => [...p, file]);
+    e.target.value = null;
   };
 
   // Image upload handler
@@ -756,44 +876,25 @@ export default function ChatPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
-      className={`${showSuggestions ? 'min-h-[140vh]' : 'min-h-screen'} relative`}
+      className="min-h-screen bg-white flex flex-col"
     >
-      {/* overlays to darken the hero */}
-      <div className="absolute inset-0 bg-black/40" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-gray-700/20 via-transparent to-transparent" />
-
-      {/* Left floating open-button (small screens) */}
-      {/* Mobile toggle - single oval container */}
+      {/* Mobile Navigation - Single compact button */}
       {!isDesktop && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
           className="fixed left-4 top-4 z-30 sm:hidden"
         >
-          <div className="flex items-center p-1 rounded-full backdrop-blur-sm border border-white/20 bg-transparent">
-            <motion.button
-              whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowMobileSidebar(true)}
-              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
-              aria-label="Open chat"
-            >
-              <MessageSquare className="text-white" size={18} />
-            </motion.button>
-            
-            <div className="w-px h-5 bg-white/20 mx-1"></div>
-            
-            <motion.button
-              whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => { /* Add your plus button action here */ }}
-              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
-              aria-label="Add new"
-            >
-              <Plus className="text-white" size={18} />
-            </motion.button>
-          </div>
+          <motion.button
+            whileHover={{ scale: 1.05, backgroundColor: '#FF6B35' }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowMobileSidebar(true)}
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#FF6B35] text-white shadow-lg transition-all duration-200"
+            aria-label="Open navigation"
+          >
+            <MessageSquare className="text-white" size={18} />
+          </motion.button>
         </motion.div>
       )}
 
@@ -816,24 +917,24 @@ export default function ChatPage() {
               animate={{ x: 0, opacity: 1 }}
               exit={isDesktop ? { x: 0, opacity: 1 } : { x: -320, opacity: 0 }}
               transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
-              className={`fixed left-0 top-0 z-50 h-full backdrop-blur-xl flex flex-col border-r border-gray-800/50 ${compactMode ? 'w-16' : 'w-64'}`}
-              style={{ 
-                background: 'rgba(15, 15, 15, 0.95)',
-                boxShadow: '2px 0 10px rgba(0, 0, 0, 0.2)'
+              className={`fixed left-0 top-0 z-50 h-full backdrop-blur-xl flex flex-col border-r border-gray-200/80 ${compactMode ? 'w-16' : 'w-72'}`}
+              style={{
+                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)',
+                boxShadow: '4px 0 20px rgba(0, 0, 0, 0.08)'
               }}
             >
               {/* HomeSwift sidebar header */}
-              <div className="p-3 flex-shrink-0">
-                <div className="flex items-center justify-between mb-12 mt-8">
-                  <div className="flex items-center gap-2">
+              <div className="p-4 flex-shrink-0 bg-gradient-to-br from-white to-gray-50/50 border-b border-gray-100">
+                <div className="flex items-center justify-between mb-8 mt-6">
+                  <div className="flex items-center gap-3">
                     {compactMode ? (
                       <div className="flex justify-center w-full">
-                        <img src="/Group 129.png" alt="HomeSwift Logo" className="w-10 h-10 rounded-lg object-cover" />
+                        <img src="/images/logo.png" alt="HomeSwift Logo" className="w-12 h-12 rounded-xl object-cover shadow-sm" />
                       </div>
                     ) : (
                       <>
-                        <img src="/Group 129.png" alt="HomeSwift Logo" className="w-8 h-8 rounded-lg object-cover" />
-                        <span className="text-white font-semibold text-lg">HomeSwift</span>
+                        <img src="/images/logo.png" alt="HomeSwift Logo" className="w-10 h-10 rounded-xl object-cover shadow-sm" />
+                        <span className="text-[#FF6B35] font-bold text-xl tracking-tight">HomeSwift</span>
                       </>
                     )}
                   </div>
@@ -843,14 +944,14 @@ export default function ChatPage() {
                       {!isDesktop ? (
                         <button 
                           onClick={() => setShowMobileSidebar(false)} 
-                          className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-all duration-200"
+                          className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-[#2C3E50] transition-all duration-200"
                         >
                           <X size={18} />
                         </button>
                       ) : (
                         <button
                           onClick={() => setCompactMode((s) => !s)}
-                          className="inline-flex items-center justify-center p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-all duration-200"
+                          className="inline-flex items-center justify-center p-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-[#2C3E50] transition-all duration-200"
                           title={compactMode ? 'Expand sidebar' : 'Collapse sidebar'}
                         >
                           {compactMode ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -864,7 +965,7 @@ export default function ChatPage() {
                   <div className="flex justify-center mt-4">
                     <button
                       onClick={() => setCompactMode((s) => !s)}
-                      className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-all duration-200"
+                      className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-[#2C3E50] transition-all duration-200"
                       title="Expand sidebar"
                     >
                       <ChevronRight size={18} />
@@ -877,24 +978,24 @@ export default function ChatPage() {
               <div className="flex-1 overflow-y-auto px-2 pb-2 mt-8 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 <div className="space-y-1">
                   {[
-                    { icon: Home, label: 'Home', active: true },
-                    { icon: MapPin, label: 'Find Properties' },
-                    { icon: Heart, label: 'Saved Properties' },
-                    { icon: MapPin, label: 'Neighborhood Guide' },
-                    { icon: Calculator, label: 'Mortgage Calculator' },
+                    { icon: MessageSquare, label: 'AI Assistant', active: true },
+                    { icon: Home, label: 'Property Search' },
+                    { icon: TrendingUp, label: 'Market Analysis' },
+                    { icon: MapPin, label: 'Neighborhood Info' },
+                    { icon: Calculator, label: 'Price Calculator' },
                     { icon: Camera, label: 'Virtual Tours' },
-                    { icon: Filter, label: 'Advanced Filters' },
-                    { icon: Clock, label: 'Recent Searches' }
+                    { icon: Heart, label: 'Favorites' },
+                    { icon: Clock, label: 'Search History' }
                   ].map((item, idx) => (
                     <motion.div
                       key={idx}
                       initial={{ opacity: 0, x: -12 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.18, delay: idx * 0.05 }}
-                      className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 ${
+                      className={`group relative flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 ${
                         item.active 
-                          ? 'bg-gray-800/80 text-white' 
-                          : 'text-gray-400 hover:bg-gray-800/50 hover:text-white'
+                          ? 'bg-[#FF6B35] text-white shadow-lg' 
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-[#FF6B35] hover:shadow-sm'
                       }`}
                     >
                       <item.icon size={18} className="flex-shrink-0" />
@@ -907,9 +1008,9 @@ export default function ChatPage() {
                 
                 {/* Chat History */}
                 {!compactMode && (
-                  <div className="mt-6 px-1">
-                    <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Recent</h3>
-                    <div className="space-y-1">
+                  <div className="mt-8 px-2">
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">AI Conversations</h3>
+                    <div className="space-y-2">
                       {chatHistory.slice(0, 5).map((chat) => (
                         <motion.div
                           key={chat.id}
@@ -922,10 +1023,10 @@ export default function ChatPage() {
                             setActiveChat(chat.id); 
                             if (!isSmUp) setShowSidePanel(false); 
                           }}
-                          className={`group relative flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                          className={`group relative flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-200 ${
                             activeChat === chat.id 
-                              ? 'bg-gray-800/80 text-white' 
-                              : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-300'
+                              ? 'bg-[#FF6B35]/10 text-[#2C3E50] border border-[#FF6B35]/20 shadow-sm' 
+                              : 'text-gray-600 hover:bg-gray-100 hover:text-[#FF6B35] hover:shadow-sm'
                           }`}
                         >
                           <div className="min-w-0 flex-1">
@@ -937,7 +1038,7 @@ export default function ChatPage() {
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                               <button 
                                 onClick={(e) => deleteChat(chat.id, e)}
-                                className="p-1 rounded hover:bg-gray-700/50 transition-colors duration-200"
+                                className="p-1 rounded hover:bg-red-50 transition-colors duration-200"
                                 title="Delete"
                               >
                                 <Trash2 size={12} className="text-gray-500 hover:text-red-400" />
@@ -952,43 +1053,43 @@ export default function ChatPage() {
               </div>
 
               {/* HomeSwift sidebar footer */}
-              <div className="p-3 border-t border-gray-800/50 flex-shrink-0">
+              <div className="p-4 border-t border-gray-100 bg-gradient-to-br from-gray-50/50 to-white flex-shrink-0">
                 <div className="flex items-center justify-between">
                   {!compactMode && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       {user ? (
                         <>
-                          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] flex items-center justify-center flex-shrink-0 shadow-sm">
                             <span className="text-white text-sm font-bold">
                               {getUserDisplayName().charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div className="flex flex-col min-w-0">
-                            <span className="text-gray-100 text-sm font-medium truncate">
+                            <span className="text-[#2C3E50] text-sm font-semibold truncate">
                               {getUserDisplayName()}
                             </span>
-                            <span className="text-gray-400 text-xs truncate">
+                            <span className="text-gray-500 text-xs truncate">
                               {user?.email}
                             </span>
                           </div>
                         </>
                       ) : (
                         <>
-                          <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center">
-                            <User size={12} className="text-gray-300" />
+                          <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center">
+                            <User size={14} className="text-gray-500" />
                           </div>
-                          <span className="text-gray-400 text-sm">Not logged in</span>
+                          <span className="text-gray-500 text-sm">Not logged in</span>
                         </>
                       )}
                     </div>
                   )}
                   {user && (
-                    <button 
+                    <button
                       onClick={handleLogout}
-                      className="p-2 rounded-lg text-gray-400 hover:bg-gray-800/50 hover:text-red-400 transition-all duration-200"
+                      className="p-2.5 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all duration-200"
                       title="Logout"
                     >
-                      <LogOut size={16} />
+                      <LogOut size={18} />
                     </button>
                   )}
                 </div>
@@ -999,67 +1100,149 @@ export default function ChatPage() {
       </AnimatePresence>
 
       {/* Top Nav */}
-      <motion.nav className="relative z-10 flex items-center justify-end p-4 sm:p-6 w-full">
+      <motion.nav
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative z-10 flex items-center justify-end p-3 sm:p-6 w-full bg-white/95 backdrop-blur-md border-b border-gray-200/80"
+        style={{
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)'
+        }}
+      >
         {/* User Profile - Avatar Only */}
         <div className="flex items-center">
           {user ? (
-            <div className="flex items-center">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="flex items-center"
+            >
               <div className="hidden sm:flex sm:flex-col sm:items-end mr-3">
-                <span className="text-sm font-medium text-white">{getUserDisplayName()}</span>
-                <span className="text-xs text-gray-400">{user?.email}</span>
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                  className="text-sm font-medium text-[#2C3E50]"
+                >
+                  {getUserDisplayName()}
+                </motion.span>
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3, delay: 0.3 }}
+                  className="text-xs text-gray-500"
+                >
+                  {user?.email}
+                </motion.span>
               </div>
-              <button 
+              <motion.button
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3, delay: 0.4, type: "spring", stiffness: 300 }}
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: "0 4px 12px rgba(255, 107, 53, 0.3)",
+                  rotate: [0, -2, 2, 0],
+                }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setShowMenu((s) => !s)}
-                className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors duration-200"
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
+                style={{
+                  boxShadow: '0 2px 8px rgba(255, 107, 53, 0.3)'
+                }}
                 aria-label="User menu"
               >
-                {getUserDisplayName().charAt(0).toUpperCase()}
-              </button>
-            </div>
+                <motion.div
+                  animate={{
+                    background: showMenu
+                      ? "linear-gradient(45deg, #FF6B35, #e85e2f)"
+                      : "linear-gradient(135deg, #FF6B35, #e85e2f)"
+                  }}
+                  className="absolute inset-0 rounded-full"
+                />
+                <motion.span
+                  animate={{ rotate: showMenu ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="relative z-10"
+                >
+                  {getUserDisplayName().charAt(0).toUpperCase()}
+                </motion.span>
+              </motion.button>
+            </motion.div>
           ) : (
-            <div className="flex items-center gap-2">
-              <button 
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="flex items-center gap-2"
+            >
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+                whileHover={{
+                  scale: 1.02,
+                  backgroundColor: "rgba(44, 62, 80, 0.05)",
+                  boxShadow: "0 2px 8px rgba(44, 62, 80, 0.15)"
+                }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('/login')}
-                className="px-4 py-2 text-sm font-medium text-white hover:bg-white/10 rounded-lg transition-colors duration-200"
+                className="px-4 py-2 text-sm font-medium text-[#2C3E50] hover:bg-gray-100 rounded-lg transition-all duration-200 border border-gray-200"
               >
                 Log In
-              </button>
-              <button 
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+                whileHover={{
+                  scale: 1.02,
+                  boxShadow: "0 4px 12px rgba(255, 107, 53, 0.3)",
+                  background: "linear-gradient(135deg, #FF6B35, #e85e2f)"
+                }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('/signup')}
-                className="px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors duration-200"
+                className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-[#FF6B35] to-[#e85e2f] text-white hover:shadow-lg rounded-lg transition-all duration-200"
+                style={{
+                  boxShadow: '0 2px 8px rgba(255, 107, 53, 0.3)'
+                }}
               >
                 Sign Up
-              </button>
-            </div>
+              </motion.button>
+            </motion.div>
           )}
         </div>
 
         <AnimatePresence>
           {showMenu && (
             <motion.div 
-              initial={{ opacity: 0, y: -8 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, y: -8 }} 
-              transition={{ duration: 0.18 }} 
-              className="absolute top-16 right-4 sm:right-6 border border-gray-400/50 rounded-2xl shadow-2xl z-50 px-2 py-2 min-w-[260px] backdrop-blur-xl" 
-              style={{ background: 'rgba(60, 60, 60, 0.85)' }}
+              initial={{ opacity: 0, y: -8, scale: 0.95 }} 
+              animate={{ opacity: 1, y: 0, scale: 1 }} 
+              exit={{ opacity: 0, y: -8, scale: 0.95 }} 
+              transition={{ duration: 0.2, ease: "easeOut", type: "spring", stiffness: 300 }} 
+              className="absolute top-16 right-4 sm:right-6 border border-gray-200 rounded-2xl shadow-2xl z-50 px-2 py-2 min-w-[200px] max-w-[280px] bg-white"
+              style={{
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+              }}
             >
               <motion.div variants={containerVariants} initial="hidden" animate="visible" className="p-2">
                 {user ? (
                   // Logged in menu items
                   [
-                    { label: 'Dashboard', action: () => navigate('/main') },
-                    { label: 'Browse Properties', action: () => navigate('/listings') },
+                    { label: 'AI Assistant', action: () => navigate('/chat') },
+                    { label: 'Browse Properties', action: () => navigate('/properties') },
                     { label: 'Saved Properties', action: () => navigate('/saved') },
                     { label: 'Profile', action: () => navigate('/profile') },
-                    { label: 'Logout', action: handleLogout, className: 'text-red-400 hover:text-red-300' }
+                    { label: 'Logout', action: handleLogout, className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
                   ].map((item, idx) => (
                     <motion.button 
                       key={idx} 
                       variants={itemVariants} 
-                      whileHover={{ x: 6 }} 
+                      whileHover={{ x: 4, backgroundColor: item.className?.includes('red') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(44, 62, 80, 0.05)', scale: 1.02 }} 
+                      whileTap={{ scale: 0.98 }} 
                       onClick={item.action}
-                      className={`w-full text-left text-gray-300 hover:text-white hover:bg-gray-700/50 p-3 rounded-lg text-sm cursor-pointer transition-all duration-200 ${item.className || ''}`}
+                      className={`w-full text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 p-3 rounded-lg text-sm cursor-pointer transition-all duration-200 ${item.className || ''}`}
                     >
                       {item.label}
                     </motion.button>
@@ -1077,9 +1260,10 @@ export default function ChatPage() {
                     <motion.button 
                       key={idx} 
                       variants={itemVariants} 
-                      whileHover={{ x: 6 }} 
+                      whileHover={{ x: 4, backgroundColor: 'rgba(44, 62, 80, 0.05)', scale: 1.02 }} 
+                      whileTap={{ scale: 0.98 }} 
                       onClick={item.action}
-                      className="w-full text-left text-gray-300 hover:text-white hover:bg-gray-700/50 p-3 rounded-lg text-sm cursor-pointer transition-all duration-200"
+                      className="w-full text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 p-3 rounded-lg text-sm cursor-pointer transition-all duration-200"
                     >
                       {item.label}
                     </motion.button>
@@ -1096,11 +1280,11 @@ export default function ChatPage() {
         <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 pt-32 sm:pt-24">
           {/* hero text */}
           <div className="text-center mb-8 sm:mb-10 max-w-4xl px-2 sm:px-0">
-            <h1 className="flex items-center justify-center flex-wrap text-3xl sm:text-4xl font-bold text-white mb-4 sm:mb-5 leading-tight gap-2 sm:gap-3">
-              <span>Welcome back, {getUserDisplayName()}!</span>
-              <span className="inline-flex items-center"><img src="/Group 129.png" alt="logo" className="w-8 h-8 sm:w-8 sm:h-8 rounded-lg object-cover" /></span>
+            <h1 className="flex items-center justify-center flex-wrap text-3xl sm:text-4xl font-bold text-[#2C3E50] mb-4 sm:mb-5 leading-tight gap-2 sm:gap-3">
+              <span>AI-Powered Property Search</span>
+              <span className="inline-flex items-center"><img src="/images/logo.png" alt="logo" className="w-8 h-8 sm:w-8 sm:h-8 rounded-lg object-cover" /></span>
             </h1>
-            <p className="text-gray-300 text-md md:text-lg font-light max-w-2xl mx-auto">Find your dream home with HomeSwift's AI-powered search</p>
+            <p className="text-gray-600 text-md md:text-lg font-light max-w-2xl mx-auto">Ask me anything about properties, neighborhoods, or market trends. I'm your AI real estate assistant!</p>
           </div>
 
           {/* Search + upload area */}
@@ -1111,9 +1295,9 @@ export default function ChatPage() {
                   {uploadedFiles.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-2">
                       {uploadedFiles.map((file, idx) => (
-                        <motion.div key={idx} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.25, delay: idx * 0.05 }} className="flex items-center bg-gray-700/30 text-gray-200 px-2 py-1 rounded-lg text-xs">
+                        <motion.div key={idx} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.25, delay: idx * 0.05 }} className="flex items-center bg-gray-100 text-[#2C3E50] px-2 py-1 rounded-lg text-xs">
                           <span className="mr-2 cursor-pointer underline" onClick={() => handlePreviewItem({ type: 'file', file })}>{file.name}</span>
-                          <motion.button whileHover={{ scale: 1.1 }} type="button" className="ml-1 text-red-400 hover:text-red-600 text-xs px-1" onClick={() => handleRemoveFile(idx)}>
+                          <motion.button whileHover={{ scale: 1.1 }} type="button" className="ml-1 text-red-600 hover:text-red-700 text-xs px-1" onClick={() => handleRemoveFile(idx)}>
                             <span className="text-lg font-bold">×</span>
                           </motion.button>
                         </motion.div>
@@ -1124,10 +1308,10 @@ export default function ChatPage() {
                   {uploadedImages.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-2">
                       {uploadedImages.map((img, idx) => (
-                        <motion.div key={idx} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.25, delay: idx * 0.05 }} className="flex items-center bg-gray-700/30 text-gray-200 px-2 py-1 rounded-lg text-xs">
+                        <motion.div key={idx} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.25, delay: idx * 0.05 }} className="flex items-center bg-gray-100 text-[#2C3E50] px-2 py-1 rounded-lg text-xs">
                           <img src={URL.createObjectURL(img)} alt={img.name} className="w-8 h-8 object-cover rounded mr-2 cursor-pointer" onClick={() => handlePreviewItem({ type: 'image', file: img })} />
                           <span className="mr-2 cursor-pointer underline" onClick={() => handlePreviewItem({ type: 'image', file: img })}>{img.name}</span>
-                          <motion.button whileHover={{ scale: 1.1 }} type="button" className="ml-1 text-red-400 hover:text-red-600 text-xs px-1" onClick={() => handleRemoveImage(idx)}>
+                          <motion.button whileHover={{ scale: 1.1 }} type="button" className="ml-1 text-red-600 hover:text-red-700 text-xs px-1" onClick={() => handleRemoveImage(idx)}>
                             <span className="text-lg font-bold">×</span>
                           </motion.button>
                         </motion.div>
@@ -1138,57 +1322,92 @@ export default function ChatPage() {
               )}
             </AnimatePresence>
 
-            <motion.form 
+            <motion.form
               onSubmit={handleSearchSubmit}
-              whileHover={{ scale: 1.005 }} 
-              className="relative flex flex-col bg-transparent border  border-[#6c6c6c] rounded-3xl shadow-2xl px-0 py-6 sm:px-4 sm:py-10 min-h-[120px] backdrop-blur-xl" 
-              style={{ background: 'rgba(60, 60, 60, 0.15)' }}
+              whileHover={{ scale: 1.005 }}
+              className="relative flex flex-col bg-white/95 border border-gray-300 rounded-3xl shadow-2xl px-0 py-6 sm:px-4 sm:py-10 min-h-[120px] backdrop-blur-sm"
+              style={{
+                boxShadow: `
+                  0 0 20px rgba(255, 107, 53, 0.2),
+                  0 0 40px rgba(255, 107, 53, 0.1),
+                  0 0 60px rgba(255, 107, 53, 0.05),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.1)
+                `,
+                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)'
+              }}
             >
+              <motion.div
+                animate={{
+                  boxShadow: [
+                    "0 0 20px rgba(255, 107, 53, 0.2)",
+                    "0 0 30px rgba(255, 107, 53, 0.3)",
+                    "0 0 20px rgba(255, 107, 53, 0.2)"
+                  ]
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+                className="absolute inset-0 rounded-3xl pointer-events-none"
+                style={{
+                  background: 'radial-gradient(circle at center, rgba(255, 107, 53, 0.1) 0%, transparent 70%)'
+                }}
+              />
+
               <div className="relative">
-                <div className="relative w-full flex items-center">
-                  <input 
-                    type="text" 
-                    value={searchQuery} 
+                <div className="relative w-full">
+                  <motion.input
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
+                    type="text"
+                    value={searchQuery}
                     onChange={handleSearchChange}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(e)}
                     onFocus={() => searchQuery.trim() && setShowSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                    placeholder="Search by location, type, or features..." 
-                    className="w-full bg-transparent text-white placeholder-[#737373] outline-none border-none h-14 sm:h-16 rounded-xl sm:rounded-2xl px-6 pr-16 pt-2 pb-1" 
-                    style={{ 
-                      minWidth: 0, 
-                      fontSize: '1.1rem', 
-                      lineHeight: '1.2'
+                    placeholder="Search by location, type, or features..."
+                    className="w-full bg-transparent text-[#2C3E50] placeholder-gray-400 outline-none border-none h-14 sm:h-16 rounded-xl sm:rounded-2xl px-6 pr-16 relative z-10"
+                    style={{
+                      minWidth: 0,
+                      fontSize: '1.1rem',
+                      lineHeight: '0.9',
+                      verticalAlign: 'top',
+                      marginTop: '-8px',
+                      marginBottom: 0,
+                      paddingTop: '28px',
+                      paddingBottom: '2px'
                     }}
                     autoComplete="off"
                     aria-label="Search properties"
                     disabled={isSearching}
                   />
                   {searchError && (
-                    <div className="absolute bottom-0 left-0 right-0 text-red-400 text-xs mt-1">
+                    <div className="absolute bottom-0 left-0 right-0 text-red-600 text-xs mt-1">
                       {searchError}
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between absolute bottom-4 left-4 right-4 sm:left-6 sm:right-6 w-auto">
+              <div className="flex items-center justify-between absolute bottom-3 left-4 right-4 sm:left-6 sm:right-6 w-auto">
                 <div className="flex items-center gap-2 sm:gap-3 relative">
-                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="button" className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-gray-700/40 hover:bg-gray-600/50 text-gray-300 border border-gray-500" tabIndex={-1} onClick={() => setShowPlusDropdown((s) => !s)}>
-                    <Plus size={12} />
+                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="button" className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 text-[#2C3E50] border border-gray-300" tabIndex={-1} onClick={() => setShowPlusDropdown((s) => !s)}>
+                    <Plus size={10} />
                   </motion.button>
 
                   <AnimatePresence>
                     {showPlusDropdown && (
-                      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} transition={{ duration: 0.18 }} className="absolute bottom-14 left-0 border border-gray-400/50 rounded-lg shadow-2xl z-50 px-1 py-0.5 min-w-[180px] w-[180px] h-[60px] backdrop-blur-xl" style={{ background: 'rgba(60, 60, 60, 0.9)' }}>
+                      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} transition={{ duration: 0.18 }} className="absolute bottom-12 left-0 border border-gray-200 rounded-lg shadow-2xl z-50 px-1 py-0.5 min-w-[180px] w-[180px] h-[60px] bg-white">
                         <div className="space-y-0">
-                          <button onClick={() => { handleFileUploadClick(); setShowPlusDropdown(false); }} className="w-full flex items-center gap-0.5 text-left text-gray-300 hover:text-white hover:bg-gray-700/50 px-1.5 py-0.5 rounded text-[10px] leading-tight">
+                          <button onClick={() => { handleFileUploadClick(); setShowPlusDropdown(false); }} className="w-full flex items-center gap-0.5 text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 px-1.5 py-0.5 rounded text-[10px] leading-tight">
                             <FileUp size={8} className="flex-shrink-0" />
                             <span className="truncate">Upload File</span>
                           </button>
                           <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
 
-                          <button onClick={() => { handleImageUploadClick(); setShowPlusDropdown(false); }} className="w-full flex items-center gap-0.5 text-left text-gray-300 hover:text-white hover:bg-gray-700/50 px-1.5 py-0.5 rounded text-[10px] leading-tight">
+                          <button onClick={() => { handleImageUploadClick(); setShowPlusDropdown(false); }} className="w-full flex items-center gap-0.5 text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 px-1.5 py-0.5 rounded text-[10px] leading-tight">
                             <ImageUp size={8} className="flex-shrink-0" />
                             <span className="truncate">Upload Image</span>
                           </button>
@@ -1198,8 +1417,8 @@ export default function ChatPage() {
                     )}
                   </AnimatePresence>
 
-                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="button" onClick={handleSuggestionClick} className="flex items-center gap-1 sm:gap-1 px-1 py-1 sm:px-3 sm:py-1 rounded-full bg-transparent border border-gray-400/50 text-gray-300 font-small hover:bg-gray-700/30 text-xs sm:text-base">
-                    <Sparkles size={18} />
+                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="button" onClick={handleSuggestionClick} className="flex items-center gap-1 px-2 py-1 sm:px-2 sm:py-1 rounded-full bg-transparent border border-gray-300 text-[#2C3E50] font-small hover:bg-gray-100 text-xs">
+                    <Sparkles size={14} />
                     <span>Suggestions</span>
                   </motion.button>
                 </div>
@@ -1208,11 +1427,11 @@ export default function ChatPage() {
                   whileHover={{ scale: 1.05 }} 
                   whileTap={{ scale: 0.95 }} 
                   type="submit" 
-                  className={`w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-white shadow-lg border border-gray-400/50 ${!searchQuery.trim() ? 'opacity-50 cursor-not-allowed' : ''}`} 
-                  style={{ background: 'linear-gradient(180deg, #3a3d42 0%, #23262b 100%)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }} 
+                  className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-white shadow-lg ${!searchQuery.trim() ? 'opacity-50 cursor-not-allowed bg-gray-400' : 'bg-[#FF6B35] hover:bg-[#e85e2f]'}`} 
+                  style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }} 
                   disabled={!searchQuery.trim() || isSearching}
                 >
-                  <ArrowUp size={18} />
+                  <ArrowUp size={14} />
                 </motion.button>
               </div>
             </motion.form>
@@ -1220,9 +1439,9 @@ export default function ChatPage() {
             {/* Suggestions */}
             <AnimatePresence>
               {showSuggestions && (
-                <motion.div initial={{ opacity: 0, y: -10, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -10, height: 0 }} transition={{ duration: 0.2 }} className="absolute top-full left-0 right-0 mt-2 sm:mt-4 border border-gray-400/50 rounded-2xl shadow-2xl z-20 overflow-hidden" style={{ backgroundImage: 'url("/Rectangle 135.png")', backgroundSize: 'cover', backgroundPosition: 'center', backdropFilter: 'blur(12px)' }}>
-                  <div className="p-4" style={{ background: 'transparent' }}>
-                    <h3 className="text-white font-semibold mb-3 sm:mb-4 text-lg sm:text-xl">Popular Searches</h3>
+                <motion.div initial={{ opacity: 0, y: -10, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -10, height: 0 }} transition={{ duration: 0.2 }} className="absolute top-full left-0 right-0 mt-2 sm:mt-4 border border-gray-200 rounded-2xl shadow-2xl z-20 overflow-hidden bg-white">
+                  <div className="p-4">
+                    <h3 className="text-[#FF6B35] font-semibold mb-3 sm:mb-4 text-lg sm:text-xl">Popular Searches</h3>
                     <div className="space-y-1">
                       {suggestions.map((sug, idx) => (
                         <motion.button 
@@ -1230,7 +1449,7 @@ export default function ChatPage() {
                           whileHover={{ scale: 1.01 }}
                           whileTap={{ scale: 0.99 }}
                           onClick={() => handleSuggestionSelect(sug)} 
-                          className="w-full text-left text-gray-300 hover:text-white hover:bg-gray-700/50 px-4 py-2.5 rounded-lg leading-normal transition-all duration-150"
+                          className="w-full text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 px-4 py-2.5 rounded-lg leading-normal transition-all duration-150"
                           style={{ fontSize: '15px' }}
                         >
                           {sug}
@@ -1246,11 +1465,11 @@ export default function ChatPage() {
         {/* preview modal */}
         <AnimatePresence>
           {previewItem && (
-            <motion.div ref={previewDropdownRef} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18 }} className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 border border-gray-400/50 rounded-2xl shadow-2xl z-50 flex flex-col items-center justify-center backdrop-blur-xl" style={{ background: 'rgba(60, 60, 60, 0.95)', width: '70vw', height: '70vh', maxWidth: '900px', maxHeight: '900px', overflow: 'hidden', boxSizing: 'border-box' }}>
+            <motion.div ref={previewDropdownRef} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18 }} className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 border border-gray-200 rounded-2xl shadow-2xl z-50 flex flex-col items-center justify-center bg-white" style={{ width: '70vw', height: '70vh', maxWidth: '900px', maxHeight: '900px', overflow: 'hidden', boxSizing: 'border-box' }}>
               <div className="flex items-center justify-between w-full px-6 pt-4">
-                <div className="text-gray-200 font-bold text-lg truncate">{previewItem.file?.name}</div>
+                <div className="text-[#2C3E50] font-bold text-lg truncate">{previewItem.file?.name}</div>
                 <div className="flex items-center gap-2">
-                  <button onClick={closePreview} className="p-1 rounded hover:bg-gray-700/50"><X size={18} className="text-gray-300" /></button>
+                  <button onClick={closePreview} className="p-1 rounded hover:bg-gray-100"><X size={18} className="text-gray-600" /></button>
                 </div>
               </div>
 
@@ -1259,18 +1478,18 @@ export default function ChatPage() {
                   <img src={previewURL} alt={previewItem.file.name} className="max-w-full max-h-[60vh] rounded-lg shadow-lg object-contain" />
                 ) : previewItem.file?.type === 'application/pdf' ? (
                   <object data={previewURL} type="application/pdf" className="w-full h-[60vh] rounded-lg shadow-lg bg-white">
-                    <div className="text-gray-400 text-lg mb-4">PDF preview not available in this browser.</div>
-                    <a href={previewURL} download={previewItem.file?.name} className="px-4 py-2 bg-gray-700 text-white rounded-lg shadow hover:bg-gray-800">Download PDF</a>
+                    <div className="text-gray-600 text-lg mb-4">PDF preview not available in this browser.</div>
+                    <a href={previewURL} download={previewItem.file?.name} className="px-4 py-2 bg-gray-200 text-[#2C3E50] rounded-lg shadow hover:bg-gray-300">Download PDF</a>
                   </object>
                 ) : previewItem.isDocxType ? (
                   <div className="text-center">
-                    <div className="text-gray-400 text-lg mb-4">DOCX preview not supported. You can download the file below.</div>
-                    <a href={previewURL} download={previewItem.file?.name} className="px-4 py-2 bg-gray-700 text-white rounded-lg shadow hover:bg-gray-800">Download DOCX</a>
+                    <div className="text-gray-600 text-lg mb-4">DOCX preview not supported. You can download the file below.</div>
+                    <a href={previewURL} download={previewItem.file?.name} className="px-4 py-2 bg-gray-200 text-[#2C3E50] rounded-lg shadow hover:bg-gray-300">Download DOCX</a>
                   </div>
                 ) : previewItem.fileText ? (
-                  <div className="w-full h-[60vh] overflow-auto bg-gray-900 text-gray-100 p-4 rounded-lg shadow-lg" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{previewItem.fileText}</div>
+                  <div className="w-full h-[60vh] overflow-auto bg-gray-50 text-[#2C3E50] p-4 rounded-lg shadow-lg" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{previewItem.fileText}</div>
                 ) : (
-                  <div className="text-gray-400 text-lg">File preview not available for this type.</div>
+                  <div className="text-gray-600 text-lg">File preview not available for this type.</div>
                 )}
               </div>
             </motion.div>

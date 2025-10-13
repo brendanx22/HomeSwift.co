@@ -312,46 +312,51 @@ const Messages = () => {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header aligned with dashboard style */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4">
+        <div className="flex items-center justify-between max-w-full">
+          <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
             {/* Back to Dashboard Button */}
             <button
-              onClick={() => navigate('/')}
-              className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors group"
+              onClick={() => navigate('/landlord/dashboard')}
+              className="flex items-center space-x-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-gray-100 transition-colors group flex-shrink-0"
             >
-              <ArrowLeft className="w-4 h-4 text-[#2C3E50] group-hover:text-[#FF6B35] transition-colors" />
-              <span className="text-sm font-medium text-[#2C3E50] group-hover:text-[#FF6B35] transition-colors">
+              <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 text-[#2C3E50] group-hover:text-[#FF6B35] transition-colors" />
+              <span className="text-xs sm:text-sm font-medium text-[#2C3E50] group-hover:text-[#FF6B35] transition-colors hidden sm:inline">
                 Back to Dashboard
               </span>
+              <span className="text-xs sm:hidden font-medium text-[#2C3E50]">
+                Back
+              </span>
             </button>
-            
+
             {/* Mobile conversation list toggle */}
             {isMobileView && !showConversationList && (
               <button
                 onClick={() => setShowConversationList(true)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden"
+                className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden flex-shrink-0"
               >
-                <ArrowLeft className="w-5 h-5 text-[#2C3E50]" />
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-[#2C3E50]" />
               </button>
             )}
-            <h1 className="text-xl font-bold text-[#FF6B35]">Messages</h1>
+
+            <h1 className="text-lg sm:text-xl font-bold text-[#FF6B35] truncate">Messages</h1>
           </div>
+
           {activeConversationData && !showConversationList && (
-            <div className="flex items-center space-x-3">
-              <div className="text-sm">
-                <div className="font-medium text-[#2C3E50]">{activeConversationData.name}</div>
-                <div className="text-gray-500">{activeConversationData.online ? 'Online' : 'Offline'}</div>
+            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1 justify-end">
+              <div className="text-xs sm:text-sm text-right hidden sm:block">
+                <div className="font-medium text-[#2C3E50] truncate max-w-[120px]">{activeConversationData.name}</div>
+                <div className="text-gray-500 truncate max-w-[120px]">{activeConversationData.online ? 'Online' : 'Offline'}</div>
               </div>
-              <div className="flex items-center space-x-2">
-                <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                  <Phone className="w-5 h-5 text-[#2C3E50]" />
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <button className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                  <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-[#2C3E50]" />
                 </button>
-                <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                  <Video className="w-5 h-5 text-[#2C3E50]" />
+                <button className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                  <Video className="w-4 h-4 sm:w-5 sm:h-5 text-[#2C3E50]" />
                 </button>
-                <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                  <Info className="w-5 h-5 text-[#2C3E50]" />
+                <button className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                  <Info className="w-4 h-4 sm:w-5 sm:h-5 text-[#2C3E50]" />
                 </button>
               </div>
             </div>
@@ -359,8 +364,8 @@ const Messages = () => {
         </div>
       </header>
 
-      <div className="flex-1 pt-[72px]">
-        <div className="h-[calc(100vh-72px)] flex">
+      <div className="flex-1 pt-[60px] sm:pt-[72px]">
+        <div className="h-[calc(100vh-60px)] sm:h-[calc(100vh-72px)] flex">
           {/* Conversation List Panel */}
           <div className={`${
             isMobileView 

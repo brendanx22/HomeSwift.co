@@ -1,78 +1,177 @@
--- Run this in Supabase SQL editor to create the properties and inquiries tables.
--- It uses gen_random_uuid() from pgcrypto. Enable extension if needed.
+-- =============================================
+-- HomeSwift Database Reset & Setup Script
+-- Run this if you have existing conflicting tables
+-- =============================================
 
-create extension if not exists "pgcrypto";
+-- Drop existing tables (if they exist) to avoid conflicts
+DROP TABLE IF EXISTS user_roles CASCADE;
+DROP TABLE IF EXISTS saved_properties CASCADE;
+DROP TABLE IF EXISTS search_history CASCADE;
+DROP TABLE IF EXISTS inquiries CASCADE;
+DROP TABLE IF EXISTS properties CASCADE;
+DROP TABLE IF EXISTS user_profiles CASCADE;
 
--- User profiles table to store additional user information
-create table if not exists user_profiles (
-  id uuid references auth.users on delete cascade primary key,
-  email text not null,
-  full_name text not null,
-  user_type text not null check (user_type in ('landlord', 'renter')),
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+-- Drop existing functions and triggers
+DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+-- Enable required extensions
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- =============================================
+-- 1. USER PROFILES TABLE
+-- =============================================
+
+CREATE TABLE user_profiles (
+  id uuid REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  email text NOT NULL,
+  full_name text NOT NULL,
+  user_type text NOT NULL CHECK (user_type IN ('landlord', 'renter')),
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
 
 -- Enable Row Level Security on user_profiles
-alter table user_profiles enable row level security;
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- Users can view their own profile
-create policy "Users can view their own profile"
-  on user_profiles for select
-  using (auth.uid() = id);
+CREATE POLICY "Users can view their own profile"
+  ON user_profiles FOR SELECT
+  USING (auth.uid() = id);
 
 -- Users can update their own profile
-create policy "Users can update their own profile"
-  on user_profiles for update
-  using (auth.uid() = id);
+CREATE POLICY "Users can update their own profile"
+  ON user_profiles FOR UPDATE
+  USING (auth.uid() = id);
 
--- Function to handle new user signups
-create or replace function public.handle_new_user() 
-returns trigger as $$
-begin
-  insert into public.user_profiles (id, email, full_name, user_type)
-  values (
-    new.id, 
-    new.email,
-    new.raw_user_meta_data->>'full_name',
-    new.raw_user_meta_data->>'user_type'
-  );
-  return new;
-end;
-$$ language plpgsql security definer;
+-- =============================================
+-- 2. PROPERTIES TABLE
+-- =============================================
 
--- Trigger to create a profile when a new user signs up
-create or replace trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
-
--- Properties table
-create table if not exists properties (
-  id uuid default gen_random_uuid() primary key,
-  title text not null,
+CREATE TABLE properties (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  title text NOT NULL,
   description text,
   price numeric,
   location text,
   images text[],
-  landlord_id uuid references auth.users(id),
-  created_at timestamptz default now()
+  landlord_id uuid REFERENCES auth.users(id),
+  bedrooms integer,
+  bathrooms integer,
+  area numeric,
+  property_type text,
+  is_featured boolean DEFAULT false,
+  is_active boolean DEFAULT true,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
 
-create table if not exists inquiries (
-  id uuid default gen_random_uuid() primary key,
-  renter_id uuid references auth.users(id),
-  landlord_id uuid references auth.users(id),
-  property_id uuid references properties(id),
+-- =============================================
+-- 3. INQUIRIES TABLE
+-- =============================================
+
+CREATE TABLE inquiries (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  renter_id uuid REFERENCES auth.users(id),
+  landlord_id uuid REFERENCES auth.users(id),
+  property_id uuid REFERENCES properties(id),
   message text,
-  created_at timestamptz default now()
+  created_at timestamptz DEFAULT now()
 );
 
--- Row Level Security: allow public selects on properties, but restrict inserts/updates to owners
-alter table properties enable row level security;
-create policy "public_select" on properties for select using (true);
-create policy "insert_by_owner" on properties for insert with check (auth.uid() = landlord_id);
-create policy "update_delete_by_owner" on properties for update, delete using (auth.uid() = landlord_id);
+-- =============================================
+-- 4. SEARCH HISTORY TABLE
+-- =============================================
 
-alter table inquiries enable row level security;
-create policy "insert_inquiry" on inquiries for insert with check (auth.uid() = renter_id);
-create policy "select_inquiry_participant" on inquiries for select using (auth.uid() = renter_id or auth.uid() = landlord_id);
+CREATE TABLE search_history (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id),
+  query text NOT NULL,
+  search_data jsonb,
+  created_at timestamptz DEFAULT now()
+);
+
+-- =============================================
+-- 5. SAVED PROPERTIES TABLE
+-- =============================================
+
+CREATE TABLE saved_properties (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id),
+  property_id uuid REFERENCES properties(id),
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(user_id, property_id)
+);
+
+-- =============================================
+-- 6. USER ROLES TABLE
+-- =============================================
+
+CREATE TABLE user_roles (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id),
+  role text NOT NULL CHECK (role IN ('renter', 'landlord')),
+  is_primary boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+
+-- =============================================
+-- 7. AUTOMATIC PROFILE CREATION TRIGGER
+-- =============================================
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.user_profiles (id, email, full_name, user_type)
+  VALUES (
+    new.id,
+    new.email,
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'user_type'
+  );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create trigger for new user signups
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- =============================================
+-- 8. ROW LEVEL SECURITY POLICIES
+-- =============================================
+
+-- Properties table policies
+ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public_select" ON properties FOR SELECT USING (true);
+CREATE POLICY "insert_by_owner" ON properties FOR INSERT WITH CHECK (auth.uid() = landlord_id);
+CREATE POLICY "update_by_owner" ON properties FOR UPDATE USING (auth.uid() = landlord_id);
+CREATE POLICY "delete_by_owner" ON properties FOR DELETE USING (auth.uid() = landlord_id);
+
+-- Inquiries table policies
+ALTER TABLE inquiries ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "insert_inquiry" ON inquiries FOR INSERT WITH CHECK (auth.uid() = renter_id);
+CREATE POLICY "select_inquiry_participant" ON inquiries FOR SELECT USING (auth.uid() = renter_id OR auth.uid() = landlord_id);
+
+-- Search history table policies
+ALTER TABLE search_history ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "users_can_view_own_search_history" ON search_history FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "users_can_insert_own_search_history" ON search_history FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Saved properties table policies
+ALTER TABLE saved_properties ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "users_can_view_own_saved_properties" ON saved_properties FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "users_can_insert_own_saved_properties" ON saved_properties FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "users_can_delete_own_saved_properties" ON saved_properties FOR DELETE USING (auth.uid() = user_id);
+
+-- User roles table policies
+ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "users_can_view_own_roles" ON user_roles FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "users_can_insert_own_roles" ON user_roles FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "users_can_update_own_roles" ON user_roles FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "users_can_delete_own_roles" ON user_roles FOR DELETE USING (auth.uid() = user_id);
+
+-- =============================================
+-- SETUP COMPLETE - SUCCESS!
+-- =============================================

@@ -1,9 +1,12 @@
+// src/components/RoleSwitcher.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Check, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
 
 const RoleSwitcher = () => {
-  const { roles, currentRole, switchRole } = useAuth();
+  const { user, roles, currentRole, switchRole } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
