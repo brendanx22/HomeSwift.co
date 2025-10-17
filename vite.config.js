@@ -7,7 +7,6 @@ export default defineConfig({
   server: {
     port: 3000,
     host: "0.0.0.0",
-    open: true,
     strictPort: true,
     proxy: {
       "/api": {
@@ -17,20 +16,11 @@ export default defineConfig({
         ws: true,
       },
     },
-    hmr: {
-      clientPort: 3000,
-      port: 3000,
-      host: "localhost",
-      protocol: "ws",
-    },
-    watch: {
-      usePolling: true,
-    },
   },
   build: {
     outDir: "dist",
     assetsDir: "assets",
-    sourcemap: true,
+    sourcemap: false,
     minify: "terser",
     chunkSizeWarningLimit: 1000,
   },

@@ -348,12 +348,6 @@ export default function PropertyDetails() {
               ))}
             </div>
           )}
-
-          {images.length > 0 && (
-            <button className="absolute right-12 top-4 text-gray-900 hover:text-[#FF6B35] transition-colors underline underline-offset-4 text-sm font-medium">
-              View all →
-            </button>
-          )}
         </div>
 
         {/* Content Grid */}

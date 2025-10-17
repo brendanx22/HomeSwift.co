@@ -28,8 +28,8 @@ const Home = () => {
   };
 
   return (
-    <div 
-      className="min-h-[70vh] sm:min-h-screen w-full bg-cover bg-center hero-container flex flex-col"
+    <div
+      className="h-screen w-full bg-cover bg-center hero-container flex flex-col overflow-hidden"
       style={{
         backgroundImage: 'url("/images/Illustration.png")',
         backgroundColor: '#ffffff',
@@ -37,7 +37,7 @@ const Home = () => {
         backgroundPosition: 'center 100%',
         backgroundSize: 'contain',
         width: '100%',
-        position: 'absolute',
+        position: 'relative',
         top: 0,
         left: 0
       }}
@@ -49,28 +49,26 @@ const Home = () => {
       <style>{`
         @media (max-width: 768px) {
           .hero-container {
-            background-position: center 110% !important;
+            background-position: center 100% !important;
             background-size: contain !important;
-            padding-bottom: 0 !important;
+            background-attachment: scroll !important;
           }
           .logo-img {
-            width: 160px !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
+            width: 120px !important;
             height: auto !important;
           }
         }
       `}</style>
       {/* Header */}
       <motion.header
-        className="relative z-10 flex items-center justify-between px-4 py-4 sm:px-6 sm:py-6 lg:px-12 w-full"
+        className="relative z-10 flex items-center justify-between px-2 py-1 sm:px-6 sm:py-6 lg:px-12 w-full"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
       >
         {/* Logo */}
-        <div className="flex items-center space-x-3 ml-4 mt-4">
-          <img src="/images/logo.png" alt="HomeSwift Logo" className="logo-img w-60 h-10 rounded-lg object-cover" />
+        <div className="flex items-center">
+          <img src="/images/logo.png" alt="HomeSwift Logo" className="logo-img w-48 sm:w-60 h-10 rounded-lg object-cover" />
         </div>
 
         {/* Desktop Navigation */}
@@ -157,7 +155,7 @@ const Home = () => {
       <AnimatePresence>
         {showMobileMenu && (
           <motion.div
-            className="md:hidden absolute top-20 left-0 right-0 bg-[#FF6B35]/90 backdrop-blur-md border-t border-gray-400/50 z-20"
+            className="md:hidden absolute top-12 left-0 right-0 bg-[#FF6B35]/90 backdrop-blur-md border-t border-gray-400/50 z-20"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
@@ -192,7 +190,7 @@ const Home = () => {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 text-center">
+      <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 text-center">
         {/* Feature Tag */}
         <motion.div
           className="flex items-center space-x-2 bg-[#FF6B35] rounded-[2rem] px-6 py-3 mb-6"

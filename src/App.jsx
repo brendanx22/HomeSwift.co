@@ -86,24 +86,24 @@ const AppLayout = () => {
       const detectedRole = currentRole || allRoles.find(r => r.is_primary)?.role || allRoles[0]?.role || userType || 'renter';
 
       // Enhanced debug logging
-      console.log('AppLayout Auth Debug:', {
-        isAuthenticated,
-        user: user ? 'exists' : 'null',
-        userType,
-        storedRoles,
-        authContextRoles,
-        allRoles,
-        currentRole,
-        detectedRole,
-        path,
-        isLandlordLoginPage,
-        isLoginPage
-      });
+      // console.log('AppLayout Auth Debug:', {
+      //   isAuthenticated,
+      //   user: user ? 'exists' : 'null',
+      //   userType,
+      //   storedRoles,
+      //   authContextRoles,
+      //   allRoles,
+      //   currentRole,
+      //   detectedRole,
+      //   path,
+      //   isLandlordLoginPage,
+      //   isLoginPage
+      // });
 
       // If we're on a login page, redirect to the appropriate dashboard
       if (isLoginPage || isLandlordLoginPage) {
         const dashboardPath = detectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
-        console.log('Redirecting from login to:', dashboardPath, 'based on role:', detectedRole);
+        // console.log('Redirecting from login to:', dashboardPath, 'based on role:', detectedRole);
         if (path !== dashboardPath) {
           navigate(dashboardPath, { replace: true });
         }
@@ -113,7 +113,7 @@ const AppLayout = () => {
       // For other public routes when authenticated
       if (publicRoutes.includes(path)) {
         const dashboardPath = detectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
-        console.log('Redirecting from public route to:', dashboardPath);
+        // console.log('Redirecting from public route to:', dashboardPath);
         if (path !== dashboardPath) {
           navigate(dashboardPath, { replace: true });
         }
@@ -122,14 +122,14 @@ const AppLayout = () => {
 
       // If user is on a landlord route but not a landlord, redirect to renter dashboard
       if (isLandlordRoute && detectedRole !== 'landlord') {
-        console.log('Not a landlord, redirecting to chat');
+        // console.log('Not a landlord, redirecting to chat');
         navigate('/chat', { replace: true });
         return;
       }
 
       // If user is a renter but on a landlord route, redirect to renter dashboard
       if (detectedRole === 'renter' && isLandlordRoute) {
-        console.log('Renter on landlord route, redirecting to chat');
+        // console.log('Renter on landlord route, redirecting to chat');
         navigate('/chat', { replace: true });
         return;
       }
@@ -142,7 +142,7 @@ const AppLayout = () => {
       if (!authPages.includes(path) && path !== '/') {
         // For landlord routes, redirect to landlord login, otherwise regular login
         const loginPath = isLandlordRoute ? '/landlord/login' : '/login';
-        console.log('Unauthenticated user, redirecting to:', loginPath, 'from path:', path);
+        // console.log('Unauthenticated user, redirecting to:', loginPath, 'from path:', path);
         if (path !== loginPath) {
           navigate(`${loginPath}?redirected=true&from=${encodeURIComponent(path)}`, {
             replace: true,
