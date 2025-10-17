@@ -29,16 +29,14 @@ const Home = () => {
 
   return (
     <div 
-      className="min-h-screen w-full h-screen bg-cover bg-center hero-container flex flex-col"
+      className="min-h-[70vh] sm:min-h-screen w-full bg-cover bg-center hero-container flex flex-col"
       style={{
         backgroundImage: 'url("/images/Illustration.png")',
         backgroundColor: '#ffffff',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center 110%',
         backgroundSize: 'contain',
-        minHeight: '100vh',
         width: '100%',
-        height: '100%',
         position: 'absolute',
         top: 0,
         left: 0
@@ -216,7 +214,7 @@ const Home = () => {
 
         {/* Main Headline */}
         <motion.h1
-          className="text-3xl md:text-4xl lg:text-5xl text-[#2C3E50] mb-4 leading-tight max-w-4xl"
+          className="text-center mb-6 sm:mb-10 max-w-4xl text-3xl md:text-4xl lg:text-5xl text-[#2C3E50] leading-tight"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: 'easeOut', delay: 0.3 }}
