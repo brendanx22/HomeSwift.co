@@ -230,6 +230,9 @@ export default function PropertyBrowse() {
             </div>
 
             <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">
+                {currentIndex + 1} of {filteredProperties.length}
+              </span>
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -350,7 +353,7 @@ export default function PropertyBrowse() {
       )}
 
       {/* Main Content - Full Screen Property View */}
-      <div className="flex-1 relative w-full">
+      <div className="flex-1 relative">
         {/* Show search prompt when no filters are active */}
         {(!searchQuery && !locationFilter && !propertyType && filteredProperties.length === 0) ? (
           <motion.div
@@ -403,21 +406,21 @@ export default function PropertyBrowse() {
             </button>
           </motion.div>
         ) : (
-          <div className="relative w-full h-[calc(100vh-80px)] overflow-hidden">
+          <div className="relative h-[calc(100vh-80px)] overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentIndex}
                 initial={{ opacity: 0, y: '100%' }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: '-100%' }}
-                transition={{ duration: 0.8, ease: "easeInOut" }}
-                className="absolute inset-0 w-full"
+                transition={{ duration: 0.6, ease: "easeInOut" }}
+                className="absolute inset-0 flex flex-col"
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
                 onTouchEnd={onTouchEnd}
               >
                 {/* Property Image Section */}
-                <div className="flex-1 relative w-full">
+                <div className="flex-1 relative">
                   {currentProperty?.images && currentProperty.images.length > 0 ? (
                     <img
                       src={currentProperty.images[0]}
@@ -427,21 +430,6 @@ export default function PropertyBrowse() {
                   ) : (
                     <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                       <div className="text-gray-400 text-6xl">🏠</div>
-                    </div>
-                  )}
-
-                  {/* Swipe Indicators - More prominent */}
-                  {currentIndex < filteredProperties.length - 1 && (
-                    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center text-white/90">
-                      <ChevronUp className="w-8 h-8 mb-2 animate-bounce" />
-                      <span className="text-sm font-medium">Swipe up for next</span>
-                    </div>
-                  )}
-
-                  {currentIndex > 0 && (
-                    <div className="absolute top-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center text-white/90">
-                      <ChevronDown className="w-8 h-8 mb-2 animate-bounce" />
-                      <span className="text-sm font-medium">Swipe down for previous</span>
                     </div>
                   )}
 
@@ -470,8 +458,8 @@ export default function PropertyBrowse() {
                 </div>
 
                 {/* Property Details Section */}
-                <div className="bg-white p-6 shadow-lg w-full">
-                  <div className="w-full">
+                <div className="bg-white p-6 shadow-lg">
+                  <div className="max-w-7xl mx-auto">
                     <div className="mb-4">
                       <h2 className="font-bold text-gray-900 text-2xl mb-2">
                         {currentProperty.title || 'Untitled Property'}
