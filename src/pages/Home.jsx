@@ -34,7 +34,7 @@ const Home = () => {
         backgroundImage: 'url("/images/Illustration.png")',
         backgroundColor: '#ffffff',
         backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center 110%',
+        backgroundPosition: 'center',
         backgroundSize: 'contain',
         width: '100%',
         position: 'absolute',
@@ -65,7 +65,7 @@ const Home = () => {
       `}</style>
       {/* Header */}
       <motion.header
-        className="relative z-10 flex items-center justify-between px-6 py-6 lg:px-12 w-full"
+        className="relative z-10 flex items-center justify-between px-4 py-4 sm:px-6 sm:py-6 lg:px-12 w-full"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -225,7 +225,7 @@ const Home = () => {
 
         {/* Sub-headline */}
         <motion.p
-          className="text-sm md:text-sm text-[#FF6B35] mb-16 max-w-2xl leading-relaxed"
+          className="text-sm md:text-sm text-[#FF6B35] mb-8 sm:mb-12 max-w-2xl leading-relaxed"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 }}
