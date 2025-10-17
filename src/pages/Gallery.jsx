@@ -1,12 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { Play } from "lucide-react";
-import { Header } from "../components/Header";
-import house1 from "../assets/house1.jpg";
-import house2 from "../assets/house2.jpg";
-import house3 from "../assets/house3.jpg";
-import interior1 from "../assets/interior1.jpg";
-import interior2 from "../assets/interior2.jpg";
-import interior3 from "../assets/interior3.jpg";
+import Header from "../components/Header";
+
+// Using placeholder images for demo - in production, these would be actual property images
+const house1 = "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop";
+const house2 = "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400&h=400&fit=crop";
+const house3 = "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=400&h=400&fit=crop";
+const interior1 = "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop";
+const interior2 = "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop";
+const interior3 = "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop";
 
 const Gallery = ({ showTours = false }) => {
   const navigate = useNavigate();
