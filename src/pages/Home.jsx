@@ -49,10 +49,9 @@ const Home = () => {
       <style>{`
         @media (max-width: 768px) {
           .hero-container {
-            background-position: center 100% !important;
+            background-position: center 60% !important;
             background-size: contain !important;
             padding-bottom: 0 !important;
-            background-attachment: scroll !important;
           }
           .logo-img {
             width: 160px !important;
