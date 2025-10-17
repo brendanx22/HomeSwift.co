@@ -21,7 +21,6 @@ const Properties = React.lazy(() => import('./pages/Properties'));
 const About = React.lazy(() => import('./pages/About'));
 const Contact = React.lazy(() => import('./pages/Contact'));
 const Gallery = React.lazy(() => import('./pages/Gallery'));
-const HouseListings = React.lazy(() => import('./pages/HouseListings'));
 const LandlordProperties = React.lazy(() => import('./pages/LandlordProperties'));
 const MessageCenter = React.lazy(() => import('./pages/MessageCenter'));
 const FAQ = React.lazy(() => import('./pages/FAQ'));
