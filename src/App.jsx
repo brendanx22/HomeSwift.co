@@ -15,6 +15,7 @@ const LandlordPropertyBrowse = React.lazy(() => import('./pages/LandlordProperty
 const LandlordLoginPage = React.lazy(() => import('./pages/LandlordLoginPage'));
 const LandlordSignupPage = React.lazy(() => import('./pages/LandlordSignupPage'));
 const LandlordDashboard = React.lazy(() => import('./pages/LandlordDashboard'));
+const LandlordSettings = React.lazy(() => import('./pages/LandlordSettings'));
 const ChatPage = React.lazy(() => import('./pages/ChatPage'));
 const Properties = React.lazy(() => import('./pages/Properties'));
 const About = React.lazy(() => import('./pages/About'));
@@ -39,7 +40,7 @@ const VirtualTours = React.lazy(() => import('./pages/VirtualTours'));
 const Messages = React.lazy(() => import('./pages/Messages'));
 const ListPropertyForm = React.lazy(() => import('./pages/ListPropertyForm'));
 const RenterProperties = React.lazy(() => import('./pages/RenterProperties'));
-const Messaging = React.lazy(() => import('./pages/Messaging'));
+const InquiryManagement = React.lazy(() => import('./pages/InquiryManagement'));
 
 // Main App Layout Component
 const AppLayout = () => {
@@ -459,6 +460,15 @@ const AppLayout = () => {
             />
             
             <Route
+              path="/landlord/settings"
+              element={
+                <ProtectedRoute requiredRoles={['landlord']}>
+                  <LandlordSettings />
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route
               path="/properties/:id"
               element={
                 <ProtectedRoute requiredRoles={['renter', 'landlord']}>
@@ -477,10 +487,10 @@ const AppLayout = () => {
             />
 
             <Route
-              path="/messages"
+              path="/inquiries"
               element={
-                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
-                  <Messaging />
+                <ProtectedRoute requiredRoles={['landlord']}>
+                  <InquiryManagement />
                 </ProtectedRoute>
               }
             />

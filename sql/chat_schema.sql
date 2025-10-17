@@ -15,6 +15,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE chats (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   property_id UUID,
+  participants UUID[] DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -50,40 +51,66 @@ ALTER TABLE chats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies first
+DROP POLICY IF EXISTS "Read own chats" ON chats;
+DROP POLICY IF EXISTS "Create chats" ON chats;
+
 -- Users can read chats they are part of
 CREATE POLICY "Read own chats" ON chats
 FOR SELECT USING (
-  id IN (SELECT chat_id FROM chat_participants WHERE user_id = auth.uid())
+  auth.uid() = ANY(participants)
+  OR auth.role() = 'service_role'
 );
 
--- Users can create new chats
+-- Users can create new chats (either participant can create)
 CREATE POLICY "Create chats" ON chats
-FOR INSERT WITH CHECK (true);
+FOR INSERT WITH CHECK (
+  auth.uid() = ANY(participants)
+  OR auth.role() = 'service_role'
+);
+
+-- Drop existing policies first
+DROP POLICY IF EXISTS "Read participants" ON chat_participants;
+DROP POLICY IF EXISTS "Add participants" ON chat_participants;
 
 -- Users can read participants of their chats (simplified to avoid circular reference)
 CREATE POLICY "Read participants" ON chat_participants
-FOR SELECT USING (true);
+FOR SELECT USING (
+  true
+  OR auth.role() = 'service_role'
+);
 
 -- Users can add themselves to chats
 CREATE POLICY "Add participants" ON chat_participants
-FOR INSERT WITH CHECK (auth.uid() = user_id);
+FOR INSERT WITH CHECK (
+  auth.uid() = user_id
+  OR auth.role() = 'service_role'
+);
 
--- Users can insert messages only in chats they belong to
+-- Drop existing policies first
+DROP POLICY IF EXISTS "Send messages in own chats" ON messages;
+DROP POLICY IF EXISTS "Read messages in own chats" ON messages;
+DROP POLICY IF EXISTS "Update message read status" ON messages;
+
+-- Users can insert messages only in chats they belong to (or allow service role)
 CREATE POLICY "Send messages in own chats" ON messages
 FOR INSERT WITH CHECK (
-  chat_id IN (SELECT chat_id FROM chat_participants WHERE user_id = auth.uid())
+  chat_id IN (SELECT id FROM chats WHERE auth.uid() = ANY(participants))
+  OR auth.role() = 'service_role'
 );
 
 -- Users can read messages of their chats
 CREATE POLICY "Read messages in own chats" ON messages
 FOR SELECT USING (
-  chat_id IN (SELECT chat_id FROM chat_participants WHERE user_id = auth.uid())
+  chat_id IN (SELECT id FROM chats WHERE auth.uid() = ANY(participants))
+  OR auth.role() = 'service_role'
 );
 
 -- Users can update message read status in their chats
 CREATE POLICY "Update message read status" ON messages
 FOR UPDATE USING (
-  chat_id IN (SELECT chat_id FROM chat_participants WHERE user_id = auth.uid())
+  chat_id IN (SELECT id FROM chats WHERE auth.uid() = ANY(participants))
+  OR auth.role() = 'service_role'
 );
 
 -- =============================================
@@ -113,14 +140,13 @@ BEGIN
     m.created_at as last_message_time,
     COUNT(CASE WHEN m.read = FALSE AND m.sender_id != user_uuid THEN 1 END) as unread_count
   FROM chats c
-  JOIN chat_participants cp ON c.id = cp.chat_id
   LEFT JOIN messages m ON c.id = m.chat_id AND m.id = (
     SELECT id FROM messages
     WHERE messages.chat_id = c.id
     ORDER BY messages.created_at DESC
     LIMIT 1
   )
-  WHERE cp.user_id = user_uuid
+  WHERE user_uuid = ANY(c.participants)
   GROUP BY c.id, c.property_id, c.created_at, m.message, m.created_at
   ORDER BY COALESCE(m.created_at, c.created_at) DESC;
 END;

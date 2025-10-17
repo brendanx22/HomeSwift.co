@@ -28,40 +28,49 @@ function publishMock(message) {
 
 const MessageBubble = ({ message }) => {
   const isMe = message.sender === 'me';
+  console.log('📨 MessageBubble render:', {
+    messageId: message.id,
+    sender: message.sender,
+    isMe,
+    text: message.text
+  });
+
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-3`}>      
-      <div className={`max-w-[80%] rounded-2xl px-4 py-2 shadow-sm border ${isMe ? 'bg-[#FF6B35] text-white border-[#FF6B35]' : 'bg-white text-[#2C3E50] border-gray-200'}`}>
-        {message.text && (
-          <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.text}</div>
-        )}
-        {message.files?.length > 0 && (
-          <div className="mt-2 space-y-2">
-            {message.files.map((f) => (
-              <a key={f.id} href={f.url} download={f.name} target="_blank" rel="noreferrer" className={`flex items-center gap-2 text-sm group ${isMe ? 'text-white/90 hover:text-white' : 'text-[#2C3E50] hover:text-[#FF6B35]'}`}>
-                {f.type.startsWith('image/') ? (
-                  <img src={f.url} alt={f.name} className="h-20 w-28 object-cover rounded-md border border-white/20" />
-                ) : (
-                  <div className={`h-10 w-10 rounded-md grid place-items-center border ${isMe ? 'border-white/20' : 'border-gray-200'}`}>
-                    <FileText className="h-5 w-5" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="truncate font-medium">{f.name}</div>
-                  <div className={`text-xs ${isMe ? 'text-white/80' : 'text-gray-500'}`}>{Math.ceil(f.size / 1024)} KB</div>
-                </div>
-                <Download className="h-4 w-4 opacity-70 group-hover:opacity-100" />
-              </a>
-            ))}
-          </div>
-        )}
-        <div className={`mt-1 text-[10px] ${isMe ? 'text-white/80' : 'text-gray-500'}`}>
-          {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          {isMe && (
-            <span className="ml-1 inline-flex align-middle">
-              {message.status === 'sent' && <Check className="h-3 w-3" />}
-              {message.status === 'delivered' && <CheckCheck className="h-3 w-3" />}
-            </span>
+    <div className={`flex w-full mb-3 ${isMe ? 'justify-end' : 'justify-start'}`}>
+      <div className={`${isMe ? 'ml-auto' : 'mr-auto'} max-w-[80%]`}>
+        <div className={`rounded-2xl px-4 py-2 shadow-sm border ${isMe ? 'bg-[#FF6B35] text-white border-[#FF6B35]' : 'bg-white text-[#2C3E50] border-gray-200'}`}>
+          {message.text && (
+            <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.text}</div>
           )}
+          {message.files?.length > 0 && (
+            <div className="mt-2 space-y-2">
+              {message.files.map((f) => (
+                <a key={f.id} href={f.url} download={f.name} target="_blank" rel="noreferrer" className={`flex items-center gap-2 text-sm group ${isMe ? 'text-white/90 hover:text-white' : 'text-[#2C3E50] hover:text-[#FF6B35]'}`}>
+                  {f.type.startsWith('image/') ? (
+                    <img src={f.url} alt={f.name} className="h-20 w-28 object-cover rounded-md border border-white/20" />
+                  ) : (
+                    <div className={`h-10 w-10 rounded-md grid place-items-center border ${isMe ? 'border-white/20' : 'border-gray-200'}`}>
+                      <FileText className="h-5 w-5" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="truncate font-medium">{f.name}</div>
+                    <div className={`text-xs ${isMe ? 'text-white/80' : 'text-gray-500'}`}>{Math.ceil(f.size / 1024)} KB</div>
+                  </div>
+                  <Download className="h-4 w-4 opacity-70 group-hover:opacity-100" />
+                </a>
+              ))}
+            </div>
+          )}
+          <div className={`mt-1 text-[10px] ${isMe ? 'text-white/80' : 'text-gray-500'}`}>
+            {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {isMe && (
+              <span className="ml-1 inline-flex align-middle">
+                {message.status === 'sent' && <Check className="h-3 w-3" />}
+                {message.status === 'delivered' && <CheckCheck className="h-3 w-3" />}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -458,11 +467,16 @@ const Messages = () => {
 
                 {/* Messages Area */}
                 <div ref={scrollerRef} className="flex-1 overflow-y-auto p-4 bg-gray-50" onDrop={onDrop} onDragOver={onDragOver}>
-                  <div className="max-w-3xl mx-auto">
+                  <div className="max-w-3xl mx-auto w-full">
                     <div className="text-center text-xs text-gray-500 my-2">Today</div>
-                    {messages.map((m) => (
-                      <MessageBubble key={m.id} message={m} />
-                    ))}
+                    {messages.map((m) => {
+                      console.log('📨 Rendering message in map:', {
+                        id: m.id,
+                        sender: m.sender,
+                        text: m.text
+                      });
+                      return <MessageBubble key={m.id} message={m} />;
+                    })}
                     {isTyping && (
                       <div className="flex justify-start mb-3">
                         <div className="bg-white border border-gray-200 rounded-2xl px-4 py-2 shadow-sm">

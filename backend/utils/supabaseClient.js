@@ -1,15 +1,15 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase URL or Anon Key in environment variables');
+  throw new Error('Missing Supabase URL or Service Role Key in environment variables');
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
-    autoRefreshToken: true,
+    autoRefreshToken: false,
     persistSession: false,
     detectSessionInUrl: false
   },
@@ -18,7 +18,8 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   },
   global: {
     headers: {
-      'X-Client-Info': 'homeswift-backend/1.0'
+      'X-Client-Info': 'homeswift-backend/1.0',
+      'Authorization': `Bearer ${supabaseKey}`
     },
     fetch: (url, options = {}) => {
       // Increase timeout to 30 seconds

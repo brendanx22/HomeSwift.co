@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { 
@@ -32,9 +35,7 @@ import {
   X,
   Loader2
 } from 'lucide-react';
-import { useNavigate, Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabaseClient';
+import ProfilePopup from '../components/ProfilePopup';
 
 const LandlordDashboard = () => {
   const { user, isAuthenticated, loading: authLoading, logout, hasRole } = useAuth();
@@ -46,6 +47,8 @@ const LandlordDashboard = () => {
   const [compactMode, setCompactMode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showProfilePopup, setShowProfilePopup] = useState(false);
+  const [userAvatar, setUserAvatar] = useState(null);
   const [stats, setStats] = useState({
     totalListings: 0,
     totalViews: 0,
@@ -54,6 +57,34 @@ const LandlordDashboard = () => {
     activeLeads: 0,
     inquiries: 0
   });
+
+  // Load user avatar from database
+  useEffect(() => {
+    const loadUserAvatar = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error loading user avatar:', error);
+          return;
+        }
+
+        console.log('🔍 LandlordDashboard - Loading avatar:', data?.avatar_url || 'no avatar');
+        setUserAvatar(data?.avatar_url || null);
+      } catch (err) {
+        console.error('Error loading user avatar:', err);
+        setUserAvatar(null);
+      }
+    };
+
+    loadUserAvatar();
+  }, [user]);
   
   // State for recent data - must be before any conditional logic
   const [recentProperties, setRecentProperties] = useState([]);
@@ -444,7 +475,8 @@ const LandlordDashboard = () => {
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'properties', label: 'Properties', icon: Building },
-    { id: 'messages', label: 'Messages', icon: MessageSquare, badge: stats.inquiries > 0 ? stats.inquiries.toString() : undefined },
+    { id: 'inquiries', label: 'Inquiries', icon: MessageSquare, badge: stats.activeLeads > 0 ? stats.activeLeads.toString() : undefined },
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     // { id: 'locate', label: 'Locate', icon: MapPin }
   ];
@@ -459,6 +491,9 @@ const LandlordDashboard = () => {
 
     if (id === 'properties') {
       navigate('/landlord-properties');
+    }
+    if (id === 'inquiries') {
+      navigate('/inquiries');
     }
     if (id === 'messages') {
       navigate('/messages');
@@ -573,127 +608,161 @@ const LandlordDashboard = () => {
 return (
   <div className="min-h-screen bg-white flex flex-col">
     {/* Fixed Header - Optimized for mobile */}
-    <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-      <div className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
-        <div className="flex items-center justify-between max-w-full">
-          {/* Logo - Better mobile sizing */}
-          <div className="flex items-center min-w-0 flex-shrink-0">
-            <h1 className="text-lg sm:text-xl font-bold text-[#FF6B35] tracking-tight">
-              HomeSwift
-            </h1>
-          </div>
-
-          <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-3 min-w-0 flex-1 justify-end">
-            {/* Mobile Search Button - Improved */}
-            <button className="sm:hidden p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors flex-shrink-0">
-              <Search className="w-4 h-4 text-gray-600" />
-            </button>
-
-            {/* Desktop Search Bar - Better mobile responsiveness */}
-            <div className="relative hidden sm:block flex-1 max-w-xs lg:max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search properties..."
-                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
-              />
+    <div className="relative">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
+          <div className="flex items-center justify-between max-w-full">
+            {/* Logo - Better mobile sizing */}
+            <div className="flex items-center min-w-0 flex-shrink-0">
+              <h1 className="text-lg sm:text-xl font-bold text-[#FF6B35] tracking-tight">
+                HomeSwift
+              </h1>
             </div>
 
-            {/* Notifications - Better mobile styling */}
-            <div className="relative flex-shrink-0">
-              <button className="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors">
-                <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
-                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center text-[10px] sm:text-xs font-medium">
-                  {stats.inquiries > 0 ? stats.inquiries : ''}
-                </span>
+            <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-3 min-w-0 flex-1 justify-end">
+              {/* Mobile Search Button - Improved */}
+              <button className="sm:hidden p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors flex-shrink-0">
+                <Search className="w-4 h-4 text-gray-600" />
               </button>
-            </div>
 
-            {/* User Profile - Cleaner mobile layout */}
-            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-shrink-0">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#FF6B35] rounded-full flex items-center justify-center shadow-sm">
-                <span className="text-white text-sm font-medium">{userInitials}</span>
+              {/* Desktop Search Bar - Better mobile responsiveness */}
+              <div className="relative hidden sm:block flex-1 max-w-xs lg:max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search properties..."
+                  className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+                />
               </div>
 
-              {/* Desktop user info - Better responsive behavior */}
-              <div className="hidden md:block text-sm min-w-0 max-w-[120px]">
-                <div className="font-medium text-gray-900 truncate">{firstName}</div>
-                <div className="text-gray-500 text-xs truncate">
-                  Agent #{user?.user_metadata?.agent_id || user?.id?.slice(-5) || '00000'}
+              {/* Notifications - Better mobile styling */}
+              <div className="relative flex-shrink-0">
+                <button className="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors">
+                  <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center text-[10px] sm:text-xs font-medium">
+                    {stats.inquiries > 0 ? stats.inquiries : ''}
+                  </span>
+                </button>
+              </div>
+
+              {/* User Profile - Cleaner mobile layout */}
+              <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-shrink-0">
+                <button
+                  onClick={() => setShowProfilePopup(true)}
+                  className="w-7 h-7 sm:w-8 sm:h-8 bg-[#FF6B35] rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-shadow"
+                >
+                  {userAvatar ? (
+                    <img
+                      src={userAvatar}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                      onLoad={() => console.log('🔍 LandlordDashboard - Navbar avatar loaded:', userAvatar)}
+                      onError={() => console.log('❌ LandlordDashboard - Navbar avatar failed to load:', userAvatar)}
+                    />
+                  ) : (
+                    <span className="text-white text-sm font-medium">{userInitials}</span>
+                  )}
+                </button>
+
+                {/* Desktop user info - Better responsive behavior */}
+                <div className="hidden md:block text-sm min-w-0 max-w-[120px]">
+                  <div className="font-medium text-gray-900 truncate">{firstName}</div>
+                  <div className="text-gray-500 text-xs truncate">
+                    Agent #{user?.user_metadata?.agent_id || user?.id?.slice(-5) || '00000'}
+                  </div>
+                </div>
+
+                {/* Mobile user name - Better truncation */}
+                <div className="md:hidden text-sm font-medium text-gray-900 truncate max-w-[80px]">
+                  {firstName}
                 </div>
               </div>
 
-              {/* Mobile user name - Better truncation */}
-              <div className="md:hidden text-sm font-medium text-gray-900 truncate max-w-[80px]">
-                {firstName}
-              </div>
+              {/* Add Property Button - Much improved mobile styling */}
+              <button
+                onClick={() => navigate('/list-property')}
+                className="text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold flex items-center space-x-1.5 sm:space-x-2 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 flex-shrink-0"
+                style={{ backgroundColor: '#FF6B35' }}
+                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#e85e2f')}
+                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#FF6B35')}
+              >
+                <Plus className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="hidden sm:inline text-sm">Add Property</span>
+                <span className="sm:hidden text-sm font-bold">+</span>
+              </button>
             </div>
-
-            {/* Add Property Button - Much improved mobile styling */}
-            <button
-              onClick={() => navigate('/list-property')}
-              className="text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold flex items-center space-x-1.5 sm:space-x-2 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 flex-shrink-0"
-              style={{ backgroundColor: '#FF6B35' }}
-              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#e85e2f')}
-              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#FF6B35')}
-            >
-              <Plus className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-              <span className="hidden sm:inline text-sm">Add Property</span>
-              <span className="sm:hidden text-sm font-bold">+</span>
-            </button>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Profile Popup - Positioned relative to the header */}
+      <ProfilePopup
+        isOpen={showProfilePopup}
+        onClose={() => setShowProfilePopup(false)}
+        position="navbar"
+        onAvatarUpdate={(newAvatarUrl) => {
+          console.log('🔄 LandlordDashboard - Avatar update received:', newAvatarUrl);
+          setUserAvatar(newAvatarUrl);
+          // Force re-render by updating a timestamp
+          setUserAvatar(prev => {
+            console.log('🔄 LandlordDashboard - Setting new avatar:', prev !== newAvatarUrl ? newAvatarUrl : prev);
+            return newAvatarUrl;
+          });
+        }}
+      />
+    </div>
 
     <div className="flex flex-1 pt-[56px] sm:pt-[64px] lg:pt-[76px]">
       {/* Fixed Sidebar - Desktop */}
       <aside className={`hidden lg:block fixed left-0 top-[56px] sm:top-[64px] lg:top-[76px] bottom-0 bg-white border-r border-gray-200 transition-all duration-300 ${compactMode ? 'w-16' : 'w-64'} overflow-y-auto`}>
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-8">
-            <button
-              onClick={() => setCompactMode(!compactMode)}
-              className="p-1 rounded hover:bg-gray-600 transition-colors text-[#fff]"
-            >
-              {compactMode ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            </button>
+        <div className="flex flex-col h-full">
+          <div className="p-4 flex-1">
+            <div className="flex items-center justify-between mb-8">
+              <button
+                onClick={() => setCompactMode(!compactMode)}
+                className="p-1 rounded hover:bg-gray-600 transition-colors text-[#fff]"
+              >
+                {compactMode ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              </button>
+            </div>
+
+            <nav className="space-y-2 flex-1">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+
+                return (
+                  <motion.button
+                    key={item.id}
+                    onClick={() => handleNavigation(item.id)}
+                    className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'text-[#fff]'
+                        : 'text-[#2C3E50] hover:bg-gray-600 '
+                    } ${compactMode ? 'justify-center px-2' : ''}`}
+                    style={isActive ? { backgroundColor: '#FF6B35' } : {}}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    {!compactMode && (
+                      <>
+                        <span>{item.label}</span>
+                        {item.badge && (
+                          <span className="text-[#2C3E50] text-xs rounded-full w-5 h-5 flex items-center justify-center" style={{ backgroundColor: '#FF6B35' }}>
+                            {item.badge}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </motion.button>
+                );
+              })}
+            </nav>
           </div>
 
-          <nav className="space-y-2">
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-
-              return (
-                <motion.button
-                  key={item.id}
-                  onClick={() => handleNavigation(item.id)}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive
-                      ? 'text-[#fff]'
-                      : 'text-[#2C3E50] hover:bg-gray-600 '
-                  } ${compactMode ? 'justify-center px-2' : ''}`}
-                  style={isActive ? { backgroundColor: '#FF6B35' } : {}}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  {!compactMode && (
-                    <>
-                      <span>{item.label}</span>
-                      {item.badge && (
-                        <span className="text-[#2C3E50] text-xs rounded-full w-5 h-5 flex items-center justify-center" style={{ backgroundColor: '#FF6B35' }}>
-                          {item.badge}
-                        </span>
-                      )}
-                    </>
-                  )}
-                </motion.button>
-              );
-            })}
-          </nav>
-
-          <div className="border-t border-gray-600 mt-6 pt-6">
+          {/* User Profile Section - Bottom */}
+          <div className="p-4 border-t border-gray-600">
             <nav className="space-y-2">
               <motion.button
                 className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[#2C3E50] hover:bg-gray-600 transition-all duration-200 ${
@@ -702,17 +771,28 @@ return (
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-xs font-medium">{userInitials}</span>
+                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {userAvatar ? (
+                    <img
+                      src={userAvatar}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                      onLoad={() => console.log('🔍 LandlordDashboard - Sidebar avatar loaded:', userAvatar)}
+                      onError={() => console.log('❌ LandlordDashboard - Sidebar avatar failed to load:', userAvatar)}
+                    />
+                  ) : (
+                    <span className="text-white text-xs font-medium">{userInitials}</span>
+                  )}
                 </div>
                 {!compactMode && (
-                  <>
-                    <span>{firstName}</span>
-                    <span className="text-xs text-gray-400 ml-auto">{userEmail}</span>
-                  </>
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="font-medium text-[#2C3E50] truncate">{firstName}</div>
+                    <div className="text-xs text-gray-400 truncate">{userEmail}</div>
+                  </div>
                 )}
               </motion.button>
               <motion.button
+                onClick={() => navigate('/landlord/settings')}
                 className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[#2C3E50] hover:bg-gray-600 transition-all duration-200 ${
                   compactMode ? 'justify-center px-2' : ''
                 }`}
@@ -1036,7 +1116,7 @@ return (
       </main>
     </div>
   </div>
-  );
-};
+);
+}
 
 export default LandlordDashboard;

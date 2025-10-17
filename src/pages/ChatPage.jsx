@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
-import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { useNavigate, useLocation, Link, Outlet } from "react-router-dom";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
+import ProfilePopup from '../components/ProfilePopup';
 
 // Simple debounce utility function
 function debounce(func, wait) {
@@ -155,8 +156,37 @@ export default function ChatPage() {
   // UI state
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
-  
-  // Handle sending search query
+  const [showProfilePopup, setShowProfilePopup] = useState(false);
+
+  // Avatar state for navbar display
+  const [userAvatar, setUserAvatar] = useState(null);
+
+  // Load user avatar from database
+  useEffect(() => {
+    const loadUserAvatar = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error loading user avatar:', error);
+          return;
+        }
+
+        setUserAvatar(data?.avatar_url || null);
+      } catch (err) {
+        console.error('Error loading user avatar:', err);
+        setUserAvatar(null);
+      }
+    };
+
+    loadUserAvatar();
+  }, [user]);
   const handleSend = useCallback(() => {
     if (searchInput.trim()) {
       // Here you can add logic to handle the search query
@@ -1094,180 +1124,208 @@ export default function ChatPage() {
       </AnimatePresence>
 
       {/* Top Nav */}
-      <motion.nav
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="relative z-10 flex items-center justify-end p-3 sm:p-6 w-full bg-white/95 backdrop-blur-md border-b border-gray-200/80"
-        style={{
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)'
-        }}
-      >
-        {/* User Profile - Avatar Only */}
-        <div className="flex items-center">
-          {user ? (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="flex items-center"
-            >
-              <div className="hidden sm:flex sm:flex-col sm:items-end mr-3">
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                  className="text-sm font-medium text-[#2C3E50]"
-                >
-                  {getUserDisplayName()}
-                </motion.span>
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3, delay: 0.3 }}
-                  className="text-xs text-gray-500"
-                >
-                  {user?.email}
-                </motion.span>
-              </div>
-              <motion.button
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.4, type: "spring", stiffness: 300 }}
-                whileHover={{
-                  scale: 1.05,
-                  boxShadow: "0 4px 12px rgba(255, 107, 53, 0.3)",
-                  rotate: [0, -2, 2, 0],
-                }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowMenu((s) => !s)}
-                className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
-                style={{
-                  boxShadow: '0 2px 8px rgba(255, 107, 53, 0.3)'
-                }}
-                aria-label="User menu"
+      <div className="relative">
+        <motion.nav
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="relative z-10 flex items-center justify-end p-3 sm:p-6 w-full bg-white/95 backdrop-blur-md border-b border-gray-200/80"
+          style={{
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)'
+          }}
+        >
+          {/* User Profile - Avatar Only */}
+          <div className="flex items-center">
+            {user ? (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="flex items-center"
               >
-                <motion.div
-                  animate={{
-                    background: showMenu
-                      ? "linear-gradient(45deg, #FF6B35, #e85e2f)"
-                      : "linear-gradient(135deg, #FF6B35, #e85e2f)"
+                <div className="hidden sm:flex sm:flex-col sm:items-end mr-3">
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3, delay: 0.2 }}
+                    className="text-sm font-medium text-[#2C3E50]"
+                  >
+                    {getUserDisplayName()}
+                  </motion.span>
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3, delay: 0.3 }}
+                    className="text-xs text-gray-500"
+                  >
+                    {user?.email}
+                  </motion.span>
+                </div>
+                <motion.button
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.3, delay: 0.4, type: "spring", stiffness: 300 }}
+                  whileHover={{
+                    scale: 1.05,
+                    boxShadow: "0 4px 12px rgba(255, 107, 53, 0.3)",
+                    rotate: [0, -2, 2, 0],
                   }}
-                  className="absolute inset-0 rounded-full"
-                />
-                <motion.span
-                  animate={{ rotate: showMenu ? 180 : 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="relative z-10"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowProfilePopup(true)}
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
+                  style={{
+                    boxShadow: '0 2px 8px rgba(255, 107, 53, 0.3)'
+                  }}
+                  aria-label="User menu"
                 >
-                  {getUserDisplayName().charAt(0).toUpperCase()}
-                </motion.span>
-              </motion.button>
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="flex items-center gap-2"
-            >
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-                whileHover={{
-                  scale: 1.02,
-                  backgroundColor: "rgba(44, 62, 80, 0.05)",
-                  boxShadow: "0 2px 8px rgba(44, 62, 80, 0.15)"
-                }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => navigate('/login')}
-                className="px-4 py-2 text-sm font-medium text-[#2C3E50] hover:bg-gray-100 rounded-lg transition-all duration-200 border border-gray-200"
-              >
-                Log In
-              </motion.button>
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.3 }}
-                whileHover={{
-                  scale: 1.02,
-                  boxShadow: "0 4px 12px rgba(255, 107, 53, 0.3)",
-                  background: "linear-gradient(135deg, #FF6B35, #e85e2f)"
-                }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => navigate('/signup')}
-                className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-[#FF6B35] to-[#e85e2f] text-white hover:shadow-lg rounded-lg transition-all duration-200"
-                style={{
-                  boxShadow: '0 2px 8px rgba(255, 107, 53, 0.3)'
-                }}
-              >
-                Sign Up
-              </motion.button>
-            </motion.div>
-          )}
-        </div>
-
-        <AnimatePresence>
-          {showMenu && (
-            <motion.div 
-              initial={{ opacity: 0, y: -8, scale: 0.95 }} 
-              animate={{ opacity: 1, y: 0, scale: 1 }} 
-              exit={{ opacity: 0, y: -8, scale: 0.95 }} 
-              transition={{ duration: 0.2, ease: "easeOut", type: "spring", stiffness: 300 }} 
-              className="absolute top-16 right-4 sm:right-6 border border-gray-200 rounded-2xl shadow-2xl z-50 px-2 py-2 min-w-[200px] max-w-[280px] bg-white"
-              style={{
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
-              }}
-            >
-              <motion.div variants={containerVariants} initial="hidden" animate="visible" className="p-2">
-                {user ? (
-                  // Logged in menu items
-                  [
-                    { label: 'AI Assistant', action: () => navigate('/chat') },
-                    { label: 'Browse Properties', action: () => navigate('/properties') },
-                    { label: 'Saved Properties', action: () => navigate('/saved') },
-                    { label: 'Profile', action: () => navigate('/profile') },
-                    { label: 'Logout', action: handleLogout, className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
-                  ].map((item, idx) => (
-                    <motion.button 
-                      key={idx} 
-                      variants={itemVariants} 
-                      whileHover={{ x: 4, backgroundColor: item.className?.includes('red') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(44, 62, 80, 0.05)', scale: 1.02 }} 
-                      whileTap={{ scale: 0.98 }} 
-                      onClick={item.action}
-                      className={`w-full text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 p-3 rounded-lg text-sm cursor-pointer transition-all duration-200 ${item.className || ''}`}
+                  <motion.div
+                    animate={{
+                      background: showMenu
+                        ? "linear-gradient(45deg, #FF6B35, #e85e2f)"
+                        : "linear-gradient(135deg, #FF6B35, #e85e2f)"
+                    }}
+                    className="absolute inset-0 rounded-full"
+                  />
+                  {userAvatar ? (
+                    <img
+                      src={userAvatar}
+                      alt="Profile"
+                      className="w-full h-full object-cover relative z-10"
+                      onLoad={() => console.log('🔍 ChatPage - Navbar avatar loaded:', userAvatar)}
+                      onError={() => console.log('❌ ChatPage - Navbar avatar failed to load:', userAvatar)}
+                    />
+                  ) : (
+                    <motion.span
+                      animate={{ rotate: showMenu ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="relative z-10"
                     >
-                      {item.label}
-                    </motion.button>
-                  ))
-                ) : (
-                  // Not logged in menu items
-                  [
-                    { label: 'Home', action: () => navigate('/') },
-                    { label: 'Browse Properties', action: () => navigate('/listings') },
-                    { label: 'About', action: () => navigate('/about') },
-                    { label: 'Contact', action: () => navigate('/contact') },
-                    { label: 'Login', action: () => navigate('/login') },
-                    { label: 'Sign Up', action: () => navigate('/signup') }
-                  ].map((item, idx) => (
-                    <motion.button 
-                      key={idx} 
-                      variants={itemVariants} 
-                      whileHover={{ x: 4, backgroundColor: 'rgba(44, 62, 80, 0.05)', scale: 1.02 }} 
-                      whileTap={{ scale: 0.98 }} 
-                      onClick={item.action}
-                      className="w-full text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 p-3 rounded-lg text-sm cursor-pointer transition-all duration-200"
-                    >
-                      {item.label}
-                    </motion.button>
-                  ))
-                )}
+                      {getUserDisplayName().charAt(0).toUpperCase()}
+                    </motion.span>
+                  )}
+                </motion.button>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.nav>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="flex items-center gap-2"
+              >
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                  whileHover={{
+                    scale: 1.02,
+                    backgroundColor: "rgba(44, 62, 80, 0.05)",
+                    boxShadow: "0 2px 8px rgba(44, 62, 80, 0.15)"
+                  }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => navigate('/login')}
+                  className="px-4 py-2 text-sm font-medium text-[#2C3E50] hover:bg-gray-100 rounded-lg transition-all duration-200 border border-gray-200"
+                >
+                  Log In
+                </motion.button>
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.3 }}
+                  whileHover={{
+                    scale: 1.02,
+                    boxShadow: "0 4px 12px rgba(255, 107, 53, 0.3)",
+                    background: "linear-gradient(135deg, #FF6B35, #e85e2f)"
+                  }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => navigate('/signup')}
+                  className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-[#FF6B35] to-[#e85e2f] text-white hover:shadow-lg rounded-lg transition-all duration-200"
+                  style={{
+                    boxShadow: '0 2px 8px rgba(255, 107, 53, 0.3)'
+                  }}
+                >
+                  Sign Up
+                </motion.button>
+              </motion.div>
+            )}
+          </div>
+
+          <AnimatePresence>
+            {showMenu && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: "easeOut", type: "spring", stiffness: 300 }}
+                className="absolute top-16 right-4 sm:right-6 border border-gray-200 rounded-2xl shadow-2xl z-50 px-2 py-2 min-w-[200px] max-w-[280px] bg-white"
+                style={{
+                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+                }}
+              >
+                <motion.div variants={containerVariants} initial="hidden" animate="visible" className="p-2">
+                  {user ? (
+                    // Logged in menu items
+                    [
+                      { label: 'AI Assistant', action: () => navigate('/chat') },
+                      { label: 'Browse Properties', action: () => navigate('/properties') },
+                      { label: 'Saved Properties', action: () => navigate('/saved') },
+                      { label: 'Profile', action: () => navigate('/profile') },
+                      { label: 'Logout', action: handleLogout, className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
+                    ].map((item, idx) => (
+                      <motion.button
+                        key={idx}
+                        variants={itemVariants}
+                        whileHover={{ x: 4, backgroundColor: item.className?.includes('red') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(44, 62, 80, 0.05)', scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={item.action}
+                        className={`w-full text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 p-3 rounded-lg text-sm cursor-pointer transition-all duration-200 ${item.className || ''}`}
+                      >
+                        {item.label}
+                      </motion.button>
+                    ))
+                  ) : (
+                    // Not logged in menu items
+                    [
+                      { label: 'Home', action: () => navigate('/') },
+                      { label: 'Browse Properties', action: () => navigate('/listings') },
+                      { label: 'About', action: () => navigate('/about') },
+                      { label: 'Contact', action: () => navigate('/contact') },
+                      { label: 'Login', action: () => navigate('/login') },
+                      { label: 'Sign Up', action: () => navigate('/signup') }
+                    ].map((item, idx) => (
+                      <motion.button
+                        key={idx}
+                        variants={itemVariants}
+                        whileHover={{ x: 4, backgroundColor: 'rgba(44, 62, 80, 0.05)', scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={item.action}
+                        className="w-full text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 p-3 rounded-lg text-sm cursor-pointer transition-all duration-200"
+                      >
+                        {item.label}
+                      </motion.button>
+                    ))
+                  )}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.nav>
+
+        {/* Profile Popup - Positioned relative to the navbar */}
+        <ProfilePopup
+          isOpen={showProfilePopup}
+          onClose={() => setShowProfilePopup(false)}
+          position="navbar"
+          onAvatarUpdate={(newAvatarUrl) => {
+            console.log('🔄 ChatPage - Avatar update received:', newAvatarUrl);
+            setUserAvatar(newAvatarUrl);
+            // Force re-render by updating a timestamp
+            setUserAvatar(prev => {
+              console.log('🔄 ChatPage - Setting new avatar:', prev !== newAvatarUrl ? newAvatarUrl : prev);
+              return newAvatarUrl;
+            });
+          }}
+        />
+      </div>
 
       {/* MAIN area (hero + search) */}
       <div style={{ paddingLeft: isDesktop ? (compactMode ? '80px' : '320px') : 0 }} className="relative z-10 transition-all duration-300">

@@ -89,6 +89,7 @@ export function useChat(chatId, currentUser) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [chatContext, setChatContext] = useState(null);
 
   // Real-time listener for new messages
   useRealtimeMessages(chatId, (newMessage) => {
@@ -127,7 +128,16 @@ export function useChat(chatId, currentUser) {
       }
 
       const data = await response.json();
-      setMessages(data || []);
+
+      // Handle both old format (just messages array) and new format (with chatContext)
+      if (Array.isArray(data)) {
+        // Old format - just messages
+        setMessages(data || []);
+      } else {
+        // New format - messages + chatContext
+        setMessages(data.messages || []);
+        setChatContext(data.chatContext || null);
+      }
     } catch (err) {
       console.error('Error loading messages:', err);
       setError(err.message);
@@ -136,28 +146,46 @@ export function useChat(chatId, currentUser) {
     }
   };
 
-  const sendMessage = async (messageText) => {
-    if (!chatId || !currentUser || !messageText.trim()) return;
+  const sendMessage = async (messageText, attachments = []) => {
+    if (!chatId || !currentUser || (!messageText.trim() && attachments.length === 0)) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/chat`, {
+      // Create FormData for file uploads
+      const formData = new FormData();
+      formData.append('chat_id', chatId);
+      formData.append('sender_id', currentUser.id);
+      formData.append('message', messageText.trim());
+
+      // Add attachments if any
+      attachments.forEach((file, index) => {
+        formData.append(`attachments[${index}]`, file);
+      });
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/chat/`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${currentUser.access_token || localStorage.getItem('supabase.auth.token')}`
         },
-        body: JSON.stringify({
-          chat_id: chatId,
-          sender_id: currentUser.id,
-          message: messageText.trim()
-        })
+        body: formData
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to send message: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to send message: ${response.status}`);
       }
 
-      // Message will be added via real-time listener
+      const newMessage = await response.json();
+
+      // Optimistically add the message to the UI immediately
+      // This ensures the message appears instantly for the sender
+      setMessages(prev => {
+        // Avoid duplicates
+        const exists = prev.find(m => m.id === newMessage.id);
+        if (exists) return prev;
+        return [...prev, newMessage];
+      });
+
+      return newMessage;
     } catch (err) {
       console.error('Error sending message:', err);
       throw err;
@@ -192,6 +220,7 @@ export function useChat(chatId, currentUser) {
     messages,
     loading,
     error,
+    chatContext,
     sendMessage,
     markAsRead,
     refetch: loadMessages

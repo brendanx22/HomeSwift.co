@@ -14,8 +14,7 @@ export class PropertyAPI {
     try {
       let query = supabase
         .from('properties')
-        .select('*')
-        .eq('is_active', true);
+        .select('*');
 
       // Apply filters
       if (filters.search) {
@@ -52,9 +51,18 @@ export class PropertyAPI {
       const { data, error } = await query;
 
       if (error) throw error;
-      return { success: true, properties: data || [] };
+
+      // Add default landlord fields for frontend compatibility
+      const properties = (data || []).map(property => ({
+        ...property,
+        landlord_name: null,
+        landlord_profile_image: null
+      }));
+
+      console.log('✅ getProperties query successful, found:', properties.length, 'properties');
+      return { success: true, properties };
     } catch (error) {
-      console.error('Error fetching properties:', error);
+      console.error('❌ Error in getProperties:', error);
       return { success: false, error: error.message };
     }
   }
@@ -71,7 +79,15 @@ export class PropertyAPI {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return { success: true, properties: data || [] };
+
+      // Add default landlord fields for frontend compatibility
+      const properties = (data || []).map(property => ({
+        ...property,
+        landlord_name: null,
+        landlord_profile_image: null
+      }));
+
+      return { success: true, properties };
     } catch (error) {
       console.error('Error fetching my properties:', error);
       return { success: false, error: error.message };
@@ -81,7 +97,7 @@ export class PropertyAPI {
   /**
    * Get all properties (for browsing)
    */
-  static async getProperties(filters = {}) {
+  static async getAllProperties(filters = {}) {
     try {
       let query = supabase
         .from('properties')
@@ -109,25 +125,57 @@ export class PropertyAPI {
         throw error;
       }
 
-      console.log('✅ getProperties query successful, found:', data?.length || 0, 'properties');
-      return { success: true, properties: data || [] };
+      // Add default landlord fields for frontend compatibility
+      const properties = (data || []).map(property => ({
+        ...property,
+        landlord_name: null,
+        landlord_profile_image: null
+      }));
+
+      console.log('✅ getAllProperties query successful, found:', properties.length, 'properties');
+      return { success: true, properties };
     } catch (error) {
-      console.error('❌ Error in getProperties:', error);
+      console.error('❌ Error in getAllProperties:', error);
       return { success: false, error: error.message };
     }
   }
   static async getProperty(propertyId) {
     try {
-      const { data, error } = await supabase
+      console.log('🔍 Fetching property:', propertyId);
+
+      const { data: propertyData, error: propertyError } = await supabase
         .from('properties')
         .select('*')
         .eq('id', propertyId)
         .single();
 
-      if (error) throw error;
-      return { success: true, property: data };
+      if (propertyError) {
+        console.error('❌ Property fetch error:', propertyError);
+        throw propertyError;
+      }
+
+      if (!propertyData) {
+        console.error('❌ No property data found for ID:', propertyId);
+        throw new Error('Property not found');
+      }
+
+      console.log('✅ Property data fetched:', {
+        id: propertyData.id,
+        title: propertyData.title,
+        landlord_id: propertyData.landlord_id
+      });
+
+      // For now, we'll work with just the landlord_id
+      // The frontend can handle displaying landlord info based on available data
+      const property = {
+        ...propertyData,
+        landlord_name: null, // Will be set to a default or handled by frontend
+        landlord_profile_image: null // Will be set to a default or handled by frontend
+      };
+
+      return { success: true, property };
     } catch (error) {
-      console.error('Error fetching property:', error);
+      console.error('❌ Error fetching property:', error);
       return { success: false, error: error.message };
     }
   }
@@ -249,16 +297,23 @@ export class PropertyAPI {
       // Fetch the actual property details
       const { data: propertiesData, error: propertiesError } = await supabase
         .from('properties')
-        .select('id, title, description, price, location, images, bedrooms, bathrooms, area, property_type, listing_type, landlord_id, created_at')
+        .select('*')
         .in('id', propertyIds);
 
       if (propertiesError) throw propertiesError;
+
+      // Add default landlord fields for frontend compatibility
+      const properties = (propertiesData || []).map(property => ({
+        ...property,
+        landlord_name: null,
+        landlord_profile_image: null
+      }));
 
       // Combine the data
       const savedProperties = savedData.map(saved => ({
         property_id: saved.property_id,
         created_at: saved.created_at,
-        properties: propertiesData.find(prop => prop.id === saved.property_id) || null
+        properties: properties.find(prop => prop.id === saved.property_id) || null
       }));
 
       return { success: true, savedProperties };
@@ -386,7 +441,15 @@ export class PropertyAPI {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-      return { success: true, properties: data || [] };
+
+      // Add default landlord fields for frontend compatibility
+      const properties = (data || []).map(property => ({
+        ...property,
+        landlord_name: null,
+        landlord_profile_image: null
+      }));
+
+      return { success: true, properties };
     } catch (error) {
       console.error('Error searching properties:', error);
       return { success: false, error: error.message };
