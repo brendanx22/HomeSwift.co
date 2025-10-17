@@ -34,7 +34,7 @@ const Home = () => {
         backgroundImage: 'url("/images/Illustration.png")',
         backgroundColor: '#ffffff',
         backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center 100%',
+        backgroundPosition: 'center 110%',
         backgroundSize: 'contain',
         width: '100%',
         position: 'relative',
