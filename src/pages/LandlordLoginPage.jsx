@@ -193,7 +193,7 @@ const LandlordLoginPage = () => {
   };
   
   const handleSignUpLink = () => {
-    navigate('/signup', { 
+    navigate('/landlord/signup', { 
       state: { 
         from: location.state?.from || { pathname: '/landlord/dashboard' },
         userType: 'landlord'
@@ -378,13 +378,12 @@ const LandlordLoginPage = () => {
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <Link
-                to="/landlord/signup"
-                className="font-medium text-blue-600 hover:text-blue-800"
-                onClick={() => localStorage.setItem('userType', 'landlord')}
+              <button
+                onClick={handleSignUpLink}
+                className="font-medium text-blue-600 hover:text-blue-800 transition-colors"
               >
                 Sign up as Landlord
-              </Link>
+              </button>
             </p>
           </div>
         </motion.form>

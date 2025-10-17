@@ -71,14 +71,14 @@ const LandlordDashboard = () => {
           .maybeSingle();
 
         if (error && error.code !== 'PGRST116') {
-          console.error('Error loading user avatar:', error);
+          // console.error('Error loading user avatar:', error);
           return;
         }
 
-        console.log('🔍 LandlordDashboard - Loading avatar:', data?.avatar_url || 'no avatar');
+        // console.log('🔍 LandlordDashboard - Loading avatar:', data?.avatar_url || 'no avatar');
         setUserAvatar(data?.avatar_url || null);
       } catch (err) {
-        console.error('Error loading user avatar:', err);
+        // console.error('Error loading user avatar:', err);
         setUserAvatar(null);
       }
     };
@@ -107,10 +107,10 @@ const LandlordDashboard = () => {
         const storedRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
         const currentRole = storedRoles.find(r => r.is_primary)?.role || storedRoles[0]?.role || userType || 'renter';
 
-        console.log('Dashboard Auth Check:', { currentRole, userType, storedRoles });
+        // console.log('Dashboard Auth Check:', { currentRole, userType, storedRoles });
 
         if (currentRole !== 'landlord') {
-          console.log('Not a landlord, redirecting to chat');
+          // console.log('Not a landlord, redirecting to chat');
           navigate('/chat');
           return;
         }
@@ -142,8 +142,8 @@ const LandlordDashboard = () => {
         console.error('Error fetching recent properties:', propertiesError);
       } else {
         setRecentProperties(properties || []);
-        console.log('🏠 Recent properties loaded:', properties?.length || 0);
-        console.log('📋 Recent properties data:', properties);
+        // console.log('🏠 Recent properties loaded:', properties?.length || 0);
+        // console.log('📋 Recent properties data:', properties);
       }
 
       // Fetch property views for these properties
@@ -155,7 +155,7 @@ const LandlordDashboard = () => {
           .in('property_id', propertyIds);
 
         if (viewsError) {
-          console.error('Error fetching property views:', viewsError);
+          // console.error('Error fetching property views:', viewsError);
         } else {
           // Count views per property
           const viewsByProperty = {};
@@ -182,7 +182,7 @@ const LandlordDashboard = () => {
         .limit(5);
 
       if (inquiriesError) {
-        console.error('Error fetching recent inquiries:', inquiriesError);
+        // console.error('Error fetching recent inquiries:', inquiriesError);
       } else {
         // Transform inquiries data to match expected format
         const transformedLeads = inquiries?.map(inquiry => ({
@@ -196,11 +196,11 @@ const LandlordDashboard = () => {
         })) || [];
 
         setRecentLeads(transformedLeads);
-        console.log('💬 Recent leads loaded:', transformedLeads?.length || 0);
+        // console.log('💬 Recent leads loaded:', transformedLeads?.length || 0);
       }
 
     } catch (error) {
-      console.error('❌ Error loading recent data:', error);
+      // console.error('❌ Error loading recent data:', error);
     }
   };
 
@@ -209,7 +209,7 @@ const LandlordDashboard = () => {
     try {
       if (!user?.id) return;
 
-      console.log('🔍 Loading dashboard data for user:', user.id);
+      // console.log('🔍 Loading dashboard data for user:', user.id);
 
       // Fetch actual properties from database
       const { data: properties, error: propertiesError } = await supabase
@@ -218,12 +218,12 @@ const LandlordDashboard = () => {
         .eq('landlord_id', user.id);
 
       if (propertiesError) {
-        console.error('Error fetching properties:', propertiesError);
+        // console.error('Error fetching properties:', propertiesError);
         throw propertiesError;
       }
 
-      console.log('✅ Properties fetched:', properties?.length || 0);
-      console.log('📋 Properties data:', properties);
+      // console.log('✅ Properties fetched:', properties?.length || 0);
+      // console.log('📋 Properties data:', properties);
 
       // Calculate stats from properties data
       const totalProperties = properties?.length || 0;
@@ -236,7 +236,7 @@ const LandlordDashboard = () => {
         .eq('landlord_id', user.id);
 
       if (inquiriesError) {
-        console.error('Error fetching inquiries:', inquiriesError);
+        // console.error('Error fetching inquiries:', inquiriesError);
       }
 
       // Fetch property views for this landlord's properties
@@ -248,13 +248,13 @@ const LandlordDashboard = () => {
           .in('property_id', properties.map(p => p.id));
 
         if (viewsError) {
-          console.error('Error fetching property views:', viewsError);
+          // console.error('Error fetching property views:', viewsError);
         } else {
           totalViews = viewsData?.length || 0;
-          console.log('✅ Property views fetched:', totalViews);
+          // console.log('✅ Property views fetched:', totalViews);
         }
       } else {
-        console.log('ℹ️ No properties found, skipping property views query');
+        // console.log('ℹ️ No properties found, skipping property views query');
       }
 
       // Calculate total inquiries from real data
@@ -270,14 +270,14 @@ const LandlordDashboard = () => {
         inquiries: totalInquiries
       });
 
-      console.log('📊 Dashboard stats updated:', {
-        totalListings: totalProperties,
-        totalInquiries: totalInquiries,
-        featuredProperties: totalProperties
-      });
+      // console.log('📊 Dashboard stats updated:', {
+      //   totalListings: totalProperties,
+      //   totalInquiries: totalInquiries,
+      //   featuredProperties: totalProperties
+      // });
 
     } catch (error) {
-      console.error('❌ Error loading dashboard data:', error);
+      // console.error('❌ Error loading dashboard data:', error);
       // Fallback to mock data on error
       setStats({
         totalListings: 0,
@@ -348,24 +348,24 @@ const LandlordDashboard = () => {
 
   // Get user information - first name for sidebar, full name for navbar
   const getUserDisplayName = () => {
-    console.log('🔍 User metadata for name extraction:', user?.user_metadata);
+    // console.log('🔍 User metadata for name extraction:', user?.user_metadata);
 
     // Check if user metadata exists at all
     if (!user?.user_metadata) {
-      console.log('❌ No user metadata found');
+      // console.log('❌ No user metadata found');
       return 'User';
     }
 
     // Try to use first_name from metadata first
     if (user.user_metadata.first_name) {
-      console.log('✅ Using first_name from metadata:', user.user_metadata.first_name);
+      // console.log('✅ Using first_name from metadata:', user.user_metadata.first_name);
       return user.user_metadata.first_name;
     }
 
     // Try to use first word from full_name
     if (user.user_metadata.full_name) {
       const firstName = user.user_metadata.full_name.split(' ')[0];
-      console.log('✅ Using first word from full_name:', firstName, 'from:', user.user_metadata.full_name);
+      // console.log('✅ Using first word from full_name:', firstName, 'from:', user.user_metadata.full_name);
       return firstName;
     }
 
@@ -377,12 +377,12 @@ const LandlordDashboard = () => {
         .split(/[._]/)[0]  // Take first part before dot or underscore
         .replace(/^\w/, c => c.toUpperCase()); // Capitalize first letter
 
-      console.log('⚠️ Using email fallback for name:', cleanName, 'from:', emailPrefix);
+      // console.log('⚠️ Using email fallback for name:', cleanName, 'from:', emailPrefix);
       return cleanName;
     }
 
     // Final fallback
-    console.log('❌ No name data found, using default');
+    // console.log('❌ No name data found, using default');
     return 'User';
   };
 
@@ -393,7 +393,7 @@ const LandlordDashboard = () => {
 
   const removeProperty = async (propertyId) => {
     try {
-      console.log('🗑️ Deleting property:', propertyId);
+      // console.log('🗑️ Deleting property:', propertyId);
 
       // Delete from Supabase database
       const { error } = await supabase
@@ -403,18 +403,18 @@ const LandlordDashboard = () => {
         .eq('landlord_id', user.id); // Ensure only landlord can delete their own properties
 
       if (error) {
-        console.error('❌ Error deleting property:', error);
+        // console.error('❌ Error deleting property:', error);
         throw error;
       }
 
-      console.log('✅ Property deleted successfully from database');
+      // console.log('✅ Property deleted successfully from database');
 
       // Refresh dashboard data to show updated listings
       await loadDashboardData();
       await loadRecentData();
 
     } catch (error) {
-      console.error('❌ Failed to delete property:', error);
+      // console.error('❌ Failed to delete property:', error);
       throw error;
     }
   };
@@ -499,10 +499,14 @@ const LandlordDashboard = () => {
       navigate('/messages');
     }
     if (id === 'calendar') {
-      // For now, navigate to a placeholder or show a message
-      // TODO: Create a Calendar page or link to an external calendar service
-      console.log('Calendar navigation clicked - implement calendar page');
-      // navigate('/calendar'); // Uncomment when calendar page is created
+      // For now, show a placeholder message or navigate to a calendar page
+      // TODO: Create a dedicated Calendar page for managing appointments and viewings
+      toast.info('Calendar feature coming soon! Manage your property viewings and appointments here.', {
+        duration: 4000,
+        icon: '📅',
+      });
+      // Uncomment when calendar page is created:
+      // navigate('/calendar');
     }
   };
 
@@ -557,7 +561,7 @@ const LandlordDashboard = () => {
         duration: 3000, // 3 seconds
       });
     } catch (error) {
-      console.error('Error deleting property:', error);
+      // console.error('Error deleting property:', error);
       toast.error('Failed to delete property. Please try again.', {
         duration: 4000, // 4 seconds for errors
       });
