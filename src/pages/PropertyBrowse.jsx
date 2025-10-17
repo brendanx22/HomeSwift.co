@@ -410,11 +410,11 @@ export default function PropertyBrowse() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentIndex}
-                initial={{ opacity: 0, y: 50 }}
+                initial={{ opacity: 0, y: '100%' }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -50 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="absolute inset-0 flex flex-col"
+                exit={{ opacity: 0, y: '-100%' }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="absolute inset-0"
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
                 onTouchEnd={onTouchEnd}
@@ -433,7 +433,7 @@ export default function PropertyBrowse() {
                     </div>
                   )}
 
-                  {/* Navigation Indicators */}
+                  {/* Navigation Indicators - Subtle dots only */}
                   <div className="absolute top-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
                     {filteredProperties.map((_, index) => (
                       <div
@@ -445,18 +445,18 @@ export default function PropertyBrowse() {
                     ))}
                   </div>
 
-                  {/* Swipe Indicators */}
+                  {/* Swipe Indicators - More prominent */}
                   {currentIndex < filteredProperties.length - 1 && (
-                    <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex flex-col items-center text-white/80">
-                      <ChevronUp className="w-6 h-6 mb-1" />
-                      <span className="text-sm">Swipe up for next</span>
+                    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center text-white/90">
+                      <ChevronUp className="w-8 h-8 mb-2 animate-bounce" />
+                      <span className="text-sm font-medium">Swipe up for next</span>
                     </div>
                   )}
 
                   {currentIndex > 0 && (
-                    <div className="absolute top-6 left-1/2 transform -translate-x-1/2 flex flex-col items-center text-white/80">
-                      <ChevronDown className="w-6 h-6 mb-1" />
-                      <span className="text-sm">Swipe down for previous</span>
+                    <div className="absolute top-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center text-white/90">
+                      <ChevronDown className="w-8 h-8 mb-2 animate-bounce" />
+                      <span className="text-sm font-medium">Swipe down for previous</span>
                     </div>
                   )}
 
@@ -581,29 +581,6 @@ export default function PropertyBrowse() {
                 </div>
               </motion.div>
             </AnimatePresence>
-
-            {/* Navigation Controls */}
-            <div className="absolute bottom-6 right-6 flex flex-col space-y-2">
-              {currentIndex > 0 && (
-                <button
-                  onClick={handlePrevious}
-                  disabled={isAnimating}
-                  className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center disabled:opacity-50"
-                >
-                  <ChevronUp className="w-6 h-6 text-gray-700" />
-                </button>
-              )}
-
-              {currentIndex < filteredProperties.length - 1 && (
-                <button
-                  onClick={handleNext}
-                  disabled={isAnimating}
-                  className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center disabled:opacity-50"
-                >
-                  <ChevronDown className="w-6 h-6 text-gray-700" />
-                </button>
-              )}
-            </div>
           </div>
         )}
       </div>
