@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 import { 
   Search, 
   Bell, 
@@ -103,7 +104,6 @@ const LandlordDashboard = () => {
         .from('properties')
         .select('*')
         .eq('landlord_id', user.id)
-        .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -112,6 +112,34 @@ const LandlordDashboard = () => {
       } else {
         setRecentProperties(properties || []);
         console.log('🏠 Recent properties loaded:', properties?.length || 0);
+        console.log('📋 Recent properties data:', properties);
+      }
+
+      // Fetch property views for these properties
+      if (properties && properties.length > 0) {
+        const propertyIds = properties.map(p => p.id);
+        const { data: viewsData, error: viewsError } = await supabase
+          .from('property_views')
+          .select('property_id')
+          .in('property_id', propertyIds);
+
+        if (viewsError) {
+          console.error('Error fetching property views:', viewsError);
+        } else {
+          // Count views per property
+          const viewsByProperty = {};
+          viewsData?.forEach(view => {
+            viewsByProperty[view.property_id] = (viewsByProperty[view.property_id] || 0) + 1;
+          });
+
+          // Update properties with view counts
+          const propertiesWithViews = properties.map(property => ({
+            ...property,
+            views: viewsByProperty[property.id] || 0
+          }));
+
+          setRecentProperties(propertiesWithViews);
+        }
       }
 
       // Fetch recent inquiries (last 5)
@@ -156,8 +184,7 @@ const LandlordDashboard = () => {
       const { data: properties, error: propertiesError } = await supabase
         .from('properties')
         .select('*')
-        .eq('landlord_id', user.id)
-        .eq('is_active', true);
+        .eq('landlord_id', user.id);
 
       if (propertiesError) {
         console.error('Error fetching properties:', propertiesError);
@@ -165,6 +192,11 @@ const LandlordDashboard = () => {
       }
 
       console.log('✅ Properties fetched:', properties?.length || 0);
+      console.log('📋 Properties data:', properties);
+
+      // Calculate stats from properties data
+      const totalProperties = properties?.length || 0;
+      const featuredProperties = properties?.filter(p => p.is_featured).length || 0;
 
       // Fetch inquiries for this landlord
       const { data: inquiries, error: inquiriesError } = await supabase
@@ -176,17 +208,31 @@ const LandlordDashboard = () => {
         console.error('Error fetching inquiries:', inquiriesError);
       }
 
-      console.log('✅ Inquiries fetched:', inquiries?.length || 0);
+      // Fetch property views for this landlord's properties
+      let totalViews = 0;
+      if (properties && properties.length > 0) {
+        const { data: viewsData, error: viewsError } = await supabase
+          .from('property_views')
+          .select('property_id')
+          .in('property_id', properties.map(p => p.id));
 
-      // Calculate stats from real data
-      const totalProperties = properties?.length || 0;
-      const featuredProperties = properties?.filter(p => p.is_featured).length || 0;
+        if (viewsError) {
+          console.error('Error fetching property views:', viewsError);
+        } else {
+          totalViews = viewsData?.length || 0;
+          console.log('✅ Property views fetched:', totalViews);
+        }
+      } else {
+        console.log('ℹ️ No properties found, skipping property views query');
+      }
+
+      // Calculate total inquiries from real data
       const totalInquiries = inquiries?.length || 0;
 
       // Update stats with real data
       setStats({
         totalListings: totalProperties,
-        totalViews: totalProperties * 25, // Mock calculation - replace with actual views data
+        totalViews: totalViews, // Use real view data
         activeRentals: Math.floor(totalProperties * 0.7), // Mock calculation
         propertiesSold: Math.floor(totalProperties * 0.3), // Mock calculation
         activeLeads: totalInquiries,
@@ -196,7 +242,7 @@ const LandlordDashboard = () => {
       console.log('📊 Dashboard stats updated:', {
         totalListings: totalProperties,
         totalInquiries: totalInquiries,
-        featuredProperties: featuredProperties
+        featuredProperties: totalProperties
       });
 
     } catch (error) {
@@ -315,8 +361,31 @@ const LandlordDashboard = () => {
   const userInitials = firstName[0]?.toUpperCase() || 'U';
 
   const removeProperty = async (propertyId) => {
-    // TODO: Implement property deletion logic
-    console.log('Removing property:', propertyId);
+    try {
+      console.log('🗑️ Deleting property:', propertyId);
+
+      // Delete from Supabase database
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', propertyId)
+        .eq('landlord_id', user.id); // Ensure only landlord can delete their own properties
+
+      if (error) {
+        console.error('❌ Error deleting property:', error);
+        throw error;
+      }
+
+      console.log('✅ Property deleted successfully from database');
+
+      // Refresh dashboard data to show updated listings
+      await loadDashboardData();
+      await loadRecentData();
+
+    } catch (error) {
+      console.error('❌ Failed to delete property:', error);
+      throw error;
+    }
   };
 
   // Get recent properties from database
@@ -389,7 +458,7 @@ const LandlordDashboard = () => {
     }
 
     if (id === 'properties') {
-      navigate('/properties');
+      navigate('/landlord-properties');
     }
     if (id === 'messages') {
       navigate('/messages');
@@ -411,13 +480,52 @@ const LandlordDashboard = () => {
   };
 
   const handleDeleteProperty = async (propertyId) => {
-    if (window.confirm('Are you sure you want to delete this property?')) {
-      try {
-        await removeProperty(propertyId);
-      } catch (error) {
-        console.error('Error deleting property:', error);
-        alert('Failed to delete property. Please try again.');
+    // Show confirmation toast with action buttons
+    toast((t) => (
+      <div className="flex flex-col items-start">
+        <p className="font-medium text-gray-900 mb-3">Delete Property?</p>
+        <p className="text-sm text-gray-600 mb-4">This action cannot be undone.</p>
+        <div className="flex space-x-2 w-full">
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+              performDeleteProperty(propertyId);
+            }}
+            className="flex-1 bg-red-500 text-white px-3 py-2 rounded text-sm font-medium hover:bg-red-600 transition-colors"
+          >
+            Delete
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="flex-1 border border-gray-300 text-gray-700 px-3 py-2 rounded text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: 8000,
+      style: {
+        background: '#fff',
+        border: '1px solid #e5e7eb',
+        borderRadius: '0.5rem',
+        padding: '1rem',
+        maxWidth: '320px'
       }
+    });
+  };
+
+  const performDeleteProperty = async (propertyId) => {
+    try {
+      await removeProperty(propertyId);
+      toast.success('Property deleted successfully', {
+        duration: 3000, // 3 seconds
+      });
+    } catch (error) {
+      console.error('Error deleting property:', error);
+      toast.error('Failed to delete property. Please try again.', {
+        duration: 4000, // 4 seconds for errors
+      });
     }
   };
 
@@ -888,7 +996,7 @@ return (
                       <div className="flex items-center space-x-4 mb-4 text-sm text-gray-500">
                         <div className="flex items-center space-x-1">
                           <Bed className="w-4 h-4" />
-                          <span>{listing.bedrooms || 0}</span>
+                          <span>{listing.rooms || 0}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <Bath className="w-4 h-4" />

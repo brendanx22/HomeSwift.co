@@ -7,12 +7,15 @@ import {
   TrendingUp,
   Percent,
   Calendar,
-  Info
+  Info,
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const PriceCalculator = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   // Calculator state
@@ -79,6 +82,16 @@ const PriceCalculator = () => {
           animate={{ y: 0, opacity: 1 }}
           className="mb-8"
         >
+          <div className="flex items-center space-x-4 mb-4">
+            <button
+              onClick={() => navigate('/chat')}
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back to Chat</span>
+            </button>
+            <div className="h-6 w-px bg-gray-300"></div>
+          </div>
           <h1 className="text-3xl font-bold text-[#2C3E50] mb-2">Mortgage Calculator</h1>
           <p className="text-gray-600">Calculate your monthly mortgage payments and total loan costs</p>
         </motion.div>

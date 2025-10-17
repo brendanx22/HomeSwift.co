@@ -11,77 +11,57 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Load user data from localStorage on initial load
+  // Load user data from localStorage (for both regular login and OAuth)
   const loadUserData = useCallback(async () => {
     try {
-      setLoading(true);
+      console.log('🔍 loadUserData - Loading from localStorage:', {
+        hasUserData: !!localStorage.getItem('user'),
+        userData: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null,
+        savedRoles: JSON.parse(localStorage.getItem('userRoles') || '[]'),
+        savedRole: localStorage.getItem('currentRole'),
+        userType: JSON.parse(localStorage.getItem('user') || '{}')?.user_metadata?.user_type
+      });
+
       const userData = JSON.parse(localStorage.getItem('user') || '{}');
       const savedRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
       const savedRole = localStorage.getItem('currentRole');
 
-      console.log('🔍 loadUserData - Loading from localStorage:', {
-        hasUserData: !!userData?.id,
-        userData: userData,
-        savedRoles: savedRoles.length,
-        savedRole,
-        userType: userData?.user_metadata?.user_type || userData?.user_type,
-        hasBackendToken: !!localStorage.getItem('backendToken')
-      });
+      // Check if we have valid user data
+      if (userData && userData.id && userData.email) {
+        console.log('✅ Valid user data found in localStorage');
 
-      // If we have cached user data, try to validate the session
-      if (userData?.id) {
-        try {
-          // First try to get the current session from Supabase
-          const { data: { session }, error } = await supabase.auth.getSession();
+        // Check if we also have a valid Supabase session
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
-          if (error) {
-            console.warn('⚠️ Session validation error, using cached data:', error.message);
-            // Don't logout immediately - continue with cached data for better UX
-          }
+        if (sessionError) {
+          console.warn('⚠️ Session validation error, using cached data:', sessionError.message);
+          // Don't logout immediately - continue with cached data for better UX
+        }
 
-          // If we have a session and it's for the same user, use it
-          if (session?.user?.id === userData.id) {
-            console.log('✅ Active session matches cached user, using session data');
-            setUser(session.user);
-            setIsAuthenticated(true);
+        // If we have a session and it's for the same user, use it
+        if (sessionData?.session?.user?.id === userData.id) {
+          console.log('✅ Active session matches cached user, using session data');
+          setUser(sessionData.session.user);
+          setIsAuthenticated(true);
 
-            // Use cached roles if available, otherwise fetch fresh
-            if (savedRoles?.length > 0) {
-              setRoles(savedRoles);
-              setCurrentRole(savedRole || (savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role));
-              console.log('✅ Using cached roles:', savedRoles);
-            } else {
-              await fetchUserRoles(userData.id);
-            }
-            return true;
-          }
-
-          // No active session but we have cached data - try to restore
-          console.log('🔄 No active session but have cached data, attempting to restore');
+          // Use cached roles if available, otherwise fetch fresh
           if (savedRoles?.length > 0) {
-            // Check if user has landlord role in cached data
-            const hasLandlordRole = savedRoles.some(role => role.role === 'landlord');
-            console.log('🏠 User has landlord role in cached data:', hasLandlordRole);
-
             setRoles(savedRoles);
             setCurrentRole(savedRole || (savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role));
-            setUser(userData);
-            setIsAuthenticated(true);
-            console.log('✅ Restored authentication using cached data');
-            return true;
+            console.log('✅ Using cached roles:', savedRoles);
+          } else {
+            await fetchUserRoles(userData.id);
           }
-
-        } catch (error) {
-          console.error('❌ Session validation error:', error);
-          // If session validation fails, try to continue with cached data
-          if (savedRoles?.length > 0) {
-            console.log('🔄 Using cached data despite session error');
-            setRoles(savedRoles);
-            setCurrentRole(savedRole || (savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role));
-            setUser(userData);
-            setIsAuthenticated(true);
-            return true;
-          }
+          return true;
+        } else {
+          // For OAuth users, we might not have an active session immediately
+          // but we should still trust the localStorage data
+          console.log('⚠️ No active Supabase session, but using cached data for OAuth user');
+          setUser(userData);
+          setRoles(savedRoles);
+          setCurrentRole(savedRole || (savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role));
+          setIsAuthenticated(true);
+          return true;
         }
       }
 

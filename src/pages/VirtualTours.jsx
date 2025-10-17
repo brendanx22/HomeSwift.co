@@ -11,66 +11,67 @@ import {
   MapPin,
   Calendar,
   Eye,
-  Heart
+  Heart,
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { PropertyAPI } from '../lib/propertyAPI';
 
 const VirtualTours = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [tours, setTours] = useState(null);
   const [selectedTour, setSelectedTour] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
 
-  // Mock tour data - replace with real API calls
   useEffect(() => {
     const loadTours = async () => {
-      // Simulate API call
-      setTimeout(() => {
-        setTours([
-          {
-            id: 1,
-            title: 'Luxury Villa in Victoria Island',
-            location: 'Victoria Island, Lagos',
-            price: '₦150M',
-            bedrooms: 5,
-            bathrooms: 4,
-            area: '450 sqm',
-            thumbnail: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-            videoUrl: 'https://example.com/virtual-tour-1',
-            description: 'Stunning luxury villa with panoramic city views, private pool, and premium finishes throughout.',
-            features: ['Swimming Pool', 'Home Theater', 'Wine Cellar', 'Smart Home System']
-          },
-          {
-            id: 2,
-            title: 'Modern Apartment in Lekki',
-            location: 'Lekki Phase 1, Lagos',
-            price: '₦85M',
-            bedrooms: 3,
-            bathrooms: 3,
-            area: '180 sqm',
-            thumbnail: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-            videoUrl: 'https://example.com/virtual-tour-2',
-            description: 'Contemporary apartment with floor-to-ceiling windows, modern kitchen, and balcony with ocean views.',
-            features: ['Ocean View', 'Modern Kitchen', 'Balcony', 'Security System']
-          },
-          {
-            id: 3,
-            title: 'Executive Home in Maitama',
-            location: 'Maitama, Abuja',
-            price: '₦120M',
-            bedrooms: 4,
-            bathrooms: 4,
-            area: '320 sqm',
-            thumbnail: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-            videoUrl: 'https://example.com/virtual-tour-3',
-            description: 'Elegant executive residence in prestigious Maitama district with diplomatic quarter proximity.',
-            features: ['Garden', 'Study Room', 'Guest Suite', '2-Car Garage']
-          }
-        ]);
+      try {
+        setLoading(true);
+
+        // Fetch featured properties for virtual tours
+        const { success, properties } = await PropertyAPI.getProperties();
+
+        if (success && properties && properties.length > 0) {
+          // Filter properties that could have virtual tours (featured properties with images)
+          const tourProperties = properties
+            .filter(property => property.is_featured && property.images && property.images.length > 0)
+            .slice(0, 3); // Show top 3 featured properties
+
+          // Transform properties into virtual tour data
+          const tourData = tourProperties.map(property => ({
+            id: property.id,
+            title: property.title,
+            location: property.location,
+            price: `₦${property.price?.toLocaleString() || '0'}`,
+            bedrooms: property.bedrooms || property.rooms || 0,
+            bathrooms: property.bathrooms || 0,
+            area: property.area ? `${property.area} sq ft` : 'N/A',
+            thumbnail: property.images[0],
+            videoUrl: `virtual-tour-${property.id}`, // Placeholder for actual virtual tour URL
+            description: property.description || `Beautiful ${property.property_type || 'property'} located in ${property.location}. Features modern amenities and excellent location.`,
+            features: [
+              property.bedrooms > 2 ? 'Spacious Bedrooms' : 'Cozy Bedrooms',
+              property.bathrooms > 1 ? 'Multiple Bathrooms' : 'Modern Bathroom',
+              property.area > 200 ? 'Large Living Space' : 'Comfortable Space',
+              'Prime Location'
+            ]
+          }));
+
+          setTours(tourData);
+        } else {
+          // Fallback to empty state if no featured properties
+          setTours([]);
+        }
+      } catch (error) {
+        console.error('Error loading virtual tours:', error);
+        setTours([]);
+      } finally {
         setLoading(false);
-      }, 1500);
+      }
     };
 
     loadTours();
@@ -97,6 +98,16 @@ const VirtualTours = () => {
           animate={{ y: 0, opacity: 1 }}
           className="mb-8"
         >
+          <div className="flex items-center space-x-4 mb-4">
+            <button
+              onClick={() => navigate('/chat')}
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back to Chat</span>
+            </button>
+            <div className="h-6 w-px bg-gray-300"></div>
+          </div>
           <h1 className="text-3xl font-bold text-[#2C3E50] mb-2">Virtual Tours</h1>
           <p className="text-gray-600">Experience properties from the comfort of your home with immersive 360° virtual tours</p>
         </motion.div>
@@ -173,7 +184,7 @@ const VirtualTours = () => {
 
         {/* Tour Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tours.map((tour, index) => (
+          {tours && tours.length > 0 ? tours.map((tour, index) => (
             <motion.div
               key={tour.id}
               initial={{ y: 20, opacity: 0 }}
@@ -219,7 +230,19 @@ const VirtualTours = () => {
                 </button>
               </div>
             </motion.div>
-          ))}
+          )) : (
+            <div className="col-span-full bg-white rounded-xl p-12 text-center">
+              <Camera className="w-16 h-16 text-gray-400 mx-auto mb-6" />
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">No Virtual Tours Available</h3>
+              <p className="text-gray-600 mb-6">
+                Virtual tours will be available for featured properties. Check back soon for immersive property experiences.
+              </p>
+              <button className="text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                      style={{ backgroundColor: '#FF6B35' }}>
+                Browse Featured Properties
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Call to Action */}

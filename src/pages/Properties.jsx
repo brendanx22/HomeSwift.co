@@ -3,18 +3,24 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Building, MapPin, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PropertyAPI } from '../lib/propertyAPI';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Properties() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-        const { success, properties: propertiesData } = await PropertyAPI.getMyProperties();
+        if (!user?.id) {
+          setError('User not authenticated. Please log in.');
+          return;
+        }
+        const { success, properties: propertiesData } = await PropertyAPI.getMyProperties(user.id);
         if (success) {
           setProperties(propertiesData);
         } else {
@@ -29,7 +35,7 @@ export default function Properties() {
     };
 
     fetchProperties();
-  }, []);
+  }, [user]);
 
   if (loading) {
     return (

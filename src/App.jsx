@@ -11,22 +11,35 @@ const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const SignupPage = React.lazy(() => import('./pages/SignupPage'));
 const RenterDashboard = React.lazy(() => import('./pages/RenterDashboard'));
 const PropertyBrowse = React.lazy(() => import('./pages/PropertyBrowse'));
+const LandlordPropertyBrowse = React.lazy(() => import('./pages/LandlordPropertyBrowse'));
 const LandlordLoginPage = React.lazy(() => import('./pages/LandlordLoginPage'));
 const LandlordSignupPage = React.lazy(() => import('./pages/LandlordSignupPage'));
 const LandlordDashboard = React.lazy(() => import('./pages/LandlordDashboard'));
 const ChatPage = React.lazy(() => import('./pages/ChatPage'));
 const Properties = React.lazy(() => import('./pages/Properties'));
-const ListPropertyForm = React.lazy(() => import('./pages/ListPropertyForm'));
-const Messages = React.lazy(() => import('./pages/Messages'));
+const About = React.lazy(() => import('./pages/About'));
+const Contact = React.lazy(() => import('./pages/Contact'));
+const Gallery = React.lazy(() => import('./pages/Gallery'));
+const HouseListings = React.lazy(() => import('./pages/HouseListings'));
+const LandlordProperties = React.lazy(() => import('./pages/LandlordProperties'));
+const MessageCenter = React.lazy(() => import('./pages/MessageCenter'));
+const FAQ = React.lazy(() => import('./pages/FAQ'));
 const VerifyEmail = React.lazy(() => import('./pages/VerifyEmail'));
 const AuthCallback = React.lazy(() => import('./pages/AuthCallback'));
 const UserTypeSelection = React.lazy(() => import('./pages/UserTypeSelection'));
 const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
+const PropertyDetails = React.lazy(() => import('./pages/PropertyDetails'));
+const SavedProperties = React.lazy(() => import('./pages/SavedProperties'));
+const Profile = React.lazy(() => import('./pages/Profile'));
 const MarketAnalysis = React.lazy(() => import('./pages/MarketAnalysis'));
 const NeighborhoodInfo = React.lazy(() => import('./pages/NeighborhoodInfo'));
 const PriceCalculator = React.lazy(() => import('./pages/PriceCalculator'));
 const VirtualTours = React.lazy(() => import('./pages/VirtualTours'));
+const Messages = React.lazy(() => import('./pages/Messages'));
+const ListPropertyForm = React.lazy(() => import('./pages/ListPropertyForm'));
+const RenterProperties = React.lazy(() => import('./pages/RenterProperties'));
+const Messaging = React.lazy(() => import('./pages/Messaging'));
 
 // Main App Layout Component
 const AppLayout = () => {
@@ -412,11 +425,17 @@ const AppLayout = () => {
             />
 
             <Route
-              path="/properties"
+              path="/browse"
               element={
-                <ProtectedRoute requiredRoles={['renter']}>
-                  <PropertyBrowse />
-                </ProtectedRoute>
+                user?.user_type === 'landlord' ? (
+                  <ProtectedRoute requiredRoles={['landlord']}>
+                    <LandlordPropertyBrowse />
+                  </ProtectedRoute>
+                ) : (
+                  <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                    <PropertyBrowse />
+                  </ProtectedRoute>
+                )
               }
             />
 
@@ -440,10 +459,10 @@ const AppLayout = () => {
             />
             
             <Route
-              path="/properties"
+              path="/properties/:id"
               element={
-                <ProtectedRoute requiredRoles={['landlord']}>
-                  <Properties />
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <PropertyDetails />
                 </ProtectedRoute>
               }
             />
@@ -460,8 +479,8 @@ const AppLayout = () => {
             <Route
               path="/messages"
               element={
-                <ProtectedRoute requiredRoles={['landlord']}>
-                  <Messages />
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <Messaging />
                 </ProtectedRoute>
               }
             />
@@ -504,6 +523,86 @@ const AppLayout = () => {
             />
 
             {/* Catch-all route */}
+            <Route
+              path="/saved"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <SavedProperties />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/about"
+              element={<About />}
+            />
+
+            <Route
+              path="/contact"
+              element={<Contact />}
+            />
+
+            <Route
+              path="/gallery"
+              element={<Gallery />}
+            />
+
+            <Route
+              path="/renter-properties"
+              element={
+                <ProtectedRoute requiredRoles={['renter']}>
+                  <RenterProperties />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/properties"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <Properties />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/house-listings"
+              element={<HouseListings />}
+            />
+
+            <Route
+              path="/landlord-properties"
+              element={
+                <ProtectedRoute requiredRoles={['landlord']}>
+                  <LandlordProperties />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/message-center"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <MessageCenter />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/faq"
+              element={<FAQ />}
+            />
+
+            {/* Catch-all route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
@@ -518,7 +617,7 @@ const App = () => {
     <Router>
       <AuthProvider>
         <div className="min-h-screen bg-gray-50">
-          <Toaster 
+          <Toaster
             position="top-right"
             toastOptions={{
               duration: 3000,

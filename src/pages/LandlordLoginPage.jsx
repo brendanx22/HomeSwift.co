@@ -66,26 +66,15 @@ const LandlordLoginPage = () => {
     setErrors({});
 
     try {
-      localStorage.setItem('userType', 'landlord');
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/landlord/oauth-callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'select_account',
-          },
-        },
-      });
-      
-      if (error) throw error;
+      // Show toast notification that Google OAuth is not available
+      toast.error('Google sign-in is currently not available. Please use email and password to sign in.');
+
+      setGoogleLoading(false);
     } catch (error) {
       console.error('Google login error:', error);
       setErrors({
         general: error.message || 'Google sign-in failed. Please try again.'
       });
-    } finally {
       setGoogleLoading(false);
     }
   };
@@ -372,30 +361,18 @@ const LandlordLoginPage = () => {
             </div>
 
             <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={isLoading || googleLoading}
-              className="w-full flex items-center justify-center space-x-2 bg-white border border-gray-300 rounded-[2rem] py-3 px-4 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {googleLoading ? (
-                <div className="flex items-center">
-                  <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
-                  <span>Signing in with Google...</span>
-                </div>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
-                    <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
-                      <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.28426 53.749 C -8.52426 55.229 -9.42452 56.479 -10.7642 57.329 L -10.7685 57.323 L -6.5964 60.21 L -6.55399 60.312 C -4.76749 63.222 -1.848 65.274 1.544 65.274 C 4.816 65.274 7.461 63.385 8.604 60.577 C 9.395 58.558 9.797 56.345 9.797 54.043 C 9.797 53.829 9.788 53.614 9.777 53.4 C 9.745 52.86 7.147 48.49 1.487 48.49 L 1.483 48.49 Z"/>
-                      <path fill="#34A853" d="M -14.754 63.963 C -11.849 63.963 -9.344 63.058 -7.502 61.423 L -3.776 64.735 C -6.231 66.985 -9.452 68.5 -14.754 68.5 C -19.444 68.5 -23.509 66.521 -26.41 63.207 L -30.46 66.26 C -24.602 72.723 -15.526 76.5 -3.97 76.5 C 12.854 76.5 22.36 66.347 22.36 54.231 C 22.36 53.45 22.286 52.668 22.2 51.897 C 21.327 58.1 16.767 63.963 9.797 67.286 L 5.811 64.735 C 4.052 63.768 2.7 62.373 1.82 60.735 L -2.96 60.735 C -1.57 64.123 0.525 67.16 3.519 69.076 L 7.81 72.34 C 4.57 75.17 0.544 76.5 -3.97 76.5"/>
-                      <path fill="#FBBC05" d="M -33.011 57.886 C -33.978 55.314 -34.464 52.479 -34.264 49.5 L -34.264 49.5 L -34.2499 49.5 L -34.2499 40.2499 L -34.2448 40.25 C -34.2448 39.1667 -34.2448 38.3333 -34.2448 37.5 C -34.2448 36.6667 -34.2448 35.8333 -34.2448 34.8864 C -34.2448 34.0909 -34.2448 33.3333 -34.2448 32.5 L -34.2448 23.25 L -34.5 23.25 C -37.4364 23.25 -40.5 23.25 -43.5 23.25 L -43.5 49.5 L -34.5 49.5 C -33.5 52.5 -32 54.5 -30 56.5 L -30 56.5 L -33.01 57.886 Z"/>
-                      <path fill="#EA4335" d="M -43.5 23.25 L -34.5 23.25 L -34.5 23.25 L -34.5 32.5 L -43.5 32.5 L -43.5 23.25 Z"/>
-                    </g>
-                  </svg>
-                  <span>Sign in with Google</span>
-                </>
-              )}
-            </button>
+            onClick={handleGoogleLogin}
+            disabled={googleLoading}
+            className="w-full flex items-center justify-center space-x-3 bg-transparent border border-gray-400/50 text-[#2C3E50] py-4 rounded-[2rem] font-medium hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span>Continue with Google</span>
+          </button>
           </div>
 
           <div className="mt-8 text-center">

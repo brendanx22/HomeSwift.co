@@ -14,14 +14,7 @@ export class PropertyAPI {
     try {
       let query = supabase
         .from('properties')
-        .select(`
-          *,
-          landlord:landlord_id (
-            id,
-            email,
-            user_metadata
-          )
-        `)
+        .select('*')
         .eq('is_active', true);
 
       // Apply filters
@@ -30,7 +23,7 @@ export class PropertyAPI {
       }
 
       if (filters.location) {
-        query = query.or(`location->city.ilike.%${filters.location}%,location->state.ilike.%${filters.location}%`);
+        query = query.ilike('location', `%${filters.location}%`);
       }
 
       if (filters.propertyType) {
@@ -86,20 +79,48 @@ export class PropertyAPI {
   }
 
   /**
-   * Get a single property by ID
+   * Get all properties (for browsing)
    */
+  static async getProperties(filters = {}) {
+    try {
+      let query = supabase
+        .from('properties')
+        .select('*');
+
+      // Apply filters if provided
+      if (filters.search) {
+        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,location.ilike.%${filters.search}%`);
+      }
+
+      if (filters.location) {
+        query = query.ilike('location', `%${filters.location}%`);
+      }
+
+      if (filters.propertyType) {
+        query = query.eq('property_type', filters.propertyType);
+      }
+
+      // Note: Price range, bedrooms, bathrooms are handled client-side
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+
+      console.log('✅ getProperties query successful, found:', data?.length || 0, 'properties');
+      return { success: true, properties: data || [] };
+    } catch (error) {
+      console.error('❌ Error in getProperties:', error);
+      return { success: false, error: error.message };
+    }
+  }
   static async getProperty(propertyId) {
     try {
       const { data, error } = await supabase
         .from('properties')
-        .select(`
-          *,
-          landlord:landlord_id (
-            id,
-            email,
-            user_metadata
-          )
-        `)
+        .select('*')
         .eq('id', propertyId)
         .single();
 
@@ -116,16 +137,23 @@ export class PropertyAPI {
    */
   static async createProperty(propertyData) {
     try {
+      console.log('🔄 Creating property with data:', propertyData);
+
       const { data, error } = await supabase
         .from('properties')
         .insert([propertyData])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Property creation failed:', error);
+        throw error;
+      }
+
+      console.log('✅ Property created successfully:', data);
       return { success: true, property: data };
     } catch (error) {
-      console.error('Error creating property:', error);
+      console.error('❌ Error creating property:', error);
       return { success: false, error: error.message };
     }
   }
@@ -203,17 +231,37 @@ export class PropertyAPI {
    */
   static async getSavedProperties(userId) {
     try {
-      const { data, error } = await supabase
+      // First get the saved property IDs
+      const { data: savedData, error: savedError } = await supabase
         .from('saved_properties')
-        .select(`
-          property_id,
-          created_at,
-          properties (*)
-        `)
+        .select('property_id, created_at')
         .eq('user_id', userId);
 
-      if (error) throw error;
-      return { success: true, savedProperties: data || [] };
+      if (savedError) throw savedError;
+
+      if (!savedData || savedData.length === 0) {
+        return { success: true, savedProperties: [] };
+      }
+
+      // Get the property IDs
+      const propertyIds = savedData.map(item => item.property_id);
+
+      // Fetch the actual property details
+      const { data: propertiesData, error: propertiesError } = await supabase
+        .from('properties')
+        .select('id, title, description, price, location, images, bedrooms, bathrooms, area, property_type, listing_type, landlord_id, created_at')
+        .in('id', propertyIds);
+
+      if (propertiesError) throw propertiesError;
+
+      // Combine the data
+      const savedProperties = savedData.map(saved => ({
+        property_id: saved.property_id,
+        created_at: saved.created_at,
+        properties: propertiesData.find(prop => prop.id === saved.property_id) || null
+      }));
+
+      return { success: true, savedProperties };
     } catch (error) {
       console.error('Error fetching saved properties:', error);
       return { success: false, error: error.message };
@@ -292,17 +340,16 @@ export class PropertyAPI {
     try {
       let query = supabase
         .from('properties')
-        .select('*')
-        .eq('is_active', true);
+        .select('*');
 
       // Text search
       if (searchParams.query) {
-        query = query.or(`title.ilike.%${searchParams.query}%,description.ilike.%${searchParams.query}%,location->city.ilike.%${searchParams.query}%`);
+        query = query.or(`title.ilike.%${searchParams.query}%,description.ilike.%${searchParams.query}%,location.ilike.%${searchParams.query}%`);
       }
 
       // Location search
       if (searchParams.location) {
-        query = query.or(`location->city.ilike.%${searchParams.location}%,location->state.ilike.%${searchParams.location}%`);
+        query = query.ilike('location', `%${searchParams.location}%`);
       }
 
       // Property type

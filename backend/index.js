@@ -7,6 +7,7 @@ const { createClient } = require('@supabase/supabase-js');
 const authRoutes = require('./routes/authRoutes');
 const propertyRoutes = require('./routes/propertyRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 const { errorHandler } = require('./middleware/errorMiddleware');
 
 // Enhanced logging setup
@@ -52,12 +53,12 @@ log('CORS preflight handling enabled');
 // Enhanced request logging
 app.use((req, res, next) => {
   const start = Date.now();
-  
+
   res.on('finish', () => {
     const duration = Date.now() - start;
     log(`${req.method} ${req.originalUrl} - ${res.statusCode} [${duration}ms]`);
   });
-  
+
   next();
 });
 
@@ -91,7 +92,7 @@ try {
       storageKey: 'supabase.auth.token'
     }
   });
-  
+
   // Test the Supabase connection
   (async () => {
     try {
@@ -120,6 +121,7 @@ try {
 app.use('/api/auth', authRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

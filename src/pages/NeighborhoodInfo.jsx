@@ -9,72 +9,89 @@ import {
   TreePine,
   Heart,
   Star,
-  TrendingUp
+  TrendingUp,
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { PropertyAPI } from '../lib/propertyAPI';
 
 const NeighborhoodInfo = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [neighborhoods, setNeighborhoods] = useState(null);
 
-  // Mock neighborhood data - replace with real API calls
   useEffect(() => {
     const loadNeighborhoodData = async () => {
-      // Simulate API call
-      setTimeout(() => {
-        setNeighborhoods([
-          {
-            name: 'Victoria Island',
-            city: 'Lagos',
-            rating: 4.8,
-            avgPrice: '₦85M',
-            trend: '+15%',
-            amenities: ['Shopping Malls', 'International Schools', 'Fine Dining', 'Nightlife'],
-            safety: 9.2,
-            schools: 9.5,
-            transport: 8.8,
-            description: 'Premium residential and commercial area with high-end amenities and excellent infrastructure.'
-          },
-          {
-            name: 'Lekki Phase 1',
-            city: 'Lagos',
-            rating: 4.6,
-            avgPrice: '₦65M',
-            trend: '+12%',
-            amenities: ['Beaches', 'Golf Course', 'Shopping Centers', 'Restaurants'],
-            safety: 8.5,
-            schools: 8.9,
-            transport: 8.2,
-            description: 'Upscale residential neighborhood with modern developments and proximity to business districts.'
-          },
-          {
-            name: 'Maitama',
-            city: 'Abuja',
-            rating: 4.7,
-            avgPrice: '₦75M',
-            trend: '+10%',
-            amenities: ['Government Offices', 'Embassies', 'Hotels', 'Parks'],
-            safety: 9.0,
-            schools: 9.1,
-            transport: 8.6,
-            description: 'Prestigious district housing government officials and diplomats with excellent security.'
-          },
-          {
-            name: 'GRA Port Harcourt',
-            city: 'Port Harcourt',
-            rating: 4.4,
-            avgPrice: '₦45M',
-            trend: '+8%',
-            amenities: ['Oil Companies', 'Shopping Malls', 'Golf Club', 'Restaurants'],
-            safety: 7.8,
-            schools: 8.3,
-            transport: 7.9,
-            description: 'Government Reserved Area with established infrastructure and corporate presence.'
-          }
-        ]);
+      try {
+        setLoading(true);
+
+        // Fetch all properties to generate neighborhood data
+        const { success, properties } = await PropertyAPI.getProperties();
+
+        if (success && properties && properties.length > 0) {
+          // Group properties by location for neighborhood analysis
+          const locationGroups = {};
+          properties.forEach(property => {
+            const location = property.location || 'Unknown';
+            if (!locationGroups[location]) {
+              locationGroups[location] = [];
+            }
+            locationGroups[location].push(property);
+          });
+
+          // Generate neighborhood data based on real properties
+          const neighborhoodData = Object.entries(locationGroups).map(([location, props]) => {
+            const prices = props.map(p => p.price || 0).filter(p => p > 0);
+            const avgPrice = prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
+
+            // Calculate average ratings based on property features
+            const totalBedrooms = props.reduce((sum, p) => sum + (p.bedrooms || p.rooms || 0), 0);
+            const totalBathrooms = props.reduce((sum, p) => sum + (p.bathrooms || 0), 0);
+            const totalArea = props.reduce((sum, p) => sum + (p.area || 0), 0);
+
+            // Generate mock ratings for amenities (in real app, this would come from neighborhood data)
+            const safety = Math.round((Math.random() * 2 + 7) * 10) / 10; // 7.0 - 9.0
+            const schools = Math.round((Math.random() * 2 + 7) * 10) / 10; // 7.0 - 9.0
+            const transport = Math.round((Math.random() * 2 + 7) * 10) / 10; // 7.0 - 9.0
+
+            // Generate amenities based on location and property count
+            const amenities = [];
+            if (props.length > 5) amenities.push('Well-established area');
+            if (totalBedrooms / props.length > 2) amenities.push('Spacious homes');
+            if (totalBathrooms / props.length > 1.5) amenities.push('Modern facilities');
+            if (Math.random() > 0.5) amenities.push('Good transport links');
+            if (Math.random() > 0.6) amenities.push('Shopping nearby');
+
+            // Calculate trend (mock for now)
+            const trend = Math.random() > 0.3 ? (Math.random() > 0.5 ? '+10%' : '+8%') : '-2%';
+
+            return {
+              name: location,
+              city: location.includes(',') ? location.split(',')[1]?.trim() : location,
+              rating: Math.round((safety + schools + transport) / 3 * 10) / 10,
+              avgPrice: `₦${(avgPrice / 1000000).toFixed(0)}M`,
+              trend,
+              amenities: amenities.slice(0, 4), // Show up to 4 amenities
+              safety,
+              schools,
+              transport,
+              description: `${location} offers ${props.length} properties with average prices around ₦${(avgPrice / 1000000).toFixed(0)}M. ${amenities[0] || 'A well-established residential area'}.`
+            };
+          }).slice(0, 4); // Show top 4 neighborhoods
+
+          setNeighborhoods(neighborhoodData);
+        } else {
+          // Fallback to empty state if no properties
+          setNeighborhoods([]);
+        }
+      } catch (error) {
+        console.error('Error loading neighborhood data:', error);
+        setNeighborhoods([]);
+      } finally {
         setLoading(false);
-      }, 1500);
+      }
     };
 
     loadNeighborhoodData();
@@ -101,13 +118,23 @@ const NeighborhoodInfo = () => {
           animate={{ y: 0, opacity: 1 }}
           className="mb-8"
         >
+          <div className="flex items-center space-x-4 mb-4">
+            <button
+              onClick={() => navigate('/chat')}
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back to Chat</span>
+            </button>
+            <div className="h-6 w-px bg-gray-300"></div>
+          </div>
           <h1 className="text-3xl font-bold text-[#2C3E50] mb-2">Neighborhood Guide</h1>
           <p className="text-gray-600">Discover the best neighborhoods for your lifestyle and investment goals</p>
         </motion.div>
 
         {/* Neighborhood Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {neighborhoods.map((neighborhood, index) => (
+          {neighborhoods.length > 0 ? neighborhoods.map((neighborhood, index) => (
             <motion.div
               key={neighborhood.name}
               initial={{ y: 20, opacity: 0 }}
@@ -191,7 +218,15 @@ const NeighborhoodInfo = () => {
                 View Properties in {neighborhood.name}
               </motion.button>
             </motion.div>
-          ))}
+          )) : (
+            <div className="col-span-full bg-white rounded-xl p-12 text-center">
+              <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-6" />
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">No Neighborhood Data Available</h3>
+              <p className="text-gray-600">
+                Neighborhood information will be available once properties are listed in different areas.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Investment Tips */}

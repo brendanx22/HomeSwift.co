@@ -60,6 +60,9 @@ CREATE TABLE properties (
   bathrooms integer,
   area numeric,
   property_type text,
+  listing_type text DEFAULT 'for-rent' CHECK (listing_type IN ('for-rent', 'for-sale')),
+  amenities jsonb DEFAULT '[]'::jsonb,
+  rooms integer DEFAULT 1,
   is_featured boolean DEFAULT false,
   is_active boolean DEFAULT true,
   created_at timestamptz DEFAULT now(),
@@ -92,7 +95,31 @@ CREATE TABLE search_history (
 );
 
 -- =============================================
--- 5. SAVED PROPERTIES TABLE
+-- 5.5. PROPERTY VIEWS TABLE
+-- =============================================
+
+CREATE TABLE property_views (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  property_id uuid REFERENCES properties(id) ON DELETE CASCADE,
+  viewer_id uuid REFERENCES auth.users(id),
+  viewed_at timestamptz DEFAULT now(),
+  UNIQUE(property_id, viewer_id)
+);
+
+-- Property views table policies
+ALTER TABLE property_views ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "users_can_insert_own_property_views" ON property_views FOR INSERT WITH CHECK (auth.uid() = viewer_id);
+CREATE POLICY "landlords_can_view_property_views" ON property_views FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM properties 
+    WHERE properties.id = property_views.property_id 
+    AND properties.landlord_id = auth.uid()
+  )
+);
+CREATE POLICY "users_can_view_own_property_views" ON property_views FOR SELECT USING (auth.uid() = viewer_id);
+
+-- =============================================
+-- 6. SAVED PROPERTIES TABLE
 -- =============================================
 
 CREATE TABLE saved_properties (

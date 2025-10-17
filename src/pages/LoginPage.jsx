@@ -5,6 +5,7 @@ import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, Users } from 'lucide-r
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI } from '../utils/api';
 import { Toaster, toast } from 'react-hot-toast';
+import { supabase } from '../lib/supabaseClient';
 
 
 export default function LoginPage() {
@@ -161,16 +162,17 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      setLoading(true);
+      setGoogleLoading(true);
       setError('');
-      
-      // This will be handled by the backend's OAuth flow
-      window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/auth/google?returnTo=${encodeURIComponent(window.location.pathname)}`;
+
+      // Show toast notification that Google OAuth is not available
+      toast.error('Google sign-in is currently not available. Please use email and password to sign in.');
+
+      setGoogleLoading(false);
     } catch (err) {
       console.error('Google login error:', err);
       setError('Failed to sign in with Google. Please try again.');
-    } finally {
-      setLoading(false);
+      setGoogleLoading(false);
     }
   };
 

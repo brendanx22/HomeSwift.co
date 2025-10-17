@@ -148,27 +148,14 @@ const LandlordSignupPage = () => {
     setErrors({});
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-          redirectTo: `${window.location.origin}/landlord/dashboard`,
-        },
-      });
+      // Show toast notification that Google OAuth is not available
+      toast.error('Google sign-up is currently not available. Please use email and password to create your account.');
 
-      if (error) throw error;
-      
-      console.log('✅ Google OAuth successful');
-      toast.success('Successfully signed in with Google!');
+      setGoogleLoading(false);
     } catch (error) {
       console.error('❌ Google signup failed:', error.message);
       toast.error(error.message || 'Failed to sign in with Google');
-    } finally {
       setGoogleLoading(false);
-      console.log('🏁 Google signup process completed');
     }
   };
 
@@ -342,27 +329,14 @@ const LandlordSignupPage = () => {
   setErrors({});
 
   try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-        redirectTo: `${window.location.origin}/landlord/dashboard`,
-      },
-    });
+    // Show toast notification that Google OAuth is not available
+    toast.error('Google sign-up is currently not available. Please use email and password to create your account.');
 
-    if (error) throw error;
-    
-    console.log('✅ Google OAuth successful');
-    toast.success('Successfully signed in with Google!');
+    setGoogleLoading(false);
   } catch (error) {
     console.error('❌ Google signup failed:', error.message);
     toast.error(error.message || 'Failed to sign in with Google');
-  } finally {
     setGoogleLoading(false);
-    console.log('🏁 Google signup process completed');
   }
 };
 

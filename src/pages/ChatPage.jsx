@@ -358,7 +358,7 @@ export default function ChatPage() {
   // Navigation items with their respective routes
   const navItems = [
     { id: 'ai-assistant', label: 'AI Assistant', icon: <MessageSquare className="w-5 h-5" /> },
-    { id: 'property-search', label: 'Property Search', icon: <Home className="w-5 h-5" /> },
+    { id: 'messages', label: 'Messages', icon: <Home className="w-5 h-5" /> },
     { id: 'market-analysis', label: 'Market Analysis', icon: <TrendingUp className="w-5 h-5" /> },
     { id: 'neighborhood-info', label: 'Neighborhood Info', icon: <MapPin className="w-5 h-5" /> },
     { id: 'price-calculator', label: 'Price Calculator', icon: <Calculator className="w-5 h-5" /> },
@@ -367,40 +367,36 @@ export default function ChatPage() {
     { id: 'search-history', label: 'Search History', icon: <Clock className="w-5 h-5" /> },
   ];
 
-  // Handle navigation to different sections
-  const handleNavigation = (id) => {
-    setActiveTab(id);
-    setIsMobileMenuOpen(false);
-
-    // Handle navigation based on the selected item
-    switch(id) {
-      case 'ai-assistant':
+  // Handle sidebar navigation
+  const handleSidebarNavigation = (label) => {
+    switch(label) {
+      case 'AI Assistant':
         // Stay on current page (chat)
         break;
-      case 'property-search':
-        navigate('/properties');
+      case 'Messages':
+        navigate('/messages');
         break;
-      case 'market-analysis':
+      case 'Market Analysis':
         navigate('/market-analysis');
         break;
-      case 'neighborhood-info':
+      case 'Neighborhood Info':
         navigate('/neighborhoods');
         break;
-      case 'price-calculator':
+      case 'Price Calculator':
         navigate('/calculator');
         break;
-      case 'virtual-tours':
+      case 'Virtual Tours':
         navigate('/virtual-tours');
         break;
-      case 'favorites':
+      case 'Favorites':
         navigate('/saved');
         break;
-      case 'search-history':
-        // Navigate to search history page (placeholder)
-        console.log('Search History navigation clicked - implement history page');
+      case 'Search History':
+        // For now, just log - could implement a history modal/page later
+        console.log('Search History clicked - implement history page');
         break;
       default:
-        // For other items, just update the active tab
+        console.log('Unknown sidebar navigation:', label);
         break;
     }
   };
@@ -475,7 +471,7 @@ export default function ChatPage() {
         const searchParams = new URLSearchParams({ search: query });
         if (searchLocation) searchParams.set('location', searchLocation);
         if (propertyType) searchParams.set('type', propertyType);
-        const redirectTarget = `${window.location.origin}/properties?${searchParams.toString()}`;
+        const redirectTarget = `${window.location.origin}/browse?${searchParams.toString()}`;
         navigate(`/login?redirect=${encodeURIComponent(redirectTarget)}`);
         return;
       }
@@ -501,7 +497,7 @@ export default function ChatPage() {
       const searchParams = new URLSearchParams({ search: query });
       if (searchLocation) searchParams.set('location', searchLocation);
       if (propertyType) searchParams.set('type', propertyType);
-      navigate(`/properties?${searchParams.toString()}`);
+      navigate(`/browse?${searchParams.toString()}`);
     } catch (error) {
       console.error('Search error:', error);
       setSearchError('Search failed. Please try again.');
@@ -531,10 +527,7 @@ export default function ChatPage() {
           const { data: suggestions, error } = await supabase
             .from('properties')
             .select('title, location')
-            .or([
-              { title: { ilike: `%${value}%` } },
-              { location: { ilike: `%${value}%` } },
-            ])
+            .or(`title.ilike.%${value}%,location.ilike.%${value}%`)
             .limit(5);
           
           if (!error) {
@@ -827,7 +820,7 @@ export default function ChatPage() {
   };
 
   const handleSuggestionSelect = (suggestion) => {
-    setSearchQuery(suggestion.value || suggestion.text);
+    setSearchQuery(suggestion.title);
     setShowSuggestions(false);
     // Trigger search with the selected suggestion
     setTimeout(() => {
@@ -978,14 +971,14 @@ export default function ChatPage() {
               <div className="flex-1 overflow-y-auto px-2 pb-2 mt-8 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 <div className="space-y-1">
                   {[
-                    { icon: MessageSquare, label: 'AI Assistant', active: true },
-                    { icon: Home, label: 'Property Search' },
-                    { icon: TrendingUp, label: 'Market Analysis' },
-                    { icon: MapPin, label: 'Neighborhood Info' },
-                    { icon: Calculator, label: 'Price Calculator' },
-                    { icon: Camera, label: 'Virtual Tours' },
-                    { icon: Heart, label: 'Favorites' },
-                    { icon: Clock, label: 'Search History' }
+                    { icon: MessageSquare, label: 'AI Assistant', active: location.pathname === '/chat' },
+                    { icon: MessageSquare, label: 'Messages', active: false },
+                    { icon: TrendingUp, label: 'Market Analysis', active: location.pathname === '/market-analysis' },
+                    { icon: MapPin, label: 'Neighborhood Info', active: location.pathname === '/neighborhoods' },
+                    { icon: Calculator, label: 'Price Calculator', active: location.pathname === '/calculator' },
+                    { icon: Camera, label: 'Virtual Tours', active: location.pathname === '/virtual-tours' },
+                    { icon: Heart, label: 'Favorites', active: location.pathname === '/saved' },
+                    { icon: Clock, label: 'Search History', active: false }
                   ].map((item, idx) => (
                     <motion.div
                       key={idx}
@@ -997,6 +990,7 @@ export default function ChatPage() {
                           ? 'bg-[#FF6B35] text-white shadow-lg' 
                           : 'text-gray-600 hover:bg-gray-100 hover:text-[#FF6B35] hover:shadow-sm'
                       }`}
+                      onClick={() => handleSidebarNavigation(item.label)}
                     >
                       <item.icon size={18} className="flex-shrink-0" />
                       {!compactMode && (
@@ -1371,7 +1365,7 @@ export default function ChatPage() {
                     className="w-full bg-transparent text-[#2C3E50] placeholder-gray-400 outline-none border-none h-14 sm:h-16 rounded-xl sm:rounded-2xl px-6 pr-16 relative z-10"
                     style={{
                       minWidth: 0,
-                      fontSize: '1.1rem',
+                      fontSize: '0.95rem',
                       lineHeight: '0.9',
                       verticalAlign: 'top',
                       marginTop: '-8px',
@@ -1452,7 +1446,7 @@ export default function ChatPage() {
                           className="w-full text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 px-4 py-2.5 rounded-lg leading-normal transition-all duration-150"
                           style={{ fontSize: '15px' }}
                         >
-                          {sug}
+                          {sug.title} {sug.location && `- ${sug.location}`}
                         </motion.button>
                       ))}
                     </div>

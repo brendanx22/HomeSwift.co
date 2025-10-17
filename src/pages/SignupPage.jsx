@@ -351,26 +351,17 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignup = async () => {
-    setGoogleLoading(true);
-    setError('');
-
     try {
-      await googleAuth.signInWithGoogle({
-        redirectTo: window.location.origin,
-        userType: 'renter'
-      });
-      // The redirect will happen automatically via Supabase OAuth
-    } catch (error) {
-      console.error('Error during signup:', error);
-      if (error.message === 'verification_resent') {
-        toast.success('A new verification email has been sent. Please check your inbox.');
-      } else if (error.message.includes('unverified')) {
-        setEmailStatus('unverified');
-        setEmailCheckError('This email is registered but not verified. Please check your email for a verification link.');
-      } else {
-        setError(error.message || 'An error occurred during signup. Please try again.');
-      }
-    } finally {
+      setGoogleLoading(true);
+      setError('');
+
+      // Show toast notification that Google OAuth is not available
+      toast.error('Google sign-up is currently not available. Please use email and password to create your account.');
+
+      setGoogleLoading(false);
+    } catch (err) {
+      console.error('Google signup error:', err);
+      setError('Failed to sign up with Google. Please try again.');
       setGoogleLoading(false);
     }
   };
