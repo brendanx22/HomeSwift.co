@@ -49,7 +49,7 @@ const Home = () => {
       <style>{`
         @media (max-width: 768px) {
           .hero-container {
-            background-position: center 80% !important;
+            background-position: center 1000% !important;
             background-size: contain !important;
             padding-bottom: 0 !important;
             background-attachment: scroll !important;
@@ -58,7 +58,6 @@ const Home = () => {
             width: 160px !important;
             margin-left: auto !important;
             margin-right: auto !important;
-{{ ... }}
             height: auto !important;
           }
         }

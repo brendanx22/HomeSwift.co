@@ -619,7 +619,7 @@ return (
               </h1>
             </div>
 
-            <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-3 min-w-0 flex-1 justify-end">
+            <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 min-w-0 flex-1 justify-end">
               {/* Mobile Search Button - Improved */}
               <button className="sm:hidden p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors flex-shrink-0">
                 <Search className="w-4 h-4 text-gray-600" />

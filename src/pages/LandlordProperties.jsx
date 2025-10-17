@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { motion } from 'framer-motion';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { API } from '../api';
 
 const PropertyCard = ({ property, onDelete }) => {
@@ -115,7 +117,7 @@ const LandlordProperties = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <LoadingSpinner size="default" />
       </div>
     );
   }
