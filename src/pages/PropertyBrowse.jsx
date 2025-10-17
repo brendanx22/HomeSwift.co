@@ -230,9 +230,6 @@ export default function PropertyBrowse() {
             </div>
 
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">
-                {currentIndex + 1} of {filteredProperties.length}
-              </span>
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
