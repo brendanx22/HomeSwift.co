@@ -136,7 +136,7 @@ const AppLayout = () => {
     }
     // Handle unauthenticated users
     else {
-      const authPages = ['/login', '/landlord/login', '/signup', '/forgot-password', '/reset-password'];
+      const authPages = ['/login', '/landlord/login', '/signup', '/forgot-password', '/reset-password', '/user-type'];
 
       // If not on an auth page and not on the home page, redirect to login
       if (!authPages.includes(path) && path !== '/') {
