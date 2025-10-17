@@ -584,11 +584,6 @@ const AppLayout = () => {
             />
 
             <Route
-              path="/house-listings"
-              element={<HouseListings />}
-            />
-
-            <Route
               path="/landlord-properties"
               element={
                 <ProtectedRoute requiredRoles={['landlord']}>
