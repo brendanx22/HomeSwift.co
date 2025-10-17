@@ -1,7 +1,11 @@
 {
   "rewrites": [
     {
-      "source": "/((?!api).*)",
+      "source": "/landlord/(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/((?!api|_next/static|_next/image|favicon.ico).*)",
       "destination": "/index.html"
     }
   ]

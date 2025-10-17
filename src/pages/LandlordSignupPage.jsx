@@ -7,6 +7,8 @@ import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabaseClient';
 
 const LandlordSignupPage = () => {
+  console.log('🏗️ LandlordSignupPage component loaded');
+
   const navigate = useNavigate();
   const { signup } = useAuth();
   
@@ -314,7 +316,14 @@ const LandlordSignupPage = () => {
 
       console.log('✅ Landlord account created successfully');
       toast.success('Account created successfully! Please check your email to verify your account.');
-      navigate('/landlord/dashboard');
+
+      // Navigate to verification page instead of dashboard
+      navigate('/verify-email', {
+        state: {
+          email: formData.email,
+          userType: 'landlord'
+        }
+      });
     } catch (error) {
       console.error('❌ Landlord signup failed:', error.message);
       toast.error(error.message || 'Failed to create account. Please try again.');
@@ -599,7 +608,7 @@ const handleBackToHome = () => {
             <p className="text-gray-600">
               Already have a landlord account?{' '}
               <Link
-                to="/list-login"
+                to="/landlord/login"
                 className="text-orange-600 hover:text-orange-700 font-semibold"
               >
                 Sign in here

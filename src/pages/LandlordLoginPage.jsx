@@ -193,6 +193,7 @@ const LandlordLoginPage = () => {
   };
   
   const handleSignUpLink = () => {
+    console.log('🔗 Landlord signup link clicked, navigating to /landlord/signup');
     navigate('/landlord/signup', { 
       state: { 
         from: location.state?.from || { pathname: '/landlord/dashboard' },
