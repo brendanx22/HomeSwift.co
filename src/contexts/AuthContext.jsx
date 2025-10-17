@@ -14,64 +14,117 @@ export const AuthProvider = ({ children }) => {
   // Load user data from localStorage (for both regular login and OAuth)
   const loadUserData = useCallback(async () => {
     try {
-      console.log('🔍 loadUserData - Loading from localStorage:', {
-        hasUserData: !!localStorage.getItem('user'),
-        userData: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null,
-        savedRoles: JSON.parse(localStorage.getItem('userRoles') || '[]'),
-        savedRole: localStorage.getItem('currentRole'),
-        userType: JSON.parse(localStorage.getItem('user') || '{}')?.user_metadata?.user_type
-      });
+      console.log('🔍 loadUserData - Checking authentication state...');
 
-      const userData = JSON.parse(localStorage.getItem('user') || '{}');
-      const savedRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
+      // First, check if we have valid user data in localStorage
+      const userDataString = localStorage.getItem('user');
+      const savedRolesString = localStorage.getItem('userRoles');
       const savedRole = localStorage.getItem('currentRole');
 
-      // Check if we have valid user data
-      if (userData && userData.id && userData.email) {
-        console.log('✅ Valid user data found in localStorage');
+      console.log('🔍 loadUserData - LocalStorage state:', {
+        hasUserData: !!userDataString,
+        userDataLength: userDataString?.length || 0,
+        savedRolesLength: savedRolesString?.length || 0,
+        savedRole: savedRole
+      });
 
-        // Check if we also have a valid Supabase session
+      if (!userDataString) {
+        console.log('❌ No user data in localStorage');
+        return false;
+      }
+
+      let userData;
+      try {
+        userData = JSON.parse(userDataString);
+      } catch (parseError) {
+        console.error('❌ Failed to parse user data from localStorage:', parseError);
+        localStorage.removeItem('user');
+        return false;
+      }
+
+      // Validate user data structure
+      if (!userData || !userData.id || !userData.email) {
+        console.log('❌ Invalid user data structure in localStorage');
+        localStorage.removeItem('user');
+        localStorage.removeItem('userRoles');
+        localStorage.removeItem('currentRole');
+        return false;
+      }
+
+      console.log('✅ Valid user data found in localStorage:', {
+        id: userData.id,
+        email: userData.email,
+        userType: userData.user_metadata?.user_type
+      });
+
+      // Try to get Supabase session to validate
+      try {
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
-          console.warn('⚠️ Session validation error, using cached data:', sessionError.message);
-          // Don't logout immediately - continue with cached data for better UX
-        }
-
-        // If we have a session and it's for the same user, use it
-        if (sessionData?.session?.user?.id === userData.id) {
-          console.log('✅ Active session matches cached user, using session data');
+          console.warn('⚠️ Supabase session error:', sessionError.message);
+          // Continue with localStorage data for better UX
+        } else if (sessionData?.session?.user?.id === userData.id) {
+          console.log('✅ Active Supabase session matches localStorage user');
           setUser(sessionData.session.user);
           setIsAuthenticated(true);
+        } else {
+          console.log('⚠️ No active Supabase session or mismatch, using localStorage data');
+          setUser(userData);
+          setIsAuthenticated(true);
+        }
 
-          // Use cached roles if available, otherwise fetch fresh
-          if (savedRoles?.length > 0) {
-            setRoles(savedRoles);
-            setCurrentRole(savedRole || (savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role));
-            console.log('✅ Using cached roles:', savedRoles);
-          } else {
-            await fetchUserRoles(userData.id);
+        // Handle roles
+        if (savedRolesString) {
+          try {
+            const savedRoles = JSON.parse(savedRolesString);
+            if (Array.isArray(savedRoles) && savedRoles.length > 0) {
+              console.log('✅ Using cached roles:', savedRoles);
+              setRoles(savedRoles);
+              setCurrentRole(savedRole || (savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role));
+              return true;
+            }
+          } catch (rolesError) {
+            console.error('❌ Failed to parse saved roles:', rolesError);
           }
+        }
+
+        // Fetch fresh roles from database
+        console.log('🔄 Fetching fresh roles from database...');
+        const rolesFetched = await fetchUserRoles(userData.id);
+        if (rolesFetched) {
+          console.log('✅ Fresh roles fetched successfully');
           return true;
         } else {
-          // For OAuth users, we might not have an active session immediately
-          // but we should still trust the localStorage data
-          console.log('⚠️ No active Supabase session, but using cached data for OAuth user');
-          setUser(userData);
-          setRoles(savedRoles);
-          setCurrentRole(savedRole || (savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role));
-          setIsAuthenticated(true);
+          console.log('⚠️ No roles found, assigning default role');
+          const defaultRole = userData.user_metadata?.user_type === 'landlord' ? 'landlord' : 'renter';
+          await addRole(defaultRole, userData.id);
+          await fetchUserRoles(userData.id);
           return true;
         }
+
+      } catch (supabaseError) {
+        console.error('❌ Supabase session check failed:', supabaseError);
+        // Fall back to localStorage data
+        setUser(userData);
+        setIsAuthenticated(true);
+
+        if (savedRolesString) {
+          try {
+            const savedRoles = JSON.parse(savedRolesString);
+            setRoles(savedRoles);
+            setCurrentRole(savedRole || (savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role));
+          } catch (rolesError) {
+            console.error('❌ Failed to load saved roles:', rolesError);
+          }
+        }
+
+        return true; // Return true to indicate we have valid local data
       }
 
-      console.log('❌ No valid authentication data found');
-      return false;
     } catch (error) {
-      console.error('💥 Error loading user data:', error);
+      console.error('💥 Error in loadUserData:', error);
       return false;
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -243,30 +296,35 @@ const signup = async (userData) => {
   // Check if user is logged in on initial load
   useEffect(() => {
     const checkAuth = async () => {
+      console.log('🔍 checkAuth - Starting authentication check...');
+
       try {
         const hasUserData = await loadUserData();
-        
-        if (!hasUserData) {
-          // If no valid session or roles, clear auth state
-          localStorage.removeItem('token');
+
+        if (hasUserData) {
+          console.log('✅ User authenticated, setting auth state');
+          setIsAuthenticated(true);
+        } else {
+          console.log('❌ No valid authentication found, clearing state');
+          // Clear any stale data
+          localStorage.removeItem('user');
           localStorage.removeItem('userRoles');
           localStorage.removeItem('currentRole');
-          localStorage.removeItem('backendToken'); // Clear backend token
+          localStorage.removeItem('backendToken');
           setUser(null);
           setRoles([]);
           setCurrentRole(null);
           setIsAuthenticated(false);
-        } else {
-          setIsAuthenticated(true);
         }
       } catch (error) {
-        console.error('Auth check error:', error);
+        console.error('💥 Auth check error:', error);
         setIsAuthenticated(false);
       } finally {
+        console.log('✅ Auth check completed, loading set to false');
         setLoading(false);
       }
     };
-    
+
     checkAuth();
   }, [loadUserData]);
 
