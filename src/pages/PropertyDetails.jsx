@@ -288,10 +288,11 @@ export default function PropertyDetails() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-4 lg:p-8">
+      <div className="max-w-7xl mx-auto p-4 lg:p-8 overflow-hidden">
         {/* Image Carousel */}
-        <div className="relative mb-12">
-          <div className="flex items-center justify-center">
+        <div className="relative mb-12 w-full">
+          {/* Desktop Carousel - Hidden on mobile */}
+          <div className="hidden lg:flex items-center justify-center">
             <button
               onClick={prevImage}
               className="absolute left-8 z-20 bg-black/60 hover:bg-black/80 text-white rounded-lg w-10 h-10 flex items-center justify-center"
@@ -336,8 +337,57 @@ export default function PropertyDetails() {
             </button>
           </div>
 
+          {/* Mobile Carousel - Stacked layout */}
+          <div className="lg:hidden">
+            <div className="relative w-full max-w-full">
+              {images.length > 0 ? (
+                <div className="relative w-full h-[280px] rounded-2xl overflow-hidden">
+                  <img
+                    src={images[currentImage]}
+                    alt={`Property ${currentImage + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+
+                  {/* Navigation arrows for mobile */}
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full w-10 h-10 flex items-center justify-center"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full w-10 h-10 flex items-center justify-center"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full h-[280px] bg-gray-100 rounded-2xl flex items-center justify-center">
+                  <div className="text-gray-400 text-6xl">🏠</div>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile image indicators */}
+            {images.length > 0 && (
+              <div className="flex justify-center gap-2 mt-4">
+                {images.map((_, index) => (
+                  <div
+                    key={index}
+                    className={`h-1 rounded-full transition-all duration-300 ${
+                      index === currentImage ? "w-6 bg-[#FF6B35]" : "w-2 bg-gray-400"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop image indicators */}
           {images.length > 0 && (
-            <div className="flex justify-center gap-2 mt-8">
+            <div className="hidden lg:flex justify-center gap-2 mt-8">
               {images.map((_, index) => (
                 <div
                   key={index}
