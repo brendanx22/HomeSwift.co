@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Header } from "../components/Header";
 import { PropertyCard } from "../components/PropertyCard";
-import house1 from "../assets/house1.jpg";
-import house2 from "../assets/house2.jpg";
-import house3 from "../assets/house3.jpg";
-import house4 from "../assets/house4.jpg";
+
+// Using placeholder images for demo - in production, these would be actual property images
+const house1 = "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop";
+const house2 = "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400&h=400&fit=crop";
+const house3 = "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=400&h=400&fit=crop";
+const house4 = "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=400&fit=crop";
 
 const properties = [
   {
