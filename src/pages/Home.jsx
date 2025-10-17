@@ -34,7 +34,7 @@ const Home = () => {
         backgroundImage: 'url("/images/Illustration.png")',
         backgroundColor: '#ffffff',
         backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center',
+        backgroundPosition: 'center 100%',
         backgroundSize: 'contain',
         width: '100%',
         position: 'absolute',
@@ -49,7 +49,7 @@ const Home = () => {
       <style>{`
         @media (max-width: 768px) {
           .hero-container {
-            background-position: center 60% !important;
+            background-position: center 110% !important;
             background-size: contain !important;
             padding-bottom: 0 !important;
           }
