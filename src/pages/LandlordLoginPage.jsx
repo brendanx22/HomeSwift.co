@@ -193,13 +193,19 @@ const LandlordLoginPage = () => {
   };
   
   const handleSignUpLink = () => {
-    console.log('🔗 Landlord signup link clicked, navigating to /landlord/signup');
-    navigate('/landlord/signup', { 
-      state: { 
-        from: location.state?.from || { pathname: '/landlord/dashboard' },
-        userType: 'landlord'
-      } 
-    });
+    try {
+      console.log('🔗 Landlord signup link clicked, navigating to /landlord/signup');
+      navigate('/landlord/signup', { 
+        state: { 
+          from: location.state?.from || { pathname: '/landlord/dashboard' },
+          userType: 'landlord'
+        } 
+      });
+    } catch (error) {
+      console.error('❌ Error in handleSignUpLink:', error);
+      // Fallback navigation if React Router fails
+      window.location.href = '/landlord/signup';
+    }
   };
 
   return (

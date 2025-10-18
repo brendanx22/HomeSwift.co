@@ -9,6 +9,14 @@ import { supabase } from '../lib/supabaseClient';
 const LandlordSignupPage = () => {
   console.log('🏗️ LandlordSignupPage component loaded');
 
+  // Add error boundary to catch any component errors
+  React.useEffect(() => {
+    console.log('🏗️ LandlordSignupPage mounted successfully');
+    return () => {
+      console.log('🏗️ LandlordSignupPage unmounted');
+    };
+  }, []);
+
   const navigate = useNavigate();
   const { signup } = useAuth();
   
@@ -309,10 +317,14 @@ const LandlordSignupPage = () => {
     console.log('⏳ Creating landlord account...');
 
     try {
-      await signup({
+      const result = await signup({
         ...formData,
         userType: 'landlord'
       });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Signup failed');
+      }
 
       console.log('✅ Landlord account created successfully');
       toast.success('Account created successfully! Please check your email to verify your account.');
@@ -325,7 +337,7 @@ const LandlordSignupPage = () => {
         }
       });
     } catch (error) {
-      console.error('❌ Landlord signup failed:', error.message);
+      console.error('❌ Landlord signup failed:', error);
       toast.error(error.message || 'Failed to create account. Please try again.');
     } finally {
       setIsLoading(false);
@@ -569,10 +581,10 @@ const handleBackToHome = () => {
               className="w-full bg-[#FF6B35] text-white py-4 px-6 rounded-[2rem] font-semibold text-lg hover:bg-[#e85e2f] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               {isLoading ? (
-                <div className="w-full flex items-center justify-center space-x-3 bg-transparent border border-gray-400/50 text-[#2C3E50] py-4 rounded-[2rem] font-medium hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                   <span>Creating account...</span>
-                </div>
+                </>
               ) : (
                 'Create Landlord Account'
               )}

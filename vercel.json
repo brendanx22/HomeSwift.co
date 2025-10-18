@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/landlord/signup",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/landlord/login",
+      "destination": "/index.html"
+    },
+    {
       "source": "/landlord/(.*)",
       "destination": "/index.html"
     },
