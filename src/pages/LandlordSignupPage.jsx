@@ -169,36 +169,47 @@ const LandlordSignupPage = () => {
     }
   };
 
+  // Check email availability function
+  const checkEmailAvailability = async (emailToCheck) => {
+    console.log(`📧 Checking email availability: ${emailToCheck}`);
+    setEmailStatus('checking');
+
+    try {
+      console.log('📧 Making Supabase query to user_profiles table...');
+
+      // Check if user_profiles table exists and has data
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('email')
+        .eq('email', emailToCheck)
+        .maybeSingle();
+
+      if (error) {
+        console.error('❌ Supabase query error:', error);
+        // If the table doesn't exist, assume email is available for now
+        if (error.code === '42P01') { // Table doesn't exist
+          console.log('📧 user_profiles table does not exist, assuming email is available');
+          setEmailStatus('available');
+          return;
+        }
+        throw error;
+      }
+
+      console.log('📧 Query result:', { data, error });
+
+      const status = data ? 'taken' : 'available';
+      setEmailStatus(status);
+      console.log(`📧 Email status: ${status}`, data ? 'Email exists in database' : 'Email is available');
+    } catch (error) {
+      console.error('❌ Email check failed:', error.message);
+      console.error('❌ Full error object:', error);
+      setEmailStatus('error');
+      toast.error('Failed to check email availability');
+    }
+  };
+
   // Check email availability with debounce
   useEffect(() => {
-    const checkEmailAvailability = async () => {
-      if (!isEmailValid || isEmailEmpty) {
-        setEmailStatus('');
-        return;
-      }
-
-      console.log(`📧 Checking email availability: ${email}`);
-      setEmailStatus('checking');
-
-      try {
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .select('email')
-          .eq('email', email)
-          .maybeSingle();
-
-        if (error) throw error;
-
-        const status = data ? 'taken' : 'available';
-        setEmailStatus(status);
-        console.log(`📧 Email status: ${status}`, data ? 'Email exists in database' : 'Email is available');
-      } catch (error) {
-        console.error('❌ Email check failed:', error.message);
-        setEmailStatus('error');
-        toast.error('Failed to check email availability');
-      }
-    };
-
     // Clear previous timeout
     if (emailCheckTimeoutRef.current) {
       clearTimeout(emailCheckTimeoutRef.current);
@@ -207,7 +218,7 @@ const LandlordSignupPage = () => {
     // Only check if email is valid and not empty
     if (isEmailValid && !isEmailEmpty) {
       // Set new timeout with 500ms debounce
-      emailCheckTimeoutRef.current = setTimeout(checkEmailAvailability, 500);
+      emailCheckTimeoutRef.current = setTimeout(() => checkEmailAvailability(email), 500);
     } else {
       setEmailStatus('');
     }
@@ -271,8 +282,8 @@ const LandlordSignupPage = () => {
       newErrors.email = 'Error checking email availability';
     } else if (emailStatus === 'checking') {
       newErrors.email = 'Please wait while we check email availability';
-    } else if (!isEmailAvailable) {
-      newErrors.email = 'Please check email availability';
+    } else if (emailStatus !== 'available') {
+      newErrors.email = 'Please wait for email availability check to complete';
     }
 
     if (!formData.phone) {

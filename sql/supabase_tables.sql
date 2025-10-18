@@ -39,6 +39,11 @@ CREATE POLICY "Users can view their own profile"
   ON user_profiles FOR SELECT
   USING (auth.uid() = id);
 
+-- Allow checking email availability for signup (unauthenticated users)
+CREATE POLICY "Allow email availability check"
+  ON user_profiles FOR SELECT
+  USING (true);
+
 -- Users can update their own profile
 CREATE POLICY "Users can update their own profile"
   ON user_profiles FOR UPDATE
