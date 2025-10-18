@@ -121,14 +121,16 @@ const AppLayout = () => {
       }
 
       // If user is on a landlord route but not a landlord, redirect to renter dashboard
-      if (isLandlordRoute && detectedRole !== 'landlord') {
+      // Exclude signup pages from this check since they should be accessible to unauthenticated users
+      if (isLandlordRoute && detectedRole !== 'landlord' && !path.includes('/signup')) {
         // console.log('Not a landlord, redirecting to chat');
         navigate('/chat', { replace: true });
         return;
       }
 
       // If user is a renter but on a landlord route, redirect to renter dashboard
-      if (detectedRole === 'renter' && isLandlordRoute) {
+      // Exclude signup pages from this check
+      if (detectedRole === 'renter' && isLandlordRoute && !path.includes('/signup')) {
         // console.log('Renter on landlord route, redirecting to chat');
         navigate('/chat', { replace: true });
         return;
@@ -136,7 +138,7 @@ const AppLayout = () => {
     }
     // Handle unauthenticated users
     else {
-      const authPages = ['/login', '/landlord/login', '/signup', '/forgot-password', '/reset-password', '/user-type'];
+      const authPages = ['/login', '/landlord/login', '/signup', '/landlord/signup', '/forgot-password', '/reset-password', '/user-type'];
 
       // If not on an auth page and not on the home page, redirect to login
       if (!authPages.includes(path) && path !== '/') {
