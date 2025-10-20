@@ -1,8 +1,11 @@
 import React, { Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
+import { OfflineIndicator, PWAInstallPrompt, UpdatePrompt, registerServiceWorker } from './utils/pwa.jsx';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Lazy load pages for better performance
@@ -21,25 +24,35 @@ const Properties = React.lazy(() => import('./pages/Properties'));
 const About = React.lazy(() => import('./pages/About'));
 const Contact = React.lazy(() => import('./pages/Contact'));
 const Gallery = React.lazy(() => import('./pages/Gallery'));
-const LandlordProperties = React.lazy(() => import('./pages/LandlordProperties'));
+const InquiryManagement = React.lazy(() => import('./pages/InquiryManagement'));
 const MessageCenter = React.lazy(() => import('./pages/MessageCenter'));
 const FAQ = React.lazy(() => import('./pages/FAQ'));
+const PropertyDetails = React.lazy(() => import('./pages/PropertyDetails'));
 const VerifyEmail = React.lazy(() => import('./pages/VerifyEmail'));
 const AuthCallback = React.lazy(() => import('./pages/AuthCallback'));
 const UserTypeSelection = React.lazy(() => import('./pages/UserTypeSelection'));
 const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
-const PropertyDetails = React.lazy(() => import('./pages/PropertyDetails'));
+const RenterProperties = React.lazy(() => import('./pages/RenterProperties'));
 const SavedProperties = React.lazy(() => import('./pages/SavedProperties'));
 const Profile = React.lazy(() => import('./pages/Profile'));
 const MarketAnalysis = React.lazy(() => import('./pages/MarketAnalysis'));
 const NeighborhoodInfo = React.lazy(() => import('./pages/NeighborhoodInfo'));
 const PriceCalculator = React.lazy(() => import('./pages/PriceCalculator'));
 const VirtualTours = React.lazy(() => import('./pages/VirtualTours'));
-const Messages = React.lazy(() => import('./pages/Messages'));
+const PropertyComparison = React.lazy(() => import('./pages/PropertyComparison'));
 const ListPropertyForm = React.lazy(() => import('./pages/ListPropertyForm'));
-const RenterProperties = React.lazy(() => import('./pages/RenterProperties'));
-const InquiryManagement = React.lazy(() => import('./pages/InquiryManagement'));
+const PropertyAlerts = React.lazy(() => import('./pages/PropertyAlerts'));
+const AdvancedSearch = React.lazy(() => import('./pages/AdvancedSearch'));
+const PropertyAnalytics = React.lazy(() => import('./pages/PropertyAnalytics'));
+const PropertyRecommendations = React.lazy(() => import('./pages/PropertyRecommendations'));
+const MarketInsights = React.lazy(() => import('./pages/MarketInsights'));
+const AdvancedPropertyManagement = React.lazy(() => import('./pages/AdvancedPropertyManagement'));
+const ComparisonHistory = React.lazy(() => import('./pages/ComparisonHistory'));
+const MarketTrends = React.lazy(() => import('./pages/MarketTrends'));
+const LandlordProperties = React.lazy(() => import('./pages/LandlordProperties'));
+const HomeInspectionChecklist = React.lazy(() => import('./pages/HomeInspectionChecklist'));
+
 
 // Main App Layout Component
 const AppLayout = () => {
@@ -544,10 +557,70 @@ const AppLayout = () => {
             />
 
             <Route
-              path="/profile"
+              path="/compare"
               element={
                 <ProtectedRoute requiredRoles={['renter', 'landlord']}>
-                  <Profile />
+                  <PropertyComparison />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/search"
+              element={<AdvancedSearch />}
+            />
+
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute requiredRoles={['landlord']}>
+                  <PropertyAnalytics />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/recommendations"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <PropertyRecommendations />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/insights"
+              element={<MarketInsights />}
+            />
+
+            <Route
+              path="/manage"
+              element={
+                <ProtectedRoute requiredRoles={['landlord']}>
+                  <AdvancedPropertyManagement />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/history"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <ComparisonHistory />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/market-trends"
+              element={<MarketTrends />}
+            />
+
+            <Route
+              path="/alerts"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <PropertyAlerts />
                 </ProtectedRoute>
               }
             />
@@ -608,8 +681,14 @@ const AppLayout = () => {
               element={<FAQ />}
             />
 
-            {/* Catch-all route */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route
+              path="/inspection-checklist"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <HomeInspectionChecklist />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </Suspense>
       </main>
@@ -619,24 +698,36 @@ const AppLayout = () => {
 
 // Main App Component
 const App = () => {
+  // Register service worker for PWA functionality
+  React.useEffect(() => {
+    registerServiceWorker();
+  }, []);
+
   return (
     <Router>
       <AuthProvider>
-        <div className="min-h-screen bg-gray-50">
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 3000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-                borderRadius: '0.5rem',
-                padding: '1rem',
-              },
-            }}
-          />
-          <AppLayout />
-        </div>
+        <ThemeProvider>
+          <LanguageProvider>
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+              <OfflineIndicator />
+              <PWAInstallPrompt />
+              <UpdatePrompt onUpdate={() => window.location.reload()} />
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 3000,
+                  style: {
+                    background: '#363636',
+                    color: '#fff',
+                    borderRadius: '0.5rem',
+                    padding: '1rem',
+                  },
+                }}
+              />
+              <AppLayout />
+            </div>
+          </LanguageProvider>
+        </ThemeProvider>
       </AuthProvider>
     </Router>
   );

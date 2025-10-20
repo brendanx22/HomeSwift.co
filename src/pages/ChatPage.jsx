@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import ProfilePopup from '../components/ProfilePopup';
+import NotificationCenter from '../components/NotificationCenter';
 
 // Simple debounce utility function
 function debounce(func, wait) {
@@ -41,7 +42,25 @@ import {
   ArrowUp,
   House,
   LogOut,
-  TrendingUp
+  TrendingUp,
+  Shield,
+  DollarSign,
+  ClipboardList,
+  Eye,
+  Move3D,
+  Users,
+  Database,
+  Layers,
+  SlidersHorizontal,
+  Loader2,
+  FileUp,
+  ImageUp,
+  Trash2,
+  ShoppingCart,
+  Bed,
+  Bath,
+  Flame,
+  Search
 } from "lucide-react";
 
 export default function ChatPage() {
@@ -160,6 +179,59 @@ export default function ChatPage() {
 
   // Avatar state for navbar display
   const [userAvatar, setUserAvatar] = useState(null);
+
+  // Dynamic greeting function that handles time-based greetings and special holidays
+  const getDynamicGreeting = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    const dayOfWeek = now.getDay();
+    const month = now.getMonth();
+    const date = now.getDate();
+
+    // Time-based greetings
+    let timeGreeting = '';
+    if (hour < 12) {
+      timeGreeting = 'Good morning';
+    } else if (hour < 17) {
+      timeGreeting = 'Good afternoon';
+    } else {
+      timeGreeting = 'Good evening';
+    }
+
+    // Special holiday greetings
+    let holidayGreeting = '';
+
+    // Check for major holidays (month is 0-indexed)
+    if (month === 11 && date === 25) {
+      holidayGreeting = '🎄 Merry Christmas! ';
+    } else if (month === 0 && date === 1) {
+      holidayGreeting = '🎉 Happy New Year! ';
+    } else if (month === 3 && date >= 19 && date <= 21) { // Easter (approximate)
+      holidayGreeting = '🐰 Happy Easter! ';
+    } else if (month === 9 && date === 1) {
+      holidayGreeting = '🇳🇬 Happy Independence Day! ';
+    } else if (month === 4 && date === 29) {
+      holidayGreeting = '👶 Happy Children\'s Day! ';
+    } else if (month === 9 && date === 1) {
+      holidayGreeting = '👨‍👩‍👧‍👦 Happy Family Day! ';
+    }
+
+    // Personalized activity messages for chat context
+    let activityMessage = '';
+    if (user) {
+      activityMessage = 'How can I help you find your perfect property today?';
+    } else {
+      activityMessage = 'Sign in to get personalized property recommendations!';
+    }
+
+    return {
+      greeting: `${holidayGreeting}${timeGreeting}`,
+      message: activityMessage,
+      showHolidayIcon: holidayGreeting !== ''
+    };
+  };
+
+  const { greeting, message, showHolidayIcon } = getDynamicGreeting();
 
   // Load user avatar from database
   useEffect(() => {
@@ -392,6 +464,9 @@ export default function ChatPage() {
     { id: 'market-analysis', label: 'Market Analysis', icon: <TrendingUp className="w-5 h-5" /> },
     { id: 'neighborhood-info', label: 'Neighborhood Info', icon: <MapPin className="w-5 h-5" /> },
     { id: 'price-calculator', label: 'Price Calculator', icon: <Calculator className="w-5 h-5" /> },
+    { id: 'insurance-calculator', label: 'Insurance Calculator', icon: <Shield className="w-5 h-5" /> },
+    { id: 'tax-calculator', label: 'Tax Calculator', icon: <DollarSign className="w-5 h-5" /> },
+    { id: 'inspection-checklist', label: 'Inspection Checklist', icon: <ClipboardList className="w-5 h-5" /> },
     { id: 'virtual-tours', label: 'Virtual Tours', icon: <Camera className="w-5 h-5" /> },
     { id: 'favorites', label: 'Favorites', icon: <Heart className="w-5 h-5" /> },
     { id: 'search-history', label: 'Search History', icon: <Clock className="w-5 h-5" /> },
@@ -415,6 +490,9 @@ export default function ChatPage() {
       case 'Price Calculator':
         navigate('/calculator');
         break;
+      case 'Inspection Checklist':
+        navigate('/inspection-checklist');
+        break;
       case 'Virtual Tours':
         navigate('/virtual-tours');
         break;
@@ -435,10 +513,19 @@ export default function ChatPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLocation, setSearchLocation] = useState('');
   const [propertyType, setPropertyType] = useState('');
+  const [priceRange, setPriceRange] = useState([0, 10000000]); // Default range
+  const [bedrooms, setBedrooms] = useState('');
+  const [bathrooms, setBathrooms] = useState('');
+  const [purchaseType, setPurchaseType] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
+  const [searchHistory, setSearchHistory] = useState([]);
+  const [popularSearches, setPopularSearches] = useState([]);
+  const [searchIntent, setSearchIntent] = useState(null);
+  const [locationSuggestions, setLocationSuggestions] = useState([]);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [featuredProperties, setFeaturedProperties] = useState([]);
@@ -536,12 +623,267 @@ export default function ChatPage() {
     }
   };
 
-  // Handle search input change with debounced suggestions
-  const handleSearchChange = async (e) => {
+  // Load search history and popular searches
+  useEffect(() => {
+    const loadSearchData = async () => {
+      if (!user?.id) return;
+
+      try {
+        // Load search history
+        const { data: historyData, error: historyError } = await supabase
+          .from('search_history')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (!historyError && historyData) {
+          setSearchHistory(historyData.map(item => item.query));
+        }
+
+        // Load popular searches (from all users)
+        const { data: popularData, error: popularError } = await supabase
+          .from('search_history')
+          .select('query')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (!popularError && popularData) {
+          const popularQueries = popularData
+            .map(item => item.query)
+            .filter((query, index, arr) => arr.indexOf(query) === index) // Remove duplicates
+            .slice(0, 5);
+          setPopularSearches(popularQueries);
+        }
+      } catch (error) {
+        console.error('Error loading search data:', error);
+      }
+    };
+
+    loadSearchData();
+  }, [user?.id]);
+
+  // Enhanced intelligent search parser - handles complex queries with multiple features
+  const parseSearchQuery = (query) => {
+    const lowerQuery = query.toLowerCase().trim();
+    const words = lowerQuery.split(/\s+/);
+    const intent = {
+      location: null,
+      propertyType: null,
+      priceRange: null,
+      bedrooms: null,
+      bathrooms: null,
+      amenities: [],
+      keywords: [],
+      originalQuery: query
+    };
+
+    // Expanded location detection (Nigerian cities and areas)
+    const nigerianLocations = [
+      'lagos', 'abuja', 'port harcourt', 'kano', 'ibadan', 'benin city', 'maiduguri',
+      'zaria', 'aba', 'jos', 'ilorin', 'oyo', 'enugu', 'akure', 'bauchi', 'jalingo',
+      'victoria island', 'ikeja', 'lekki', 'surulere', 'yaba', 'ajah', 'ikoyi', 'banana island',
+      'festac', 'apapa', 'ebute metta', 'mushin', 'agege', 'oshodi', 'ketu', 'berger',
+      'garki', 'wuse', 'maitama', 'asokoro', 'kuje', 'lugbe', 'kuje', 'dawaki', 'katampe',
+      'gwarinpa', 'kuje', 'dawaki', 'jahi', 'galadimawa', 'lokogoma', 'kubwa', 'nyanya',
+      'karu', 'masaka', 'mararaba', 'keffi', 'gwagwalada', 'kuje', 'lugbe', 'dawaki'
+    ];
+
+    // Location detection with better pattern matching including prepositions
+    const locationPatterns = [
+      // "apartment in Lagos", "house at Victoria Island"
+      /(?:in|at|near|around)\s+([A-Za-z\s]+?)(?:\s|$)/gi,
+      // "Lagos apartment", "Victoria Island house" (no preposition)
+      /\b([A-Za-z\s]+?)\s+(?:apartment|house|flat|duplex|bungalow|property|home|listing)\b/gi,
+      // Just location names at start or end
+      /^(?:find\s+)?([A-Za-z\s]+?)(?:\s|$)/gi,
+      /([A-Za-z\s]+?)$/gi
+    ];
+
+    for (const pattern of locationPatterns) {
+      const matches = [...lowerQuery.matchAll(pattern)];
+      for (const match of matches) {
+        if (match[1]) {
+          const potentialLocation = match[1].trim();
+          // Check if this looks like a Nigerian location
+          for (const location of nigerianLocations) {
+            if (potentialLocation.toLowerCase().includes(location) ||
+                location.includes(potentialLocation.toLowerCase())) {
+              intent.location = location.charAt(0).toUpperCase() + location.slice(1);
+              break;
+            }
+          }
+          if (intent.location) break;
+        }
+      }
+      if (intent.location) break;
+    }
+
+    // Enhanced property type detection with synonyms
+    const propertyTypes = {
+      'apartment': 'apartment',
+      'flat': 'apartment',
+      'house': 'house',
+      'duplex': 'duplex',
+      'bungalow': 'bungalow',
+      'mansion': 'mansion',
+      'penthouse': 'penthouse',
+      'studio': 'studio',
+      'room': 'room',
+      'self contain': 'self-contain',
+      'mini flat': 'mini-flat',
+      'bedsitter': 'bedsitter',
+      'one bedroom': '1-bedroom',
+      'two bedroom': '2-bedroom',
+      'three bedroom': '3-bedroom',
+      'four bedroom': '4-bedroom',
+      'five bedroom': '5-bedroom'
+    };
+
+    // Check for property type patterns
+    for (const [key, value] of Object.entries(propertyTypes)) {
+      if (lowerQuery.includes(key)) {
+        intent.propertyType = value;
+        break;
+      }
+    }
+
+    // Enhanced price range detection with multiple patterns
+    const pricePatterns = [
+      // Range patterns: "₦500k - ₦1M", "500k to 1M", "between 500k and 1M"
+      /(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:-|to|and|between)\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/gi,
+      // Under/below patterns: "under ₦1M", "below 1M"
+      /(?:under|below|less than)\s*₦?(\d+(?:,\d{3})*(?:\.\d{2})?)/gi,
+      // Above/over patterns: "above ₦2M", "over 2M"
+      /(?:above|over|more than)\s*₦?(\d+(?:,\d{3})*(?:\.\d{2})?)/gi,
+      // Exact amounts: "₦1M", "1M"
+      /₦?(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:only|exactly)?/gi,
+      // Plus patterns: "₦1M+"
+      /₦?(\d+(?:,\d{3})*(?:\.\d{2})?)\s*\+/gi
+    ];
+
+    for (const pattern of pricePatterns) {
+      const matches = [...lowerQuery.matchAll(pattern)];
+      for (const match of matches) {
+        if (match[1] && match[2]) {
+          // Range pattern
+          intent.priceRange = [
+            parseInt(match[1].replace(/,/g, '')),
+            parseInt(match[2].replace(/,/g, ''))
+          ];
+        } else if (match[1]) {
+          const price = parseInt(match[1].replace(/,/g, ''));
+          if (lowerQuery.includes('under') || lowerQuery.includes('below') || lowerQuery.includes('less than')) {
+            intent.priceRange = [0, price];
+          } else if (lowerQuery.includes('above') || lowerQuery.includes('over') || lowerQuery.includes('more than')) {
+            intent.priceRange = [price, 10000000];
+          } else if (lowerQuery.includes('+')) {
+            intent.priceRange = [price, 10000000];
+          } else {
+            // Single price - assume it's a maximum
+            intent.priceRange = [0, price];
+          }
+        }
+      }
+    }
+
+    // Enhanced bedroom detection with multiple patterns
+    const bedroomPatterns = [
+      /(\d+)\s*(?:bedroom|bed|br|bd)/gi,
+      /(\d+)\s*(?:room|rm)/gi,
+      /(?:(\d+)\s*bedroom|(\d+)\s*bed|(\d+)\s*br|(\d+)\s*bd)/gi
+    ];
+
+    for (const pattern of bedroomPatterns) {
+      const match = lowerQuery.match(pattern);
+      if (match) {
+        // Find the first number in the match
+        for (let i = 1; i < match.length; i++) {
+          if (match[i]) {
+            intent.bedrooms = parseInt(match[i]);
+            break;
+          }
+        }
+        if (intent.bedrooms) break;
+      }
+    }
+
+    // Enhanced bathroom detection
+    const bathroomPatterns = [
+      /(\d+)\s*(?:bathroom|bath|ba|toilet|wc)/gi,
+      /(?:(\d+)\s*bathroom|(\d+)\s*bath|(\d+)\s*ba|(\d+)\s*toilet|(\d+)\s*wc)/gi
+    ];
+
+    for (const pattern of bathroomPatterns) {
+      const match = lowerQuery.match(pattern);
+      if (match) {
+        for (let i = 1; i < match.length; i++) {
+          if (match[i]) {
+            intent.bathrooms = parseInt(match[i]);
+            break;
+          }
+        }
+        if (intent.bathrooms) break;
+      }
+    }
+
+    // Enhanced amenity detection with more keywords and better matching
+    const amenityKeywords = {
+      'parking': 'Parking',
+      'security': 'Security',
+      'gym': 'Gym',
+      'pool': 'Swimming Pool',
+      'garden': 'Garden',
+      'balcony': 'Balcony',
+      'furnished': 'Furnished',
+      'generator': 'Generator',
+      'borehole': 'Borehole',
+      'cctv': 'CCTV',
+      'elevator': 'Elevator',
+      'internet': 'Internet',
+      'air conditioning': 'Air Conditioning',
+      'pet friendly': 'Pet Friendly',
+      'garage': 'Garage',
+      'swimming pool': 'Swimming Pool',
+      'air condition': 'Air Conditioning',
+      'water': 'Water',
+      'electricity': 'Electricity',
+      'power': 'Power',
+      'backup': 'Backup',
+      'serviced': 'Serviced',
+      'new': 'New',
+      'modern': 'Modern',
+      'spacious': 'Spacious',
+      'clean': 'Clean',
+      'safe': 'Safe',
+      'quiet': 'Quiet',
+      'central': 'Central',
+      'prime': 'Prime',
+      'luxury': 'Luxury',
+      'affordable': 'Affordable'
+    };
+
+    for (const [keyword, amenity] of Object.entries(amenityKeywords)) {
+      if (lowerQuery.includes(keyword)) {
+        if (!intent.amenities.includes(amenity)) {
+          intent.amenities.push(amenity);
+        }
+      }
+    }
+
+    // Extract remaining keywords as search terms
+    const stopWords = ['in', 'at', 'for', 'with', 'and', 'or', 'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can'];
+    intent.keywords = words.filter(word => !stopWords.includes(word.toLowerCase()) && word.length > 2);
+
+    return intent;
+  };
+
+  // Handle intelligent search input change
+  const handleIntelligentSearchChange = async (e) => {
     const value = e.target.value;
     setSearchQuery(value);
     setSearchError(null);
-    
+
     // Clear existing timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
@@ -549,29 +891,299 @@ export default function ChatPage() {
 
     if (value.trim()) {
       setShowSuggestions(true);
-      
+
+      // Parse search intent for intelligent suggestions
+      const intent = parseSearchQuery(value);
+      setSearchIntent(intent);
+
       // Debounce suggestions loading
       searchTimeoutRef.current = setTimeout(async () => {
         try {
-          // Get search suggestions from properties table
-          const { data: suggestions, error } = await supabase
-            .from('properties')
-            .select('title, location')
-            .or(`title.ilike.%${value}%,location.ilike.%${value}%`)
-            .limit(5);
-          
-          if (!error) {
-            setSuggestions(suggestions || []);
+          // Build flexible search query for suggestions
+          let suggestionQuery = supabase.from('properties').select('title, location, price, bedrooms, bathrooms, images, id, property_type, description, amenities, is_featured');
+
+          // If we have parsed intent, use it for better suggestions
+          if (intent.location || intent.propertyType || intent.bedrooms || intent.bathrooms) {
+            // Build OR query for multiple criteria
+            const conditions = [];
+
+            if (intent.location) {
+              conditions.push(`location.ilike.%${intent.location}%`);
+            }
+
+            if (intent.propertyType) {
+              conditions.push(`property_type.ilike.%${intent.propertyType}%`);
+            }
+
+            if (intent.bedrooms) {
+              conditions.push(`bedrooms.eq.${intent.bedrooms}`);
+              conditions.push(`bedrooms.eq.${intent.bedrooms - 1}`);
+              conditions.push(`bedrooms.eq.${intent.bedrooms + 1}`);
+            }
+
+            if (intent.bathrooms) {
+              conditions.push(`bathrooms.eq.${intent.bathrooms}`);
+              conditions.push(`bathrooms.eq.${intent.bathrooms - 1}`);
+              conditions.push(`bathrooms.eq.${intent.bathrooms + 1}`);
+            }
+
+            if (intent.priceRange) {
+              const [minPrice, maxPrice] = intent.priceRange;
+              conditions.push(`price.gte.${Math.floor(minPrice * 0.8)}`);
+              conditions.push(`price.lte.${Math.ceil(maxPrice * 1.2)}`);
+            }
+
+            // Add text search for remaining keywords
+            if (intent.keywords.length > 0) {
+              const keywordConditions = intent.keywords.map(keyword =>
+                `(title.ilike.%${keyword}% OR location.ilike.%${keyword}% OR description.ilike.%${keyword}%)`
+              );
+              conditions.push(`(${keywordConditions.join(' OR ')})`);
+            }
+
+            // Add amenity search
+            if (intent.amenities.length > 0) {
+              const amenityConditions = intent.amenities.map(amenity =>
+                `amenities.cs.{${amenity}}`
+              );
+              conditions.push(`(${amenityConditions.join(' OR ')})`);
+            }
+
+            if (conditions.length > 0) {
+              suggestionQuery = suggestionQuery.or(conditions.join(' OR '));
+            }
+          } else {
+            // Fallback to text search if no structured intent found
+            suggestionQuery = suggestionQuery.or(`title.ilike.%${value}%,location.ilike.%${value}%,description.ilike.%${value}%`);
+          }
+
+          const { data: suggestions, error } = await suggestionQuery.limit(12);
+
+          if (!error && suggestions) {
+            setSuggestions(suggestions.map(property => ({
+              ...property,
+              relevance: calculateRelevance(property, intent, value)
+            })).sort((a, b) => b.relevance - a.relevance));
+          }
+
+          // Get location suggestions if intent detected location
+          if (intent.location) {
+            const nigerianCities = [
+              'Lagos', 'Abuja', 'Port Harcourt', 'Kano', 'Ibadan', 'Benin City',
+              'Victoria Island', 'Ikeja', 'Lekki', 'Surulere', 'Yaba', 'Ikoyi',
+              'Garki', 'Wuse', 'Maitama', 'Asokoro', 'Kuje', 'Lugbe', 'Dawaki'
+            ];
+            const filteredCities = nigerianCities.filter(city =>
+              city.toLowerCase().includes(intent.location.toLowerCase())
+            );
+            setLocationSuggestions(filteredCities);
           }
         } catch (error) {
-          console.error('Failed to load suggestions:', error);
+          console.error('Failed to load intelligent suggestions:', error);
           setSuggestions([]);
+          setLocationSuggestions([]);
         }
       }, 300);
     } else {
       setShowSuggestions(false);
       setSuggestions([]);
+      setLocationSuggestions([]);
+      setSearchIntent(null);
     }
+  };
+
+  // Enhanced relevance scoring for search results with fallback strategies
+  const calculateRelevance = (property, intent, query) => {
+    let score = 0;
+    const lowerQuery = query.toLowerCase();
+    const lowerTitle = property.title?.toLowerCase() || '';
+    const lowerLocation = property.location?.toLowerCase() || '';
+    const lowerDescription = property.description?.toLowerCase() || '';
+
+    // Base scoring for exact matches (highest priority)
+    if (lowerTitle.includes(lowerQuery)) {
+      score += 20;
+    }
+
+    // Location matches (high priority)
+    if (intent.location && lowerLocation.includes(intent.location.toLowerCase())) {
+      score += 15;
+    }
+
+    // Property type matches
+    if (intent.propertyType && property.property_type?.toLowerCase().includes(intent.propertyType.toLowerCase())) {
+      score += 12;
+    }
+
+    // Price range matches (flexible - within 20% tolerance)
+    if (intent.priceRange && property.price) {
+      const [minPrice, maxPrice] = intent.priceRange;
+      const priceMatch = (property.price >= minPrice * 0.8 && property.price <= maxPrice * 1.2);
+      if (priceMatch) {
+        score += 10;
+      }
+    }
+
+    // Bedroom matches (exact or within 1)
+    if (intent.bedrooms && property.bedrooms) {
+      const bedroomDiff = Math.abs(property.bedrooms - intent.bedrooms);
+      if (bedroomDiff === 0) {
+        score += 8;
+      } else if (bedroomDiff <= 1) {
+        score += 4;
+      }
+    }
+
+    // Bathroom matches (exact or within 1)
+    if (intent.bathrooms && property.bathrooms) {
+      const bathroomDiff = Math.abs(property.bathrooms - intent.bathrooms);
+      if (bathroomDiff === 0) {
+        score += 8;
+      } else if (bathroomDiff <= 1) {
+        score += 4;
+      }
+    }
+
+    // Amenity matches (partial keyword matching)
+    if (intent.amenities.length > 0) {
+      const propertyAmenities = [
+        ...(property.amenities || []),
+        lowerTitle,
+        lowerDescription,
+        lowerLocation
+      ].join(' ').toLowerCase();
+
+      const matchingAmenities = intent.amenities.filter(amenity =>
+        propertyAmenities.includes(amenity.toLowerCase())
+      );
+      score += matchingAmenities.length * 5;
+    }
+
+    // Keyword matches (from remaining search terms)
+    if (intent.keywords.length > 0) {
+      const searchText = [lowerTitle, lowerLocation, lowerDescription].join(' ');
+      const keywordMatches = intent.keywords.filter(keyword =>
+        searchText.includes(keyword)
+      );
+      score += keywordMatches.length * 3;
+    }
+
+    // Fuzzy text matching for overall query relevance
+    const searchWords = lowerQuery.split(/\s+/).filter(word => word.length > 2);
+    for (const word of searchWords) {
+      if (lowerTitle.includes(word) || lowerLocation.includes(word) || lowerDescription.includes(word)) {
+        score += 2;
+      }
+    }
+
+    // Boost score for recent/popular properties
+    if (property.is_featured) {
+      score += 3;
+    }
+
+    // Penalty for very old or incomplete listings
+    if (!property.images || property.images.length === 0) {
+      score -= 2;
+    }
+
+    return Math.max(0, score);
+  };
+
+  // Handle intelligent search submission
+  const handleIntelligentSearchSubmit = async (e) => {
+    e.preventDefault();
+
+    const query = searchQuery.trim();
+
+    if (!query) {
+      setSearchError('Please enter a search term');
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchError(null);
+
+    try {
+      // Parse search intent for intelligent routing
+      const intent = parseSearchQuery(query);
+
+      // Save search to history if user is authenticated
+      if (user?.id) {
+        await supabase
+          .from('search_history')
+          .insert([{
+            user_id: user.id,
+            query: query,
+            search_data: intent
+          }]);
+      }
+
+      // Build search parameters for intelligent routing
+      const searchParams = new URLSearchParams();
+
+      // Always include the original query as a fallback
+      if (query) searchParams.set('search', query);
+
+      // Add parsed intent parameters if they exist
+      if (intent.location) searchParams.set('location', intent.location);
+      if (intent.propertyType) searchParams.set('type', intent.propertyType);
+
+      // Handle price range more flexibly
+      if (intent.priceRange) {
+        const [minPrice, maxPrice] = intent.priceRange;
+        if (minPrice > 0) searchParams.set('minPrice', minPrice);
+        if (maxPrice < 10000000) searchParams.set('maxPrice', maxPrice);
+      }
+
+      // Add flexible bedroom/bathroom matching
+      if (intent.bedrooms) {
+        // Search for exact match first, then within range
+        searchParams.set('bedrooms', intent.bedrooms);
+      }
+
+      if (intent.bathrooms) {
+        searchParams.set('bathrooms', intent.bathrooms);
+      }
+
+      // Add amenities as search keywords
+      if (intent.amenities.length > 0) {
+        searchParams.set('amenities', intent.amenities.join(','));
+      }
+
+      // Add remaining keywords as general search terms
+      if (intent.keywords.length > 0) {
+        searchParams.set('keywords', intent.keywords.join(' '));
+      }
+
+      // Add purchase type if specified
+      if (purchaseType) searchParams.set('purchaseType', purchaseType);
+
+      // Navigate to intelligent search results
+      const searchUrl = `/browse?${searchParams.toString()}`;
+      console.log('Intelligent search URL:', searchUrl);
+      navigate(searchUrl);
+    } catch (error) {
+      console.error('Intelligent search error:', error);
+      setSearchError('Search failed. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Handle suggestion selection with intelligent parsing
+  const handleIntelligentSuggestionSelect = (suggestion) => {
+    setSearchQuery(suggestion.title);
+    setShowSuggestions(false);
+
+    // Auto-fill location if available
+    if (suggestion.location) {
+      setSearchLocation(suggestion.location);
+    }
+
+    // Trigger search after a brief delay
+    setTimeout(() => {
+      handleIntelligentSearchSubmit({ preventDefault: () => {} });
+    }, 100);
   };
   
   // --- responsive sidebar state ---
@@ -1006,7 +1618,7 @@ export default function ChatPage() {
                     { icon: TrendingUp, label: 'Market Analysis', active: location.pathname === '/market-analysis' },
                     { icon: MapPin, label: 'Neighborhood Info', active: location.pathname === '/neighborhoods' },
                     { icon: Calculator, label: 'Price Calculator', active: location.pathname === '/calculator' },
-                    { icon: Camera, label: 'Virtual Tours', active: location.pathname === '/virtual-tours' },
+                    { icon: ClipboardList, label: 'Inspection Checklist', active: location.pathname === '/inspection-checklist' },
                     { icon: Heart, label: 'Favorites', active: location.pathname === '/saved' },
                     { icon: Clock, label: 'Search History', active: false }
                   ].map((item, idx) => (
@@ -1136,6 +1748,9 @@ export default function ChatPage() {
         >
           {/* User Profile - Avatar Only */}
           <div className="flex items-center">
+            <div className="mr-4">
+              <NotificationCenter />
+            </div>
             {user ? (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
@@ -1330,14 +1945,21 @@ export default function ChatPage() {
       {/* MAIN area (hero + search) */}
       <div style={{ paddingLeft: isDesktop ? (compactMode ? '80px' : '320px') : 0 }} className="relative z-10 transition-all duration-300">
         <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 pt-32 sm:pt-24">
-          {/* hero text */}
-          <div className="text-center mb-8 sm:mb-10 max-w-4xl px-2 sm:px-0">
-            <h1 className="flex items-center justify-center flex-wrap text-3xl sm:text-4xl font-bold text-[#2C3E50] mb-4 sm:mb-5 leading-tight gap-2 sm:gap-3">
-              <span>AI-Powered Property Search</span>
-              <span className="inline-flex items-center"><img src="/images/logo.png" alt="logo" className="w-8 h-8 sm:w-8 sm:h-8 rounded-lg object-cover" /></span>
-            </h1>
-            <p className="text-gray-600 text-md md:text-lg font-light max-w-2xl mx-auto">Ask me anything about properties, neighborhoods, or market trends. I'm your AI real estate assistant!</p>
-          </div>
+          {/* Personalized welcome for logged-in users */}
+          {user && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-6 sm:mb-8 max-w-2xl"
+            >
+              <h2 className="text-2xl sm:text-3xl font-bold text-[#2C3E50] mb-2">
+                {greeting}, {getUserDisplayName()}! {showHolidayIcon && '✨'}
+              </h2>
+              <p className="text-gray-600 text-base sm:text-lg">{message}</p>
+            </motion.div>
+          )}
+
 
           {/* Search + upload area */}
           <div className="w-full max-w-3xl relative px-0 sm:px-2">
@@ -1375,11 +1997,19 @@ export default function ChatPage() {
             </AnimatePresence>
 
             <motion.form
-              onSubmit={handleSearchSubmit}
+              onSubmit={handleIntelligentSearchSubmit}
               whileHover={{ scale: 1.005 }}
-              className="relative flex flex-col bg-white/95 border border-gray-300 rounded-3xl shadow-2xl px-0 py-6 sm:px-4 sm:py-10 min-h-[120px] backdrop-blur-sm"
+              className={`relative flex flex-col bg-white/95 shadow-2xl px-0 py-3 sm:py-6 min-h-[120px] sm:min-h-[140px] backdrop-blur-sm z-20 ${showAdvancedSearch || showSuggestions ? 'rounded-[2rem]' : 'rounded-[2rem]'}`}
               style={{
-                boxShadow: `
+                boxShadow: showAdvancedSearch || showSuggestions ? `
+                  -2px 0 20px rgba(255, 107, 53, 0.2),
+                  2px 0 20px rgba(255, 107, 53, 0.2),
+                  0 -2px 20px rgba(255, 107, 53, 0.2),
+                  -2px 0 40px rgba(255, 107, 53, 0.1),
+                  2px 0 40px rgba(255, 107, 53, 0.1),
+                  0 -2px 40px rgba(255, 107, 53, 0.1),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.1)
+                ` : `
                   0 0 20px rgba(255, 107, 53, 0.2),
                   0 0 40px rgba(255, 107, 53, 0.1),
                   0 0 60px rgba(255, 107, 53, 0.05),
@@ -1401,7 +2031,7 @@ export default function ChatPage() {
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
-                className="absolute inset-0 rounded-3xl pointer-events-none"
+                className={`absolute inset-0 pointer-events-none ${showAdvancedSearch || showSuggestions ? 'rounded-[2rem]' : 'rounded-[2rem]'}`}
                 style={{
                   background: 'radial-gradient(circle at center, rgba(255, 107, 53, 0.1) 0%, transparent 70%)'
                 }}
@@ -1415,24 +2045,24 @@ export default function ChatPage() {
                     transition={{ duration: 0.4, delay: 0.1 }}
                     type="text"
                     value={searchQuery}
-                    onChange={handleSearchChange}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(e)}
+                    onChange={handleIntelligentSearchChange}
+                    onKeyDown={(e) => e.key === 'Enter' && handleIntelligentSearchSubmit(e)}
                     onFocus={() => searchQuery.trim() && setShowSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                    placeholder="Search by location, type, or features..."
-                    className="w-full bg-transparent text-[#2C3E50] placeholder-gray-400 outline-none border-none h-14 sm:h-16 rounded-xl sm:rounded-2xl px-6 pr-16 relative z-10"
+                    placeholder="Search for apartments, houses, locations... (e.g., '2 bedroom apartment in Lekki under ₦1M')"
+                    className={`w-full bg-transparent text-[#2C3E50] placeholder-gray-400 outline-none border-none h-12 sm:h-16 px-6 pr-16 relative z-10 ${showAdvancedSearch || showSuggestions ? 'rounded-xl sm:rounded-2xl' : 'rounded-xl sm:rounded-2xl'}`}
                     style={{
                       minWidth: 0,
                       fontSize: '0.95rem',
                       lineHeight: '0.9',
                       verticalAlign: 'top',
-                      marginTop: '-8px',
+                      marginTop: '-2px',
                       marginBottom: 0,
-                      paddingTop: '28px',
+                      paddingTop: '20px',
                       paddingBottom: '2px'
                     }}
                     autoComplete="off"
-                    aria-label="Search properties"
+                    aria-label="Intelligent property search"
                     disabled={isSearching}
                   />
                   {searchError && (
@@ -1440,26 +2070,89 @@ export default function ChatPage() {
                       {searchError}
                     </div>
                   )}
+
+                  {/* Search Intent Preview */}
+                  {searchIntent && Object.values(searchIntent).some(value => value !== null && value !== undefined && (Array.isArray(value) ? value.length > 0 : true)) && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="absolute top-full left-0 right-0 mt-2 p-3 bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg z-10"
+                    >
+                      <div className="text-xs text-gray-600 mb-2">Detected search intent:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {searchIntent.location && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                            📍 {searchIntent.location}
+                          </span>
+                        )}
+                        {searchIntent.propertyType && (
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                            🏠 {searchIntent.propertyType}
+                          </span>
+                        )}
+                        {searchIntent.priceRange && (
+                          <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
+                            💰 ₦{searchIntent.priceRange[0].toLocaleString()} - ₦{searchIntent.priceRange[1].toLocaleString()}
+                          </span>
+                        )}
+                        {searchIntent.bedrooms && (
+                          <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs">
+                            🛏️ {searchIntent.bedrooms} bed{searchIntent.bedrooms > 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {searchIntent.bathrooms && (
+                          <span className="px-2 py-1 bg-pink-100 text-pink-800 rounded-full text-xs">
+                            🚿 {searchIntent.bathrooms} bath{searchIntent.bathrooms > 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {searchIntent.amenities.map(amenity => (
+                          <span key={amenity} className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                            {amenity}
+                          </span>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
               </div>
 
               <div className="flex items-center justify-between absolute bottom-3 left-4 right-4 sm:left-6 sm:right-6 w-auto">
                 <div className="flex items-center gap-2 sm:gap-3 relative">
-                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="button" className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 text-[#2C3E50] border border-gray-300" tabIndex={-1} onClick={() => setShowPlusDropdown((s) => !s)}>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 text-[#2C3E50] border border-gray-300"
+                    tabIndex={-1}
+                    onClick={() => setShowPlusDropdown((s) => !s)}
+                    title="Upload files or images"
+                  >
                     <Plus size={10} />
                   </motion.button>
 
                   <AnimatePresence>
                     {showPlusDropdown && (
-                      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} transition={{ duration: 0.18 }} className="absolute bottom-12 left-0 border border-gray-200 rounded-lg shadow-2xl z-50 px-1 py-0.5 min-w-[180px] w-[180px] h-[60px] bg-white">
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.18 }}
+                        className="absolute bottom-12 left-0 border border-gray-200 rounded-lg shadow-2xl z-50 px-1 py-0.5 min-w-[180px] w-[180px] h-[60px] bg-white"
+                      >
                         <div className="space-y-0">
-                          <button onClick={() => { handleFileUploadClick(); setShowPlusDropdown(false); }} className="w-full flex items-center gap-0.5 text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 px-1.5 py-0.5 rounded text-[10px] leading-tight">
+                          <button
+                            onClick={() => { handleFileUploadClick(); setShowPlusDropdown(false); }}
+                            className="w-full flex items-center gap-0.5 text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 px-1.5 py-0.5 rounded text-[10px] leading-tight"
+                          >
                             <FileUp size={8} className="flex-shrink-0" />
                             <span className="truncate">Upload File</span>
                           </button>
                           <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
 
-                          <button onClick={() => { handleImageUploadClick(); setShowPlusDropdown(false); }} className="w-full flex items-center gap-0.5 text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 px-1.5 py-0.5 rounded text-[10px] leading-tight">
+                          <button
+                            onClick={() => { handleImageUploadClick(); setShowPlusDropdown(false); }}
+                            className="w-full flex items-center gap-0.5 text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 px-1.5 py-0.5 rounded text-[10px] leading-tight"
+                          >
                             <ImageUp size={8} className="flex-shrink-0" />
                             <span className="truncate">Upload Image</span>
                           </button>
@@ -1469,44 +2162,684 @@ export default function ChatPage() {
                     )}
                   </AnimatePresence>
 
-                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="button" onClick={handleSuggestionClick} className="flex items-center gap-1 px-2 py-1 sm:px-2 sm:py-1 rounded-full bg-transparent border border-gray-300 text-[#2C3E50] font-small hover:bg-gray-100 text-xs">
-                    <Sparkles size={14} />
-                    <span>Suggestions</span>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+                    className="flex items-center gap-1 px-2 py-1 sm:px-2 sm:py-1 rounded-full bg-transparent border border-gray-300 text-[#2C3E50] font-small hover:bg-gray-100 text-xs"
+                    title="Advanced search options"
+                  >
+                    <SlidersHorizontal size={14} />
+                    <span>Advanced</span>
                   </motion.button>
+
+                  {/* Quick Search Examples */}
+                  <div className="hidden sm:flex items-center gap-1 text-xs text-gray-500">
+                    <span>Try:</span>
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('2 bedroom apartment in Lekki')}
+                      className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs transition-colors"
+                    >
+                      2BR Lekki
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('house with parking in Abuja')}
+                      className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs transition-colors"
+                    >
+                      Abuja house
+                    </button>
+                  </div>
                 </div>
 
-                <motion.button 
-                  whileHover={{ scale: 1.05 }} 
-                  whileTap={{ scale: 0.95 }} 
-                  type="submit" 
-                  className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-white shadow-lg ${!searchQuery.trim() ? 'opacity-50 cursor-not-allowed bg-gray-400' : 'bg-[#FF6B35] hover:bg-[#e85e2f]'}`} 
-                  style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }} 
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  type="submit"
+                  className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-white shadow-lg ${!searchQuery.trim() ? 'opacity-50 cursor-not-allowed bg-gray-400' : 'bg-[#FF6B35] hover:bg-[#e85e2f]'}`}
+                  style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
                   disabled={!searchQuery.trim() || isSearching}
+                  title="Search properties"
                 >
-                  <ArrowUp size={14} />
+                  {isSearching ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <ArrowUp size={14} />
+                  )}
                 </motion.button>
               </div>
             </motion.form>
-            
-            {/* Suggestions */}
+
+            {/* Advanced Search Panel - Full Width Extension */}
+            <AnimatePresence>
+              {showAdvancedSearch && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  className="absolute top-full left-2 right-2 bg-white/95 backdrop-blur-md rounded-b-[2rem] shadow-2xl border-l border-r border-b border-gray-200/80 z-10 overflow-hidden"
+                  style={{
+                    boxShadow: `
+                      0 10px 25px rgba(0, 0, 0, 0.15),
+                      0 4px 10px rgba(0, 0, 0, 0.1),
+                      inset 0 1px 0 rgba(255, 255, 255, 0.1)
+                    `,
+                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)'
+                  }}
+                >
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-semibold text-[#2C3E50]">Advanced Search Filters</h3>
+                      <button
+                        onClick={() => setShowAdvancedSearch(false)}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <X size={18} className="text-gray-500" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                      {/* Location Section */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <MapPin size={16} className="text-blue-600" />
+                          </div>
+                          <label className="text-sm font-medium text-gray-700">Where</label>
+                        </div>
+                        <input
+                          type="text"
+                          value={searchLocation}
+                          onChange={(e) => setSearchLocation(e.target.value)}
+                          placeholder="Enter location..."
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                        />
+                        {locationSuggestions.length > 0 && (
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {locationSuggestions.slice(0, 4).map((location, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => {
+                                  setSearchLocation(location);
+                                  setLocationSuggestions([]);
+                                }}
+                                className="w-full text-left px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                              >
+                                📍 {location}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Property Type Section */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <Home size={16} className="text-green-600" />
+                          </div>
+                          <label className="text-sm font-medium text-gray-700">Property Type</label>
+                        </div>
+                        <select
+                          value={propertyType}
+                          onChange={(e) => setPropertyType(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+                        >
+                          <option value="">Any Type</option>
+                          <option value="apartment">Apartment</option>
+                          <option value="house">House</option>
+                          <option value="duplex">Duplex</option>
+                          <option value="bungalow">Bungalow</option>
+                          <option value="penthouse">Penthouse</option>
+                          <option value="studio">Studio</option>
+                          <option value="self-contain">Self Contain</option>
+                        </select>
+                      </div>
+
+                      {/* Price Section */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                            <DollarSign size={16} className="text-purple-600" />
+                          </div>
+                          <label className="text-sm font-medium text-gray-700">Price Range</label>
+                        </div>
+                        <select
+                          value={`${priceRange[0]}-${priceRange[1]}`}
+                          onChange={(e) => {
+                            const [min, max] = e.target.value.split('-').map(Number);
+                            setPriceRange([min || 0, max || 10000000]);
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                        >
+                          <option value="0-10000000">Any Price</option>
+                          <option value="0-300000">Under ₦300K</option>
+                          <option value="300000-500000">₦300K - ₦500K</option>
+                          <option value="500000-1000000">₦500K - ₦1M</option>
+                          <option value="1000000-2000000">₦1M - ₦2M</option>
+                          <option value="2000000-5000000">₦2M - ₦5M</option>
+                          <option value="5000000-10000000">Over ₦5M</option>
+                        </select>
+                      </div>
+
+                      {/* Purchase Type Section */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                            <ShoppingCart size={16} className="text-orange-600" />
+                          </div>
+                          <label className="text-sm font-medium text-gray-700">Purchase Type</label>
+                        </div>
+                        <select
+                          value={purchaseType}
+                          onChange={(e) => setPurchaseType(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+                        >
+                          <option value="">Any</option>
+                          <option value="rent">Rent</option>
+                          <option value="buy">Buy</option>
+                          <option value="lease">Lease</option>
+                          <option value="shortlet">Short Let</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => {
+                          setSearchLocation('');
+                          setPropertyType('');
+                          setPriceRange([0, 10000000]);
+                          setPurchaseType('');
+                        }}
+                        className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        Clear Filters
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setShowAdvancedSearch(false)}
+                          className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            // Apply filters and search
+                            handleIntelligentSearchSubmit({ preventDefault: () => {} });
+                            setShowAdvancedSearch(false);
+                          }}
+                          className="px-4 py-2 text-sm bg-[#FF6B35] text-white hover:bg-[#e85e2f] rounded-lg transition-colors shadow-sm"
+                        >
+                          Apply Filters
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Enhanced Suggestions */}
             <AnimatePresence>
               {showSuggestions && (
-                <motion.div initial={{ opacity: 0, y: -10, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -10, height: 0 }} transition={{ duration: 0.2 }} className="absolute top-full left-0 right-0 mt-2 sm:mt-4 border border-gray-200 rounded-2xl shadow-2xl z-20 overflow-hidden bg-white">
-                  <div className="p-4">
-                    <h3 className="text-[#FF6B35] font-semibold mb-3 sm:mb-4 text-lg sm:text-xl">Popular Searches</h3>
-                    <div className="space-y-1">
-                      {suggestions.map((sug, idx) => (
-                        <motion.button 
-                          key={idx} 
-                          whileHover={{ scale: 1.01 }}
-                          whileTap={{ scale: 0.99 }}
-                          onClick={() => handleSuggestionSelect(sug)} 
-                          className="w-full text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 px-4 py-2.5 rounded-lg leading-normal transition-all duration-150"
-                          style={{ fontSize: '15px' }}
-                        >
-                          {sug.title} {sug.location && `- ${sug.location}`}
-                        </motion.button>
-                      ))}
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.96 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  className="absolute top-full left-2 right-2 border-l border-r border-b border-gray-200/80 rounded-b-[2rem] shadow-2xl z-10 overflow-hidden bg-white/95 backdrop-blur-md"
+                  style={{
+                    boxShadow: `
+                      0 10px 25px rgba(0, 0, 0, 0.15),
+                      0 4px 10px rgba(0, 0, 0, 0.1),
+                      inset 0 1px 0 rgba(255, 255, 255, 0.1)
+                    `,
+                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)'
+                  }}
+                >
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-[#2C3E50]">🔍 Intelligent Suggestions</h3>
+                      <button
+                        onClick={() => setShowSuggestions(false)}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <X size={16} className="text-gray-500" />
+                      </button>
+                    </div>
+
+                    {/* Search Intent Summary */}
+                    {searchIntent && Object.values(searchIntent).some(value => value !== null && value !== undefined && (Array.isArray(value) ? value.length > 0 : true)) && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/50"
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Sparkles size={12} className="text-blue-600" />
+                          </div>
+                          <span className="text-sm font-medium text-blue-800">AI Detected Your Intent</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {searchIntent.location && (
+                            <motion.span
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ delay: 0.1 }}
+                              className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium border border-blue-200 flex items-center gap-1"
+                            >
+                              <motion.div
+                                animate={{
+                                  rotate: [0, 8, -8, 0],
+                                  scale: [1, 1.05, 1]
+                                }}
+                                transition={{
+                                  duration: 2.5,
+                                  repeat: Infinity,
+                                  ease: "easeInOut"
+                                }}
+                              >
+                                <MapPin size={12} className="text-blue-600" />
+                              </motion.div>
+                              {searchIntent.location}
+                            </motion.span>
+                          )}
+                          {searchIntent.propertyType && (
+                            <motion.span
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ delay: 0.15 }}
+                              className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium border border-emerald-200 flex items-center gap-1"
+                            >
+                              <motion.div
+                                animate={{
+                                  scale: [1, 1.15, 1],
+                                  rotate: [0, -5, 5, 0]
+                                }}
+                                transition={{
+                                  duration: 2.2,
+                                  repeat: Infinity,
+                                  ease: "easeInOut"
+                                }}
+                              >
+                                <Home size={12} className="text-emerald-600" />
+                              </motion.div>
+                              {searchIntent.propertyType}
+                            </motion.span>
+                          )}
+                          {searchIntent.priceRange && (
+                            <motion.span
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ delay: 0.2 }}
+                              className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium border border-purple-200 flex items-center gap-1"
+                            >
+                              <motion.div
+                                animate={{
+                                  rotate: [0, 15, -15, 0],
+                                  scale: [1, 1.1, 1]
+                                }}
+                                transition={{
+                                  duration: 2.8,
+                                  repeat: Infinity,
+                                  ease: "easeInOut"
+                                }}
+                              >
+                                <DollarSign size={12} className="text-purple-600" />
+                              </motion.div>
+                              ₦{searchIntent.priceRange[0].toLocaleString()}-{searchIntent.priceRange[1].toLocaleString()}
+                            </motion.span>
+                          )}
+                          {searchIntent.bedrooms && (
+                            <motion.span
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ delay: 0.25 }}
+                              className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium border border-amber-200 flex items-center gap-1"
+                            >
+                              <motion.div
+                                animate={{
+                                  y: [0, -3, 0],
+                                  scale: [1, 1.08, 1]
+                                }}
+                                transition={{
+                                  duration: 2.0,
+                                  repeat: Infinity,
+                                  ease: "easeInOut"
+                                }}
+                              >
+                                <Bed size={12} className="text-amber-600" />
+                              </motion.div>
+                              {searchIntent.bedrooms}BR
+                            </motion.span>
+                          )}
+                          {searchIntent.bathrooms && (
+                            <motion.span
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ delay: 0.3 }}
+                              className="px-3 py-1.5 bg-pink-100 text-pink-700 rounded-full text-xs font-medium border border-pink-200 flex items-center gap-1"
+                            >
+                              <motion.div
+                                animate={{
+                                  scale: [1, 1.25, 1],
+                                  rotate: [0, 5, -5, 0]
+                                }}
+                                transition={{
+                                  duration: 2.2,
+                                  repeat: Infinity,
+                                  ease: "easeInOut"
+                                }}
+                              >
+                                <Bath size={12} className="text-pink-600" />
+                              </motion.div>
+                              {searchIntent.bathrooms}BA
+                            </motion.span>
+                          )}
+                          {searchIntent.amenities.map((amenity, idx) => (
+                            <motion.span
+                              key={amenity}
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ delay: 0.35 + idx * 0.05 }}
+                              className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium border border-yellow-200 flex items-center gap-1"
+                            >
+                              <motion.div
+                                animate={{
+                                  rotate: [0, 12, -12, 0],
+                                  scale: [1, 1.1, 1],
+                                  y: [0, -1, 0]
+                                }}
+                                transition={{
+                                  duration: 2.5,
+                                  repeat: Infinity,
+                                  ease: "easeInOut",
+                                  delay: idx * 0.1
+                                }}
+                              >
+                                <Sparkles size={10} className="text-yellow-600" />
+                              </motion.div>
+                              {amenity}
+                            </motion.span>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Property Suggestions */}
+                    {suggestions.length > 0 && (
+                      <div className="mb-6">
+                        <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                          <Home size={14} className="text-gray-600" />
+                          Top Property Matches
+                        </h4>
+                        <div className="space-y-3">
+                          {suggestions.slice(0, 4).map((suggestion, idx) => (
+                            <motion.button
+                              key={suggestion.id || idx}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.1 }}
+                              whileHover={{
+                                scale: 1.02,
+                                backgroundColor: "rgba(255, 107, 53, 0.05)",
+                                borderColor: "#FF6B35"
+                              }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => handleIntelligentSuggestionSelect(suggestion)}
+                              className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 rounded-xl transition-all duration-200 text-left border border-gray-100 hover:border-[#FF6B35]/30 group"
+                            >
+                              <div className="relative">
+                                {suggestion.images && suggestion.images[0] ? (
+                                  <img
+                                    src={suggestion.images[0]}
+                                    alt={suggestion.title}
+                                    className="w-16 h-16 object-cover rounded-lg shadow-sm group-hover:shadow-md transition-shadow"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg flex items-center justify-center">
+                                    <Home size={20} className="text-gray-500" />
+                                  </div>
+                                )}
+                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] rounded-full flex items-center justify-center">
+                                  <motion.span
+                                    animate={{
+                                      scale: [1, 1.2, 1],
+                                      rotate: [0, 10, -10, 0]
+                                    }}
+                                    transition={{
+                                      duration: 2,
+                                      repeat: Infinity,
+                                      ease: "easeInOut"
+                                    }}
+                                    className="text-white text-xs font-bold"
+                                  >
+                                    {suggestion.relevance > 8 ? '🔥' : suggestion.relevance > 5 ? '👍' : '📍'}
+                                  </motion.span>
+                                </div>
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-gray-900 truncate mb-1">
+                                  {suggestion.title}
+                                </div>
+                                <div className="text-sm text-gray-600 mb-2 flex items-center gap-2">
+                                  <motion.div
+                                    animate={{ rotate: [0, 6, -6, 0] }}
+                                    transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                                  >
+                                    <MapPin size={12} className="text-gray-500" />
+                                  </motion.div>
+                                  {suggestion.location} •
+                                  <motion.div
+                                    animate={{
+                                      scale: [1, 1.15, 1],
+                                      rotate: [0, 3, -3, 0]
+                                    }}
+                                    transition={{
+                                      duration: 2.0,
+                                      repeat: Infinity,
+                                      ease: "easeInOut"
+                                    }}
+                                  >
+                                    <DollarSign size={12} className="text-gray-500" />
+                                  </motion.div>
+                                  ₦{suggestion.price?.toLocaleString()}
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-gray-500">
+                                  {suggestion.bedrooms && (
+                                    <span className="flex items-center gap-1">
+                                      <motion.div
+                                        animate={{
+                                          y: [0, -2, 0],
+                                          scale: [1, 1.05, 1]
+                                        }}
+                                        transition={{
+                                          duration: 1.8,
+                                          repeat: Infinity,
+                                          ease: "easeInOut"
+                                        }}
+                                      >
+                                        <Bed size={10} className="text-gray-500" />
+                                      </motion.div>
+                                      {suggestion.bedrooms}BR
+                                    </span>
+                                  )}
+                                  {suggestion.bathrooms && (
+                                    <span className="flex items-center gap-1">
+                                      <motion.div
+                                        animate={{
+                                          scale: [1, 1.18, 1],
+                                          rotate: [0, 2, -2, 0]
+                                        }}
+                                        transition={{
+                                          duration: 2.0,
+                                          repeat: Infinity,
+                                          ease: "easeInOut"
+                                        }}
+                                      >
+                                        <Bath size={10} className="text-gray-500" />
+                                      </motion.div>
+                                      {suggestion.bathrooms}BA
+                                    </span>
+                                  )}
+                                  <span className={`px-2 py-0.5 rounded-full ${
+                                    suggestion.relevance > 8 ? 'bg-green-100 text-green-700' :
+                                    suggestion.relevance > 5 ? 'bg-blue-100 text-blue-700' :
+                                    'bg-gray-100 text-gray-700'
+                                  }`}>
+                                    {suggestion.relevance > 8 ? 'Excellent Match' :
+                                     suggestion.relevance > 5 ? 'Good Match' : 'Fair Match'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="text-right">
+                                <div className="text-xs text-gray-500 mb-1">Relevance</div>
+                                <div className="w-12 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-300 ${
+                                      suggestion.relevance > 8 ? 'bg-green-500' :
+                                      suggestion.relevance > 5 ? 'bg-blue-500' :
+                                      'bg-gray-400'
+                                    }`}
+                                    style={{ width: `${Math.min(suggestion.relevance * 10, 100)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Location Suggestions */}
+                    {locationSuggestions.length > 0 && (
+                      <div className="mb-6">
+                        <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                          <MapPin size={14} className="text-gray-600" />
+                          Popular Locations
+                        </h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {locationSuggestions.slice(0, 6).map((location, idx) => (
+                            <motion.button
+                              key={idx}
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: idx * 0.05 }}
+                              whileHover={{ scale: 1.05, backgroundColor: "#FF6B35" }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => {
+                                setSearchQuery(prev => prev + ` in ${location}`);
+                                setLocationSuggestions([]);
+                                setShowSuggestions(false);
+                              }}
+                              className="px-3 py-2 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-[#FF6B35] hover:to-[#e85e2f] text-gray-700 hover:text-white rounded-lg text-xs font-medium transition-all duration-200 border border-gray-200 hover:border-[#FF6B35] flex items-center gap-2"
+                            >
+                              <motion.div
+                                animate={{
+                                  rotate: [0, 8, -8, 0],
+                                  scale: [1, 1.1, 1]
+                                }}
+                                transition={{
+                                  duration: 2.3,
+                                  repeat: Infinity,
+                                  ease: "easeInOut"
+                                }}
+                              >
+                                <MapPin size={12} />
+                              </motion.div>
+                              {location}
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quick Actions */}
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                          <Clock size={14} className="text-gray-600" />
+                          Recent Searches
+                        </h4>
+                        <div className="space-y-2">
+                          {searchHistory.slice(0, 3).map((query, idx) => (
+                            <motion.button
+                              key={idx}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.05 }}
+                              whileHover={{ x: 4, backgroundColor: "rgba(59, 130, 246, 0.1)" }}
+                              onClick={() => {
+                                setSearchQuery(query);
+                                setShowSuggestions(false);
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-blue-100 hover:border-blue-200 flex items-center gap-2"
+                            >
+                              <motion.div
+                                animate={{
+                                  scale: [1, 1.25, 1],
+                                  rotate: [0, 5, -5, 0]
+                                }}
+                                transition={{
+                                  duration: 1.8,
+                                  repeat: Infinity,
+                                  ease: "easeInOut"
+                                }}
+                              >
+                                <Search size={10} className="text-blue-600" />
+                              </motion.div>
+                              {query.length > 25 ? query.substring(0, 25) + '...' : query}
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                          <TrendingUp size={14} className="text-gray-600" />
+                          Trending Now
+                        </h4>
+                        <div className="space-y-2">
+                          {popularSearches.slice(0, 3).map((query, idx) => (
+                            <motion.button
+                              key={idx}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.05 }}
+                              whileHover={{ x: 4, backgroundColor: "rgba(16, 185, 129, 0.1)" }}
+                              onClick={() => {
+                                setSearchQuery(query);
+                                setShowSuggestions(false);
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition-all duration-200 border border-emerald-100 hover:border-emerald-200 flex items-center gap-2"
+                            >
+                              <motion.div
+                                animate={{
+                                  scale: [1, 1.4, 1],
+                                  rotate: [0, 8, -8, 0],
+                                  y: [0, -2, 0]
+                                }}
+                                transition={{
+                                  duration: 2.2,
+                                  repeat: Infinity,
+                                  ease: "easeInOut"
+                                }}
+                              >
+                                <Flame size={10} className="text-emerald-600" />
+                              </motion.div>
+                              {query.length > 25 ? query.substring(0, 25) + '...' : query}
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>

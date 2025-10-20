@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useContext, useCallback } fr
 import { authAPI } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -81,12 +81,23 @@ export const AuthProvider = ({ children }) => {
             if (Array.isArray(savedRoles) && savedRoles.length > 0) {
               console.log('✅ Using cached roles:', savedRoles);
               setRoles(savedRoles);
-              setCurrentRole(savedRole || (savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role));
+              const primaryRole = savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role;
+              console.log('Setting primary role to:', primaryRole);
+              setCurrentRole(primaryRole);
+              localStorage.setItem('currentRole', primaryRole);
               return true;
             }
           } catch (rolesError) {
             console.error('❌ Failed to parse saved roles:', rolesError);
           }
+        }
+
+        // Fallback: try to get currentRole from localStorage
+        const savedCurrentRole = localStorage.getItem('currentRole');
+        if (savedCurrentRole) {
+          console.log('🔄 Using saved currentRole from localStorage:', savedCurrentRole);
+          setCurrentRole(savedCurrentRole);
+          return true;
         }
 
         // Fetch fresh roles from database
@@ -822,5 +833,3 @@ export const useAnyRole = (requiredRoles = []) => {
     isInRole: requiredRoles.includes(currentRole)
   };
 };
-
-export default AuthContext;

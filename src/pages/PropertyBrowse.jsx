@@ -15,7 +15,8 @@ import {
   SlidersHorizontal,
   X,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  GitCompare
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,6 +33,8 @@ export default function PropertyBrowse() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [savedProperties, setSavedProperties] = useState(new Set());
+  const [compareProperties, setCompareProperties] = useState([]);
+  const [showCompareButton, setShowCompareButton] = useState(false);
 
   // Current property index for swipe navigation
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -124,6 +127,37 @@ export default function PropertyBrowse() {
     } catch (error) {
       console.error('Error toggling save property:', error);
     }
+  };
+
+  const handleAddToCompare = (propertyId) => {
+    if (compareProperties.length >= 4) {
+      toast.error('You can compare up to 4 properties at once');
+      return;
+    }
+
+    if (!compareProperties.includes(propertyId)) {
+      setCompareProperties(prev => [...prev, propertyId]);
+      setShowCompareButton(true);
+      toast.success('Added to comparison');
+    }
+  };
+
+  const handleRemoveFromCompare = (propertyId) => {
+    setCompareProperties(prev => prev.filter(id => id !== propertyId));
+    if (compareProperties.length <= 1) {
+      setShowCompareButton(false);
+    }
+  };
+
+  const handleCompareProperties = () => {
+    if (compareProperties.length < 2) {
+      toast.error('Please select at least 2 properties to compare');
+      return;
+    }
+
+    navigate('/compare', {
+      state: { propertyIds: compareProperties }
+    });
   };
 
   // Touch handlers for swipe detection
@@ -230,6 +264,15 @@ export default function PropertyBrowse() {
             </div>
 
             <div className="flex items-center space-x-2">
+              {showCompareButton && (
+                <button
+                  onClick={handleCompareProperties}
+                  className="flex items-center space-x-2 bg-[#FF6B35] text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  <GitCompare className="w-4 h-4" />
+                  <span>Compare ({compareProperties.length})</span>
+                </button>
+              )}
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -524,7 +567,10 @@ export default function PropertyBrowse() {
 
                         {/* Save Button */}
                         <button
-                          onClick={() => toggleSaveProperty(property.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSaveProperty(property.id);
+                          }}
                           className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-sm hover:shadow-md transition-shadow"
                         >
                           {savedProperties.has(property.id) ? (
@@ -532,6 +578,17 @@ export default function PropertyBrowse() {
                           ) : (
                             <Bookmark className="w-5 h-5 text-gray-600" />
                           )}
+                        </button>
+
+                        {/* Compare Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCompare(property.id);
+                          }}
+                          className="absolute top-3 right-12 p-2 bg-white rounded-full shadow-sm hover:shadow-md transition-shadow text-gray-600 hover:bg-gray-50"
+                        >
+                          <GitCompare className="w-5 h-5" />
                         </button>
 
                         {/* Property Type Badge */}
@@ -767,6 +824,14 @@ export default function PropertyBrowse() {
                       ) : (
                         <Bookmark className="w-6 h-6 text-gray-600" />
                       )}
+                    </button>
+
+                    {/* Compare Button */}
+                    <button
+                      onClick={() => handleAddToCompare(currentProperty.id)}
+                      className="absolute top-4 right-16 p-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:shadow-xl transition-all text-gray-600 hover:text-gray-800"
+                    >
+                      <GitCompare className="w-6 h-6" />
                     </button>
 
                     {/* Property Type Badge */}

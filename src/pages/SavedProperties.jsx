@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { PropertyAPI } from '../lib/propertyAPI';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
+import { supabase } from '../lib/supabaseClient';
 
 export default function SavedProperties() {
   const navigate = useNavigate();
@@ -16,6 +17,30 @@ export default function SavedProperties() {
   useEffect(() => {
     if (isAuthenticated && user?.id) {
       loadSavedProperties();
+
+      // Set up real-time subscription for saved_properties table
+      const subscription = supabase
+        .channel('saved_properties_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'saved_properties',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('📡 Real-time update received:', payload);
+            // Reload saved properties when changes occur
+            loadSavedProperties();
+          }
+        )
+        .subscribe();
+
+      // Cleanup subscription on unmount
+      return () => {
+        subscription.unsubscribe();
+      };
     } else {
       setLoading(false);
     }

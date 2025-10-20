@@ -33,9 +33,23 @@ import {
   AlertCircle,
   Menu,
   X,
-  Loader2
+  Loader2,
+  MoreHorizontal,
+  Calculator,
+  TrendingUp,
+  Coins,
+  Shield,
+  PiggyBank,
+  ClipboardList,
+  DollarSign,
+  Camera,
+  Move3D,
+  Layers,
+  Database,
+  Sparkles
 } from 'lucide-react';
 import ProfilePopup from '../components/ProfilePopup';
+import NotificationCenter from '../components/NotificationCenter';
 
 const LandlordDashboard = () => {
   const { user, isAuthenticated, loading: authLoading, logout, hasRole } = useAuth();
@@ -260,12 +274,12 @@ const LandlordDashboard = () => {
       // Calculate total inquiries from real data
       const totalInquiries = inquiries?.length || 0;
 
-      // Update stats with real data
+      // Use real data instead of mock calculations
       setStats({
         totalListings: totalProperties,
         totalViews: totalViews, // Use real view data
-        activeRentals: Math.floor(totalProperties * 0.7), // Mock calculation
-        propertiesSold: Math.floor(totalProperties * 0.3), // Mock calculation
+        activeRentals: totalProperties, // All properties are considered "active" for now
+        propertiesSold: 0, // Would need a "sold" status field in properties table
         activeLeads: totalInquiries,
         inquiries: totalInquiries
       });
@@ -391,6 +405,66 @@ const LandlordDashboard = () => {
   const userEmail = user?.email || '';
   const userInitials = firstName[0]?.toUpperCase() || 'U';
 
+  // Dynamic greeting function that handles time-based greetings and special holidays
+  const getDynamicGreeting = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    const dayOfWeek = now.getDay();
+    const month = now.getMonth();
+    const date = now.getDate();
+
+    // Time-based greetings
+    let timeGreeting = '';
+    if (hour < 12) {
+      timeGreeting = 'Good morning';
+    } else if (hour < 17) {
+      timeGreeting = 'Good afternoon';
+    } else {
+      timeGreeting = 'Good evening';
+    }
+
+    // Special holiday greetings
+    let holidayGreeting = '';
+
+    // Check for major holidays (month is 0-indexed)
+    if (month === 11 && date === 25) {
+      holidayGreeting = '🎄 Merry Christmas! ';
+    } else if (month === 0 && date === 1) {
+      holidayGreeting = '🎉 Happy New Year! ';
+    } else if (month === 3 && date >= 19 && date <= 21) { // Easter (approximate)
+      holidayGreeting = '🐰 Happy Easter! ';
+    } else if (month === 9 && date === 1) {
+      holidayGreeting = '🇳🇬 Happy Independence Day! ';
+    } else if (month === 10 && date === 1) {
+      holidayGreeting = '👶 Happy Children\'s Day! ';
+    } else if (month === 10 && date === 2) {
+      holidayGreeting = '👨‍👩‍👧‍👦 Happy Family Day! ';
+    }
+
+    // Weekday vs weekend context
+    const dayContext = dayOfWeek === 0 || dayOfWeek === 6 ? 'weekend' : 'day';
+
+    // Personalized messages based on activity level
+    let activityMessage = '';
+    if (stats.totalListings === 0) {
+      activityMessage = 'Ready to list your first property?';
+    } else if (stats.totalViews < 10) {
+      activityMessage = 'Time to boost your property visibility!';
+    } else if (stats.totalInquiries === 0) {
+      activityMessage = 'Keep your listings active for more inquiries!';
+    } else {
+      activityMessage = 'Great job on your active listings!';
+    }
+
+    return {
+      greeting: `${holidayGreeting}${timeGreeting}`,
+      message: activityMessage,
+      showHolidayIcon: holidayGreeting !== ''
+    };
+  };
+
+  const { greeting, message, showHolidayIcon } = getDynamicGreeting();
+
   const removeProperty = async (propertyId) => {
     try {
       // console.log('🗑️ Deleting property:', propertyId);
@@ -443,7 +517,7 @@ const LandlordDashboard = () => {
       icon: Eye
     },
     {
-      title: 'ACTIVE RENTALS',
+      title: 'ACTIVE LISTINGS',
       value: stats.activeRentals.toString(),
       status: `${stats.activeRentals} Active`,
       statusColor: 'text-green-400',
@@ -476,9 +550,10 @@ const LandlordDashboard = () => {
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'properties', label: 'Properties', icon: Building },
     { id: 'inquiries', label: 'Inquiries', icon: MessageSquare, badge: stats.activeLeads > 0 ? stats.activeLeads.toString() : undefined },
-    { id: 'messages', label: 'Messages', icon: MessageSquare },
-    { id: 'calendar', label: 'Calendar', icon: Calendar },
-    // { id: 'locate', label: 'Locate', icon: MapPin }
+    { id: 'manage', label: 'Property Manager', icon: Building },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'tools', label: 'Financial Tools', icon: Calculator },
+    { id: 'insurance', label: 'Insurance Calc', icon: Shield },
   ];
 
   const handleNavigation = (id) => {
@@ -495,8 +570,11 @@ const LandlordDashboard = () => {
     if (id === 'inquiries') {
       navigate('/inquiries');
     }
-    if (id === 'messages') {
-      navigate('/messages');
+    if (id === 'manage') {
+      navigate('/manage');
+    }
+    if (id === 'analytics') {
+      navigate('/analytics');
     }
     if (id === 'calendar') {
       // For now, show a placeholder message or navigate to a calendar page
@@ -641,12 +719,7 @@ return (
 
               {/* Notifications - Better mobile styling */}
               <div className="relative flex-shrink-0">
-                <button className="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors">
-                  <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
-                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center text-[10px] sm:text-xs font-medium">
-                    {stats.inquiries > 0 ? stats.inquiries : ''}
-                  </span>
-                </button>
+                <NotificationCenter />
               </div>
 
               {/* User Profile - Cleaner mobile layout */}
@@ -822,10 +895,11 @@ return (
         </div>
       </aside>
 
-      {/* Mobile Bottom Navigation - Clean alternative to hamburger menu */}
+      {/* Mobile Bottom Navigation - Clean Modern Design */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-lg">
-        <div className="grid grid-cols-5 gap-1 p-2">
-          {navigationItems.slice(0, 4).map((item) => {
+        <div className="flex items-center justify-around px-2 py-3 safe-area-pb">
+          {/* Main Navigation Items - Simplified */}
+          {navigationItems.slice(0, 4).map((item, index) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
 
@@ -833,40 +907,128 @@ return (
               <motion.button
                 key={item.id}
                 onClick={() => handleNavigation(item.id)}
-                className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 ${
+                className={`relative flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 min-w-0 flex-1 ${
                   isActive
-                    ? 'text-white shadow-md'
-                    : 'text-gray-600 hover:bg-gray-100 active:bg-gray-200'
+                    ? 'text-white'
+                    : 'text-gray-600 hover:bg-gray-50 active:bg-gray-100'
                 }`}
                 style={isActive ? { backgroundColor: '#FF6B35' } : {}}
-                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
               >
                 <div className="relative">
-                  <Icon className="w-5 h-5 mb-1" />
+                  <Icon className={`w-5 h-5 mb-1 ${isActive ? '' : ''}`} />
                   {item.badge && (
-                    <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-3 h-3 flex items-center justify-center text-[10px] font-medium">
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-medium">
                       {item.badge}
                     </span>
                   )}
                 </div>
-                <span className="text-xs font-medium leading-tight">{item.label.split(' ')[0]}</span>
+                <span className={`text-xs font-medium leading-tight truncate max-w-full ${isActive ? 'text-white' : ''}`}>
+                  {item.label.length > 8 ? item.label.substring(0, 8) + '...' : item.label}
+                </span>
               </motion.button>
             );
           })}
 
-          {/* Mobile Logout Button */}
-          <motion.button
-            onClick={handleLogout}
-            className="flex flex-col items-center justify-center p-2 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 active:bg-red-100 transition-all duration-200"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            title="Logout"
+          {/* More Options - Clean Dropdown */}
+          <motion.div
+            className="relative"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
           >
-            <LogOut className="w-5 h-5 mb-1" />
-            <span className="text-xs font-medium leading-tight">Logout</span>
-          </motion.button>
+            <motion.button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className={`relative flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 ${
+                mobileMenuOpen
+                  ? 'text-white'
+                  : 'text-gray-600 hover:bg-gray-50 active:bg-gray-100'
+              }`}
+              style={mobileMenuOpen ? { backgroundColor: '#FF6B35' } : {}}
+              whileTap={{ scale: 0.95 }}
+            >
+              <MoreHorizontal className="w-5 h-5 mb-1" />
+              <span className="text-xs font-medium leading-tight">More</span>
+            </motion.button>
+
+            {/* Clean Dropdown Menu */}
+            {mobileMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                className="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50"
+              >
+                {/* Additional navigation items */}
+                {navigationItems.slice(4).map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        handleNavigation(item.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Icon className="w-4 h-4 text-gray-600" />
+                      <span className="font-medium">{item.label}</span>
+                      {item.badge && (
+                        <span className="ml-auto bg-orange-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+
+                {/* Divider */}
+                <div className="border-t border-gray-200 my-2"></div>
+
+                {/* Account Actions */}
+                <div className="px-3 py-1 mb-1">
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Account</div>
+                  <button
+                    onClick={() => {
+                      navigate('/landlord/settings');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center space-x-3 px-2 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors rounded-lg"
+                  >
+                    <Settings className="w-4 h-4 text-gray-600" />
+                    <span>Settings</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center space-x-3 px-2 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-lg"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Log Out</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
         </div>
+
+        {/* Clean Floating Action Button */}
+        <motion.button
+          onClick={() => navigate('/list-property')}
+          className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-12 h-12 bg-[#FF6B35] rounded-full shadow-lg flex items-center justify-center text-white"
+          whileHover={{ scale: 1.05, boxShadow: "0 8px 25px rgba(255, 107, 53, 0.3)" }}
+          whileTap={{ scale: 0.95 }}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.3, type: "spring", stiffness: 260, damping: 20 }}
+        >
+          <Plus className="w-5 h-5" />
+        </motion.button>
       </div>
 
       {/* Main Content - Scrollable */}
@@ -876,8 +1038,10 @@ return (
         <div className="max-w-7xl mx-auto">
           {/* Welcome Section */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-[#2C3E50] mb-2">Welcome Back, {firstName}!</h2>
-            <p className="text-gray-600">Here's what happening with your properties today!</p>
+            <h2 className="text-3xl font-bold text-[#2C3E50] mb-2">
+              {greeting}, {firstName}! {showHolidayIcon && '✨'}
+            </h2>
+            <p className="text-gray-600">{message}</p>
           </div>
 
           {/* Main Dashboard Grid: Stats Grid and Recent Leads side by side */}

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { PropertyAPI } from '../lib/propertyAPI';
+import { useAuth } from '../contexts/AuthContext';
 import {
   ChevronLeft,
   ChevronRight,
@@ -34,10 +36,9 @@ import {
   Camera,
   Grid3X3
 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'react-hot-toast';
+import { createNewInquiryNotification } from '../services/notificationService';
 import { supabase } from '../lib/supabaseClient';
-import toast from 'react-hot-toast';
 
 export default function PropertyDetails() {
   const { id } = useParams();
@@ -53,6 +54,9 @@ export default function PropertyDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Derive images from property data
+  const images = property?.images || [];
+
   React.useEffect(() => {
     const loadProperty = async () => {
       try {
@@ -60,6 +64,11 @@ export default function PropertyDetails() {
         const { success, property: propertyData } = await PropertyAPI.getProperty(id);
         if (success) {
           setProperty(propertyData);
+
+          // Track property view for notifications
+          if (propertyData?.landlord_id && isAuthenticated && user?.id !== propertyData.landlord_id) {
+            await trackPropertyView(propertyData.id, propertyData.landlord_id, propertyData.title);
+          }
         } else {
           setError('Property not found');
         }
@@ -74,9 +83,33 @@ export default function PropertyDetails() {
     if (id) {
       loadProperty();
     }
-  }, [id]);
+  }, [id, isAuthenticated, user]);
 
-  const images = property?.images || [];
+  const trackPropertyView = async (propertyId, landlordId, propertyTitle) => {
+    try {
+      // Try to record the property view in the database (optional feature)
+      const { error } = await supabase
+        .from('property_views')
+        .insert([{
+          property_id: propertyId,
+          user_id: user.id
+        }]);
+
+      if (error) {
+        console.warn('Property view tracking failed (table may not exist):', error.message);
+        // Don't fail the entire flow if property view tracking fails
+        return;
+      }
+
+      // Create notification for landlord (if tracking succeeded)
+      await createPropertyViewedNotification(landlordId, propertyTitle);
+
+      console.log('✅ Property view tracked and notification sent');
+    } catch (error) {
+      console.warn('Property view tracking failed:', error.message);
+      // Don't fail the entire flow if property view tracking fails
+    }
+  };
 
   // Map amenities to icons and labels
   const getAmenityIcon = (amenity) => {
@@ -171,6 +204,20 @@ export default function PropertyDetails() {
       }
 
       const result = await response.json();
+
+      // Create notifications for both landlord and user
+      try {
+        // Notify landlord of new inquiry
+        await createNewInquiryNotification(property.landlord_id, property.title || 'Property');
+
+        // Notify user that inquiry was submitted (optional - could be added)
+        // await createInquiryResponseNotification(user.id, property.title || 'Property');
+
+        console.log('✅ Notifications created for inquiry submission');
+      } catch (notificationError) {
+        console.error('Error creating notifications:', notificationError);
+        // Don't fail the booking if notifications fail
+      }
 
       // Show success toast with property details
       toast.success(
@@ -478,6 +525,22 @@ export default function PropertyDetails() {
                   className="w-full h-full object-cover"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Property Reviews Section */}
+          <div className="mt-12 max-w-4xl mx-auto">
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Reviews Coming Soon</h3>
+              <p className="text-gray-600">Property reviews will be available soon.</p>
+            </div>
+          </div>
+
+          {/* Virtual Tour Section */}
+          <div className="mt-12 max-w-4xl mx-auto">
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Virtual Tour Coming Soon</h3>
+              <p className="text-gray-600">360° virtual tours will be available soon.</p>
             </div>
           </div>
 

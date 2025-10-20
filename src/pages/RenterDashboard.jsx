@@ -28,6 +28,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { PropertyAPI } from '../lib/propertyAPI';
+import NotificationCenter from '../components/NotificationCenter';
 
 export default function RenterDashboard() {
   const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
@@ -193,6 +194,64 @@ export default function RenterDashboard() {
 
   const firstName = getUserDisplayName();
 
+  // Dynamic greeting function that handles time-based greetings and special holidays
+  const getDynamicGreeting = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    const dayOfWeek = now.getDay();
+    const month = now.getMonth();
+    const date = now.getDate();
+
+    // Time-based greetings
+    let timeGreeting = '';
+    if (hour < 12) {
+      timeGreeting = 'Good morning';
+    } else if (hour < 17) {
+      timeGreeting = 'Good afternoon';
+    } else {
+      timeGreeting = 'Good evening';
+    }
+
+    // Special holiday greetings
+    let holidayGreeting = '';
+
+    // Check for major holidays (month is 0-indexed)
+    if (month === 11 && date === 25) {
+      holidayGreeting = '🎄 Merry Christmas! ';
+    } else if (month === 0 && date === 1) {
+      holidayGreeting = '🎉 Happy New Year! ';
+    } else if (month === 3 && date >= 19 && date <= 21) { // Easter (approximate)
+      holidayGreeting = '🐰 Happy Easter! ';
+    } else if (month === 9 && date === 1) {
+      holidayGreeting = '🇳🇬 Happy Independence Day! ';
+    } else if (month === 4 && date === 29) {
+      holidayGreeting = '👶 Happy Children\'s Day! ';
+    } else if (month === 9 && date === 1) {
+      holidayGreeting = '👨‍👩‍👧‍👦 Happy Family Day! ';
+    }
+
+    // Weekday vs weekend context
+    const dayContext = dayOfWeek === 0 || dayOfWeek === 6 ? 'weekend' : 'day';
+
+    // Personalized messages based on activity level
+    let activityMessage = '';
+    if (savedProperties.size === 0) {
+      activityMessage = 'Start exploring and save properties you love!';
+    } else if (savedProperties.size < 3) {
+      activityMessage = 'Keep exploring to find your perfect home!';
+    } else {
+      activityMessage = 'You have some great properties saved - ready to take the next step?';
+    }
+
+    return {
+      greeting: `${holidayGreeting}${timeGreeting}`,
+      message: activityMessage,
+      showHolidayIcon: holidayGreeting !== ''
+    };
+  };
+
+  const { greeting, message, showHolidayIcon } = getDynamicGreeting();
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -213,6 +272,11 @@ export default function RenterDashboard() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent w-64"
               />
+            </div>
+
+            {/* Notifications */}
+            <div className="relative">
+              <NotificationCenter />
             </div>
 
             {/* User Profile */}
@@ -281,8 +345,10 @@ export default function RenterDashboard() {
           <div className="max-w-7xl mx-auto">
             {/* Welcome Section */}
             <div className="mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back, {firstName}!</h2>
-              <p className="text-gray-600">Find your perfect home from thousands of listings</p>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                {greeting}, {firstName}! {showHolidayIcon && '✨'}
+              </h2>
+              <p className="text-gray-600">{message}</p>
             </div>
 
             {/* Search Filters */}
