@@ -2070,49 +2070,6 @@ export default function ChatPage() {
                       {searchError}
                     </div>
                   )}
-
-                  {/* Search Intent Preview */}
-                  {searchIntent && Object.values(searchIntent).some(value => value !== null && value !== undefined && (Array.isArray(value) ? value.length > 0 : true)) && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="absolute top-full left-0 right-0 mt-2 p-3 bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg z-10"
-                    >
-                      <div className="text-xs text-gray-600 mb-2">Detected search intent:</div>
-                      <div className="flex flex-wrap gap-2">
-                        {searchIntent.location && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                            📍 {searchIntent.location}
-                          </span>
-                        )}
-                        {searchIntent.propertyType && (
-                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                            🏠 {searchIntent.propertyType}
-                          </span>
-                        )}
-                        {searchIntent.priceRange && (
-                          <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
-                            💰 ₦{searchIntent.priceRange[0].toLocaleString()} - ₦{searchIntent.priceRange[1].toLocaleString()}
-                          </span>
-                        )}
-                        {searchIntent.bedrooms && (
-                          <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs">
-                            🛏️ {searchIntent.bedrooms} bed{searchIntent.bedrooms > 1 ? 's' : ''}
-                          </span>
-                        )}
-                        {searchIntent.bathrooms && (
-                          <span className="px-2 py-1 bg-pink-100 text-pink-800 rounded-full text-xs">
-                            🚿 {searchIntent.bathrooms} bath{searchIntent.bathrooms > 1 ? 's' : ''}
-                          </span>
-                        )}
-                        {searchIntent.amenities.map(amenity => (
-                          <span key={amenity} className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
-                            {amenity}
-                          </span>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
                 </div>
               </div>
 
