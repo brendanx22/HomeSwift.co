@@ -164,22 +164,48 @@ export default function PropertyDetails() {
   const handleConfirmBooking = async () => {
     try {
       // Get form data
+      const phoneNumber = document.querySelector('#phone-number').value;
       const moveInDate = document.querySelector('input[type="date"]').value;
       const leaseDuration = document.querySelector('select').value;
       const specialRequests = document.querySelector('textarea').value;
       const agreedToTerms = document.querySelector('#booking-terms').checked;
 
       // Validate required fields
-      if (!moveInDate || !agreedToTerms) {
-        toast.error('Please fill in all required fields and agree to terms');
+      if (!phoneNumber || !moveInDate || !agreedToTerms) {
+        toast.error('Please fill in all required fields (phone number, move-in date) and agree to terms');
         return;
       }
 
-      // Prepare booking data
+      // Get user name - check various possible fields
+      const getUserName = () => {
+        if (user?.user_metadata?.full_name) return user.user_metadata.full_name;
+        if (user?.user_metadata?.name) return user.user_metadata.name;
+        if (user?.name) return user.name;
+        if (user?.email) return user.email.split('@')[0]; // Fallback to email username
+        return 'Unknown User';
+      };
+
+      const userName = getUserName();
+
+      // Prepare comprehensive booking data
       const bookingData = {
-        property_id: property.id,
-        landlord_id: property.landlord_id,
+        // User information
         tenant_id: user.id,
+        tenant_name: userName,
+        tenant_email: user.email,
+        tenant_phone: phoneNumber,
+
+        // Property information
+        property_id: property.id,
+        property_title: property.title || `${property.bedrooms || 3} Bedroom Apartment`,
+        property_location: property.location || 'Location not specified',
+        property_price: property.price || 0,
+        property_bedrooms: property.bedrooms || property.rooms || 0,
+        property_bathrooms: property.bathrooms || 0,
+        landlord_id: property.landlord_id,
+        landlord_name: property.landlord_name || 'Landlord',
+
+        // Booking details
         move_in_date: moveInDate,
         lease_duration: parseInt(leaseDuration),
         special_requests: specialRequests || null,
@@ -189,37 +215,84 @@ export default function PropertyDetails() {
         created_at: new Date().toISOString()
       };
 
-      // Submit to backend
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/leads/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.access_token || localStorage.getItem('supabase.auth.token')}`
-        },
-        body: JSON.stringify(bookingData)
-      });
+      // Store in database (bookings table)
+      const { error: insertError } = await supabase
+        .from('bookings')
+        .insert([bookingData]);
 
-      if (!response.ok) {
-        throw new Error('Failed to submit booking');
+      if (insertError) {
+        console.error('Error storing booking in database:', insertError);
+
+        // If bookings table doesn't exist, try to use inquiries table as fallback
+        if (insertError.message.includes('relation "bookings" does not exist')) {
+          console.log('Bookings table not found, using inquiries table as fallback');
+
+          const fallbackData = {
+            renter_id: user.id,
+            landlord_id: property.landlord_id,
+            property_id: property.id,
+            message: `Booking Inquiry - Phone: ${phoneNumber}, Move-in: ${moveInDate}, Duration: ${leaseDuration} months${specialRequests ? ', Special Requests: ' + specialRequests : ''}`
+          };
+
+          const { error: fallbackError } = await supabase
+            .from('inquiries')
+            .insert([fallbackData]);
+
+          if (fallbackError) {
+            console.error('Fallback to inquiries table also failed:', fallbackError);
+            toast.error('Failed to submit booking. Please try again.');
+            return;
+          }
+
+          console.log('✅ Booking saved to inquiries table as fallback');
+        } else {
+          toast.error('Failed to submit booking. Please try again.');
+          return;
+        }
+      } else {
+        console.log('✅ Booking saved to bookings table');
       }
 
-      const result = await response.json();
+      // Also submit to backend API for notifications
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/leads/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user.access_token || localStorage.getItem('supabase.auth.token')}`
+          },
+          body: JSON.stringify({
+            property_id: property.id,
+            landlord_id: property.landlord_id,
+            tenant_id: user.id,
+            move_in_date: moveInDate,
+            lease_duration: parseInt(leaseDuration),
+            special_requests: specialRequests || null,
+            movemate_enabled: movemateEnabled,
+            total_amount: property.price,
+            status: 'pending'
+          })
+        });
+
+        if (!response.ok) {
+          console.warn('Backend API call failed, but booking saved to database');
+        }
+      } catch (apiError) {
+        console.warn('Backend API call failed, but booking saved to database:', apiError);
+      }
 
       // Create notifications for both landlord and user
       try {
-        // Notify landlord of new inquiry
+        // Notify landlord of new booking inquiry
         await createNewInquiryNotification(property.landlord_id, property.title || 'Property');
 
-        // Notify user that inquiry was submitted (optional - could be added)
-        // await createInquiryResponseNotification(user.id, property.title || 'Property');
-
-        console.log('✅ Notifications created for inquiry submission');
+        console.log('✅ Booking saved and notifications created');
       } catch (notificationError) {
         console.error('Error creating notifications:', notificationError);
         // Don't fail the booking if notifications fail
       }
 
-      // Show success toast with property details
+      // Show success toast with comprehensive details
       toast.success(
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
@@ -228,12 +301,15 @@ export default function PropertyDetails() {
           <div>
             <p className="font-medium text-gray-900">Booking Submitted Successfully!</p>
             <p className="text-sm text-gray-500">
-              Your inquiry has been sent to the landlord. They'll respond within 24 hours.
+              Your inquiry for <strong>{property.title || `${property.bedrooms || 3} Bedroom Apartment`}</strong> in <strong>{property.location}</strong> has been sent to the landlord.
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              They'll respond within 24 hours with next steps.
             </p>
           </div>
         </div>,
         {
-          duration: 5000,
+          duration: 6000,
           position: 'top-center',
           style: {
             background: '#fff',
@@ -653,6 +729,19 @@ export default function PropertyDetails() {
 
             {/* Booking Options */}
             <div className="p-6 space-y-6">
+              {/* Phone Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  id="phone-number"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:border-[#FF6B35]"
+                  placeholder="Enter your phone number"
+                />
+              </div>
+
               {/* Move-in Date */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
