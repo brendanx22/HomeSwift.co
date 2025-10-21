@@ -100,6 +100,22 @@ export const AuthProvider = ({ children }) => {
           return true;
         }
 
+        // Additional fallback: check user_type from metadata if roles aren't available yet
+        const userType = userData.user_metadata?.user_type;
+        if (userType && ['landlord', 'renter'].includes(userType)) {
+          console.log('✅ Found required role in user metadata, allowing access');
+          if (userType === 'landlord' && !currentRole) {
+            console.log('🔄 User has landlord metadata but no role assigned, assigning landlord role...');
+            try {
+              await addRole('landlord', userData.id);
+              console.log('✅ Landlord role assigned successfully');
+            } catch (error) {
+              console.error('❌ Failed to assign landlord role:', error);
+            }
+          }
+          return true;
+        }
+
         // Fetch fresh roles from database
         console.log('🔄 Fetching fresh roles from database...');
         const rolesFetched = await fetchUserRoles(userData.id);

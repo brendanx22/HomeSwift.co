@@ -42,6 +42,13 @@ const PropertyAnalytics = () => {
   const [timeRange, setTimeRange] = useState('30d');
 
   useEffect(() => {
+    console.log('🔍 PropertyAnalytics - Auth state:', {
+      isAuthenticated,
+      currentRole,
+      userId: user?.id,
+      userType: user?.user_metadata?.user_type
+    });
+
     if (isAuthenticated && currentRole === 'landlord') {
       loadAnalytics();
     }
@@ -339,12 +346,23 @@ const PropertyAnalytics = () => {
   };
 
   if (!isAuthenticated || currentRole !== 'landlord') {
+    console.log('❌ PropertyAnalytics - Access denied:', {
+      isAuthenticated,
+      currentRole,
+      userId: user?.id,
+      userType: user?.user_metadata?.user_type,
+      reason: !isAuthenticated ? 'not authenticated' : 'currentRole is not landlord'
+    });
+
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <BarChartIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Landlord Access Required</h2>
           <p className="text-gray-600 mb-6">This dashboard is only available for property owners</p>
+          <p className="text-sm text-gray-500">
+            Debug: {isAuthenticated ? `Role: ${currentRole}` : 'Not authenticated'}
+          </p>
         </div>
       </div>
     );
