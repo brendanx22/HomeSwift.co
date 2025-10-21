@@ -36,8 +36,9 @@ const InquiryManagement = () => {
   const [filteredInquiries, setFilteredInquiries] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedInquiry, setSelectedInquiry] = useState(null);
-  const [showInquiryDetails, setShowInquiryDetails] = useState(false);
+  const [selectedInquiries, setSelectedInquiries] = useState([]);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [priorityFilter, setPriorityFilter] = useState('all');
 
   // Check authentication
   useEffect(() => {
@@ -52,13 +53,18 @@ const InquiryManagement = () => {
     loadInquiries();
   }, [user]);
 
-  // Filter inquiries based on search and status
+  // Filter inquiries based on search, status, and priority
   useEffect(() => {
     let filtered = inquiries;
 
     // Filter by status
     if (statusFilter !== 'all') {
       filtered = filtered.filter(inquiry => inquiry.status === statusFilter);
+    }
+
+    // Filter by priority
+    if (priorityFilter !== 'all') {
+      filtered = filtered.filter(inquiry => inquiry.priority === priorityFilter);
     }
 
     // Filter by search query
@@ -68,12 +74,15 @@ const InquiryManagement = () => {
         inquiry.tenant_name?.toLowerCase().includes(query) ||
         inquiry.property_title?.toLowerCase().includes(query) ||
         inquiry.property_location?.toLowerCase().includes(query) ||
-        inquiry.tenant_email?.toLowerCase().includes(query)
+        inquiry.tenant_email?.toLowerCase().includes(query) ||
+        inquiry.special_requests?.toLowerCase().includes(query)
       );
     }
 
     setFilteredInquiries(filtered);
-  }, [inquiries, searchQuery, statusFilter]);
+    setSelectedInquiries([]); // Clear selections when filter changes
+    setShowBulkActions(false);
+  }, [inquiries, searchQuery, statusFilter, priorityFilter]);
 
   const loadInquiries = async () => {
     try {
@@ -154,7 +163,8 @@ const InquiryManagement = () => {
         status: booking.status,
         created_at: booking.created_at,
         updated_at: booking.updated_at,
-        priority: 'medium' // Default priority, can be enhanced later
+        priority: 'medium', // Default priority, can be enhanced later
+        read: false // Track if inquiry has been read
       })) || [];
 
       console.log('✅ Loaded inquiries from bookings table:', inquiries.length);
@@ -200,6 +210,134 @@ const InquiryManagement = () => {
     }
   };
 
+  const markInquiryAsRead = async (inquiryId) => {
+    try {
+      // Update local state
+      setInquiries(prev =>
+        prev.map(inquiry =>
+          inquiry.id === inquiryId
+            ? { ...inquiry, read: true }
+            : inquiry
+        )
+      );
+
+      toast.success('Inquiry marked as read');
+    } catch (error) {
+      console.error('Error marking inquiry as read:', error);
+      toast.error('Failed to mark as read');
+    }
+  };
+
+  // Bulk action handlers
+  const handleSelectInquiry = (inquiryId) => {
+    setSelectedInquiries(prev =>
+      prev.includes(inquiryId)
+        ? prev.filter(id => id !== inquiryId)
+        : [...prev, inquiryId]
+    );
+  };
+
+  const handleSelectAllInquiries = () => {
+    setSelectedInquiries(
+      selectedInquiries.length === filteredInquiries.length
+        ? []
+        : filteredInquiries.map(inquiry => inquiry.id)
+    );
+  };
+
+  const handleBulkStatusUpdate = async (newStatus) => {
+    if (selectedInquiries.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .in('id', selectedInquiries);
+
+      if (error) {
+        console.error('Error updating bookings:', error);
+        toast.error('Failed to update inquiries');
+        return;
+      }
+
+      // Update local state
+      setInquiries(prev =>
+        prev.map(inquiry =>
+          selectedInquiries.includes(inquiry.id)
+            ? { ...inquiry, status: newStatus, updated_at: new Date().toISOString() }
+            : inquiry
+        )
+      );
+
+      setSelectedInquiries([]);
+      setShowBulkActions(false);
+      toast.success(`Updated ${selectedInquiries.length} inquiries to ${newStatus}`);
+    } catch (error) {
+      console.error('Error in bulk update:', error);
+      toast.error('Failed to update inquiries');
+    }
+  };
+
+  const handleBulkMarkAsRead = async () => {
+    if (selectedInquiries.length === 0) return;
+
+    try {
+      // Update local state
+      setInquiries(prev =>
+        prev.map(inquiry =>
+          selectedInquiries.includes(inquiry.id)
+            ? { ...inquiry, read: true }
+            : inquiry
+        )
+      );
+
+      setSelectedInquiries([]);
+      setShowBulkActions(false);
+      toast.success(`Marked ${selectedInquiries.length} inquiries as read`);
+    } catch (error) {
+      console.error('Error in bulk mark as read:', error);
+      toast.error('Failed to mark inquiries as read');
+    }
+  };
+
+  const handleExportInquiries = () => {
+    try {
+      // Create CSV content
+      const headers = ['Name', 'Email', 'Phone', 'Property', 'Location', 'Price', 'Status', 'Priority', 'Date'];
+      const csvContent = [
+        headers.join(','),
+        ...filteredInquiries.map(inquiry => [
+          inquiry.tenant_name,
+          inquiry.tenant_email,
+          inquiry.tenant_phone,
+          inquiry.property_title,
+          inquiry.property_location,
+          inquiry.property_price,
+          inquiry.status,
+          inquiry.priority,
+          formatDate(inquiry.created_at)
+        ].join(','))
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `inquiries-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Inquiries exported successfully');
+    } catch (error) {
+      console.error('Error exporting inquiries:', error);
+      toast.error('Failed to export inquiries');
+    }
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -231,10 +369,10 @@ const InquiryManagement = () => {
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high': return 'text-red-600';
-      case 'medium': return 'text-yellow-600';
-      case 'low': return 'text-green-600';
-      default: return 'text-gray-600';
+      case 'high': return 'bg-red-100 text-red-800 border-red-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -274,7 +412,10 @@ const InquiryManagement = () => {
             </div>
 
             <div className="flex items-center space-x-3">
-              <button className="px-4 py-2 bg-[#FF6B35] text-white rounded-lg font-medium hover:bg-orange-600 transition-colors">
+              <button
+                onClick={handleExportInquiries}
+                className="px-4 py-2 bg-[#FF6B35] text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
+              >
                 <Download className="w-4 h-4 inline mr-2" />
                 Export
               </button>
@@ -361,9 +502,111 @@ const InquiryManagement = () => {
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
               </select>
+
+              <select
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
+              >
+                <option value="all">All Priority</option>
+                <option value="high">High Priority</option>
+                <option value="medium">Medium Priority</option>
+                <option value="low">Low Priority</option>
+              </select>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => {
+                  const allSelected = selectedInquiries.length === filteredInquiries.length && filteredInquiries.length > 0;
+                  handleSelectAllInquiries();
+                }}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  selectedInquiries.length === filteredInquiries.length && filteredInquiries.length > 0
+                    ? 'bg-[#FF6B35] text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {selectedInquiries.length === filteredInquiries.length && filteredInquiries.length > 0 ? 'Deselect All' : 'Select All'}
+              </button>
+
+              {selectedInquiries.length > 0 && (
+                <button
+                  onClick={() => setShowBulkActions(!showBulkActions)}
+                  className="px-3 py-2 bg-[#FF6B35] text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
+                >
+                  Actions ({selectedInquiries.length})
+                </button>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Bulk Actions Panel */}
+        {showBulkActions && selectedInquiries.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-white p-4 rounded-xl border border-gray-200 mb-6"
+          >
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center space-x-4">
+                <span className="text-sm font-medium text-gray-700">
+                  {selectedInquiries.length} inquiries selected
+                </span>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handleBulkStatusUpdate('approved')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                >
+                  Approve All
+                </button>
+                <button
+                  onClick={() => handleBulkStatusUpdate('rejected')}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+                >
+                  Reject All
+                </button>
+                <button
+                  onClick={() => handleBulkStatusUpdate('pending')}
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm font-medium hover:bg-yellow-700 transition-colors"
+                >
+                  Mark Pending
+                </button>
+                <button
+                  onClick={handleBulkMarkAsRead}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Mark Read
+                </button>
+                <button
+                  onClick={handleExportInquiries}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                >
+                  Export All
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+                >
+                  Delete All
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedInquiries([]);
+                    setShowBulkActions(false);
+                  }}
+                  className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Inquiries List */}
         <div className="bg-white rounded-xl border border-gray-200">
@@ -391,77 +634,155 @@ const InquiryManagement = () => {
                   key={inquiry.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-6 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => {
-                    setSelectedInquiry(inquiry);
-                    setShowInquiryDetails(true);
-                  }}
+                  className={`p-6 hover:bg-gray-50 ${!inquiry.read ? 'bg-blue-50/30 border-l-4 border-l-blue-400' : ''}`}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className="w-10 h-10 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-medium overflow-hidden">
-                          {inquiry.tenant_avatar ? (
-                            <img
-                              src={inquiry.tenant_avatar}
-                              alt={inquiry.tenant_name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
-                              }}
-                            />
-                          ) : null}
-                          <span
-                            className="text-white font-medium"
-                            style={{ display: inquiry.tenant_avatar ? 'none' : 'flex' }}
-                          >
-                            {inquiry.tenant_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{inquiry.tenant_name}</h3>
-                          <p className="text-sm text-gray-600">{inquiry.tenant_email}</p>
-                        </div>
-                      </div>
+                    <div className="flex items-start space-x-3 flex-1">
+                      {/* Checkbox for bulk selection */}
+                      <input
+                        type="checkbox"
+                        checked={selectedInquiries.includes(inquiry.id)}
+                        onChange={() => handleSelectInquiry(inquiry.id)}
+                        className="mt-1 w-4 h-4 text-[#FF6B35] border-gray-300 rounded focus:ring-[#FF6B35]"
+                      />
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Building className="w-4 h-4 mr-2" />
-                          {inquiry.property_title}
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <div className="relative">
+                            <div className="w-10 h-10 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-medium overflow-hidden">
+                              {inquiry.tenant_avatar ? (
+                                <img
+                                  src={inquiry.tenant_avatar}
+                                  alt={inquiry.tenant_name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextSibling.style.display = 'flex';
+                                  }}
+                                />
+                              ) : null}
+                              <span
+                                className="text-white font-medium"
+                                style={{ display: inquiry.tenant_avatar ? 'none' : 'flex' }}
+                              >
+                                {inquiry.tenant_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                              </span>
+                            </div>
+                            {!inquiry.read && (
+                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></div>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <h3 className={`font-semibold ${!inquiry.read ? 'text-gray-900' : 'text-gray-700'}`}>
+                                {inquiry.tenant_name}
+                              </h3>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(inquiry.priority)}`}>
+                                {inquiry.priority}
+                              </span>
+                              {!inquiry.read && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                  New
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600">{inquiry.tenant_email}</p>
+                          </div>
                         </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <MapPin className="w-4 h-4 mr-2" />
-                          {inquiry.property_location}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Calendar className="w-4 h-4 mr-2" />
-                          Move in: {formatDate(inquiry.move_in_date)}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(inquiry.status)}`}>
-                            {inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}
-                          </span>
-                        </div>
-                      </div>
 
-                      {inquiry.special_requests && (
-                        <p className="text-sm text-gray-600 mb-2">
-                          <strong>Special requests:</strong> {inquiry.special_requests}
-                        </p>
-                      )}
-
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-600">
-                          ₦{inquiry.property_price.toLocaleString()}/year • {inquiry.lease_duration} months
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Building className="w-4 h-4 mr-2" />
+                            {inquiry.property_title}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600">
+                            <MapPin className="w-4 h-4 mr-2" />
+                            {inquiry.property_location}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            Move in: {formatDate(inquiry.move_in_date)}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(inquiry.status)}`}>
+                              {inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}
+                            </span>
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {formatTimeAgo(inquiry.created_at)}
+
+                        {inquiry.special_requests && (
+                          <p className="text-sm text-gray-600 mb-2">
+                            <strong>Special requests:</strong> {inquiry.special_requests}
+                          </p>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-gray-600">
+                            ₦{inquiry.property_price.toLocaleString()}/year • {inquiry.lease_duration} months
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {formatTimeAgo(inquiry.created_at)}
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     <div className="flex items-center space-x-2 ml-4">
+                      {/* Quick Status Update Buttons */}
+                      <div className="hidden sm:flex items-center space-x-1">
+                        {inquiry.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateInquiryStatus(inquiry.id, 'approved');
+                              }}
+                              className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+                              title="Approve"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateInquiryStatus(inquiry.id, 'rejected');
+                              }}
+                              className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Reject"
+                            >
+                              <AlertCircle className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+
+                        <select
+                          value={inquiry.priority}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            updateInquiryPriority(inquiry.id, e.target.value);
+                          }}
+                          className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#FF6B35]"
+                          title="Change Priority"
+                        >
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                        </select>
+
+                        {!inquiry.read && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markInquiryAsRead(inquiry.id);
+                            }}
+                            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Mark as Read"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
                       <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
                         <MoreVertical className="w-4 h-4" />
                       </button>
@@ -469,10 +790,21 @@ const InquiryManagement = () => {
 
                     {/* Mobile Action Buttons */}
                     <div className="md:hidden flex items-center space-x-2 mt-4 pt-3 border-t border-gray-100">
+                      {!inquiry.read && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markInquiryAsRead(inquiry.id);
+                          }}
+                          className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span>Mark Read</span>
+                        </button>
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Handle message action - could open chat or messaging interface
                           toast.info(`Opening chat with ${inquiry.tenant_name}`);
                         }}
                         className="flex-1 px-3 py-2 bg-[#FF6B35] text-white rounded-lg font-medium hover:bg-orange-600 transition-colors flex items-center justify-center space-x-2"
@@ -483,7 +815,6 @@ const InquiryManagement = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Handle call action
                           window.location.href = `tel:${inquiry.tenant_phone}`;
                         }}
                         className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
@@ -615,21 +946,86 @@ const InquiryManagement = () => {
               )}
 
               {/* Status and Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                <div className="flex items-center space-x-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(selectedInquiry.status)}`}>
-                    {selectedInquiry.status.charAt(0).toUpperCase() + selectedInquiry.status.slice(1)}
-                  </span>
-                  <span className={`text-sm ${getPriorityColor(selectedInquiry.priority)}`}>
-                    Priority: {selectedInquiry.priority}
-                  </span>
+              <div className="flex flex-col space-y-4 pt-4 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(selectedInquiry.status)}`}>
+                        Status: {selectedInquiry.status.charAt(0).toUpperCase() + selectedInquiry.status.slice(1)}
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(selectedInquiry.priority)}`}>
+                        {selectedInquiry.priority} Priority
+                      </span>
+                      {!selectedInquiry.read && (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                          Unread
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <select
+                        value={selectedInquiry.priority}
+                        onChange={(e) => {
+                          updateInquiryPriority(selectedInquiry.id, e.target.value);
+                          // Update the selected inquiry for immediate UI feedback
+                          setSelectedInquiry(prev => prev ? { ...prev, priority: e.target.value } : null);
+                        }}
+                        className="text-sm px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                      >
+                        <option value="low">Low Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="high">High Priority</option>
+                      </select>
+
+                      {!selectedInquiry.read && (
+                        <button
+                          onClick={() => {
+                            markInquiryAsRead(selectedInquiry.id);
+                            setSelectedInquiry(prev => prev ? { ...prev, read: true } : null);
+                          }}
+                          className="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center space-x-1"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span>Mark Read</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    {selectedInquiry.status === 'pending' && (
+                      <>
+                        <button
+                          onClick={() => {
+                            updateInquiryStatus(selectedInquiry.id, 'approved');
+                            setSelectedInquiry(prev => prev ? { ...prev, status: 'approved' } : null);
+                          }}
+                          className="px-3 py-1 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center space-x-1"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Approve</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            updateInquiryStatus(selectedInquiry.id, 'rejected');
+                            setSelectedInquiry(prev => prev ? { ...prev, status: 'rejected' } : null);
+                          }}
+                          className="px-3 py-1 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center space-x-1"
+                        >
+                          <AlertCircle className="w-4 h-4" />
+                          <span>Reject</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      // Handle message action
+                      // Handle message action - could integrate with chat system
                       toast.info(`Opening chat with ${selectedInquiry.tenant_name}`);
                     }}
                     className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B35] rounded-lg hover:bg-orange-600 transition-colors flex items-center space-x-2"
@@ -648,47 +1044,74 @@ const InquiryManagement = () => {
                     <Phone className="w-4 h-4" />
                     <span>Call</span>
                   </button>
-                  <button className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                    <ExternalLink className="w-4 h-4 inline mr-2" />
-                    View Property
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Navigate to property details
+                      navigate(`/property/${selectedInquiry.property_id}`);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                  >
+                    <Building className="w-4 h-4" />
+                    <span>View Property</span>
+                  </button>
+                </div>
+
+                {/* Mobile Action Buttons in Modal */}
+                <div className="sm:hidden flex items-center space-x-2 mt-4 pt-4 border-t border-gray-200">
+                  {!selectedInquiry.read && (
+                    <button
+                      onClick={() => {
+                        markInquiryAsRead(selectedInquiry.id);
+                        setSelectedInquiry(prev => prev ? { ...prev, read: true } : null);
+                      }}
+                      className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>Mark Read</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toast.info(`Opening chat with ${selectedInquiry.tenant_name}`);
+                    }}
+                    className="flex-1 px-3 py-2 bg-[#FF6B35] text-white rounded-lg font-medium hover:bg-orange-600 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Message</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.location.href = `tel:${selectedInquiry.tenant_phone}`;
+                    }}
+                    className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <Phone className="w-4 h-4" />
+                    <span>Call</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/property/${selectedInquiry.property_id}`);
+                    }}
+                    className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <Building className="w-4 h-4" />
+                    <span>Property</span>
                   </button>
                 </div>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="p-6 border-t border-gray-200 flex gap-3">
-              {selectedInquiry.status === 'pending' && (
-                <>
-                  <button
-                    onClick={() => {
-                      updateInquiryStatus(selectedInquiry.id, 'rejected');
-                      setShowInquiryDetails(false);
-                    }}
-                    className="flex-1 px-4 py-2 border border-red-300 text-red-700 rounded-lg font-medium hover:bg-red-50 transition-colors"
-                  >
-                    Reject
-                  </button>
-                  <button
-                    onClick={() => {
-                      updateInquiryStatus(selectedInquiry.id, 'approved');
-                      setShowInquiryDetails(false);
-                    }}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
-                  >
-                    Approve
-                  </button>
-                </>
-              )}
+            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
               <button
                 onClick={() => setShowInquiryDetails(false)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  selectedInquiry.status === 'pending'
-                    ? 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                    : 'bg-[#FF6B35] text-white hover:bg-orange-600'
-                }`}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
               >
-                {selectedInquiry.status === 'pending' ? 'Close' : 'Done'}
+                Close
               </button>
             </div>
           </motion.div>
