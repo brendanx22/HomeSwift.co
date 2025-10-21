@@ -712,6 +712,7 @@ const LandlordDashboard = () => {
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'properties', label: 'Properties', icon: Building },
     { id: 'inquiries', label: 'Inquiries', icon: MessageSquare, badge: stats.activeLeads > 0 ? stats.activeLeads.toString() : undefined },
+    { id: 'manage', label: 'Property Manager', icon: Building },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'tools', label: 'Financial Tools', icon: Calculator },
     { id: 'insurance', label: 'Insurance Calc', icon: Shield },
@@ -1641,176 +1642,104 @@ return (
             </motion.div>
           )}
 
-          {/* Analytics View */}
-          {activeView === 'analytics' && (
+          {/* Inquiries View */}
+          {activeView === 'inquiries' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
+              className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
             >
-              {/* Analytics Header */}
-              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Property Analytics</h2>
-                    <p className="text-gray-600">Track your property performance and engagement</p>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Property Inquiries</h2>
+                  <p className="text-gray-600">Manage inquiries from potential tenants</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="text-sm text-gray-500">
+                    {allInquiries.length} total inquiries
                   </div>
-                  <div className="flex items-center space-x-3 mt-4 sm:mt-0">
-                    <select className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]">
-                      <option value="7d">Last 7 days</option>
-                      <option value="30d">Last 30 days</option>
-                      <option value="90d">Last 90 days</option>
-                      <option value="1y">Last year</option>
-                    </select>
-                    <motion.button
-                      onClick={() => window.location.reload()}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      Refresh
-                    </motion.button>
-                  </div>
+                  <button
+                    onClick={() => navigate('/landlord/inquiry-management')}
+                    className="px-4 py-2 bg-[#FF6B35] text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                  >
+                    Manage All
+                  </button>
                 </div>
               </div>
 
-              {/* Analytics Stats Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {statsData.map((stat, index) => {
-                  const Icon = stat.icon;
-                  return (
+              {loadingInquiries ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-[#FF6B35] mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading inquiries...</p>
+                </div>
+              ) : allInquiries.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MessageSquare className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Inquiries Yet</h3>
+                  <p className="text-gray-600 mb-4">Inquiries from interested tenants will appear here</p>
+                  <button
+                    onClick={loadAllInquiries}
+                    className="px-4 py-2 bg-[#FF6B35] text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                  >
+                    Refresh
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {allInquiries.map((lead, index) => (
                     <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 20 }}
+                      key={lead.id}
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow"
+                      className="bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition-colors"
                     >
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 bg-linear-to-br from-[#FF6B35] to-[#e85e2f] rounded-full flex items-center justify-center">
-                          <Icon className="w-6 h-6 text-white" />
+                      <div className="flex items-start space-x-4">
+                        <div className="w-12 h-12 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-medium shrink-0">
+                          {lead.avatar}
                         </div>
-                        <div className="text-right">
-                          {stat.trend && (
-                            <div className={`text-sm ${stat.trendColor} font-medium`}>
-                              {stat.trend}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h4 className="font-semibold text-gray-900">{lead.name}</h4>
+                              <p className="text-gray-600 text-sm">{lead.email}</p>
+                            </div>
+                            <span className="text-gray-400 text-sm">{lead.time}</span>
+                          </div>
+                          <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+                            <p className="text-gray-700 leading-relaxed">{lead.message}</p>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <span className="flex items-center space-x-2 text-gray-600 text-sm">
+                              <Phone className="w-4 h-4" />
+                              <span>{lead.phone}</span>
+                            </span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              lead.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              lead.status === 'approved' ? 'bg-green-100 text-green-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {lead.status}
+                            </span>
+                          </div>
+                          {lead.property_title && (
+                            <div className="mt-2 text-sm text-gray-600">
+                              <span className="font-medium">Property:</span> {lead.property_title}
+                            </div>
+                          )}
+                          {lead.move_in_date && lead.lease_duration && (
+                            <div className="mt-1 text-sm text-gray-600">
+                              <span className="font-medium">Move-in:</span> {formatDate(lead.move_in_date)} • {lead.lease_duration} months • ₦{lead.total_amount?.toLocaleString()}
                             </div>
                           )}
                         </div>
                       </div>
-                      <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
-                      <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                        {stat.title}
-                      </div>
                     </motion.div>
-                  );
-                })}
-              </div>
-
-              {/* Analytics Charts Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Property Performance Chart */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
-                >
-                  <h3 className="text-lg font-bold text-gray-900 mb-6">Property Performance</h3>
-                  <div className="space-y-4">
-                    {recentListings.slice(0, 5).map((property, index) => (
-                      <div key={property.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-[#FF6B35] rounded-full flex items-center justify-center text-white text-sm font-medium">
-                            {index + 1}
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-gray-900 text-sm">{property.title}</h4>
-                            <p className="text-gray-500 text-xs">{formatPropertyAddress(property)}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-gray-900">{property.views || 0}</div>
-                          <div className="text-xs text-gray-500">views</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* Inquiry Trends */}
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
-                >
-                  <h3 className="text-lg font-bold text-gray-900 mb-6">Recent Activity</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <CheckCircle className="w-8 h-8 text-green-500" />
-                        <div>
-                          <h4 className="font-medium text-gray-900">Inquiries Received</h4>
-                          <p className="text-gray-500 text-sm">This week</p>
-                        </div>
-                      </div>
-                      <div className="text-2xl font-bold text-green-600">{stats.inquiries}</div>
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <Eye className="w-8 h-8 text-blue-500" />
-                        <div>
-                          <h4 className="font-medium text-gray-900">Property Views</h4>
-                          <p className="text-gray-500 text-sm">This month</p>
-                        </div>
-                      </div>
-                      <div className="text-2xl font-bold text-blue-600">{stats.totalViews}</div>
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <Building className="w-8 h-8 text-purple-500" />
-                        <div>
-                          <h4 className="font-medium text-gray-900">Active Listings</h4>
-                          <p className="text-gray-500 text-sm">Currently</p>
-                        </div>
-                      </div>
-                      <div className="text-2xl font-bold text-purple-600">{stats.activeRentals}</div>
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Detailed Analytics */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
-              >
-                <h3 className="text-lg font-bold text-gray-900 mb-6">Performance Insights</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="text-center p-6 bg-gray-50 rounded-lg">
-                    <div className="text-3xl font-bold text-[#FF6B35] mb-2">
-                      {stats.totalListings > 0 ? Math.round(stats.totalViews / stats.totalListings) : 0}
-                    </div>
-                    <div className="text-sm font-medium text-gray-600">Avg Views per Property</div>
-                  </div>
-
-                  <div className="text-center p-6 bg-gray-50 rounded-lg">
-                    <div className="text-3xl font-bold text-green-600 mb-2">
-                      {stats.totalListings > 0 ? Math.round((stats.inquiries / stats.totalListings) * 100) : 0}%
-                    </div>
-                    <div className="text-sm font-medium text-gray-600">Inquiry Rate</div>
-                  </div>
-
-                  <div className="text-center p-6 bg-gray-50 rounded-lg">
-                    <div className="text-3xl font-bold text-blue-600 mb-2">
-                      {stats.inquiries > 0 ? Math.round(stats.totalViews / stats.inquiries) : 0}
-                    </div>
-                    <div className="text-sm font-medium text-gray-600">Views per Inquiry</div>
-                  </div>
+                  ))}
                 </div>
-              </motion.div>
+              )}
             </motion.div>
           )}
         </div>

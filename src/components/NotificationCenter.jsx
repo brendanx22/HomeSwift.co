@@ -15,7 +15,6 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { formatDistanceToNow } from 'date-fns';
-import { toast } from 'react-hot-toast';
 
 const NotificationCenter = () => {
   const { user, isAuthenticated } = useAuth();
@@ -41,21 +40,6 @@ const NotificationCenter = () => {
           },
           (payload) => {
             console.log('📡 Notification update received:', payload);
-
-            // Show toast notification for new notifications
-            if (payload.eventType === 'INSERT' && payload.new && !payload.new.read) {
-              toast.success(`New notification: ${payload.new.title}`, {
-                duration: 5000,
-                position: 'top-right',
-                icon: getNotificationIcon(payload.new.type),
-                style: {
-                  background: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '0.5rem',
-                },
-              });
-            }
-
             loadNotifications(); // Reload notifications when changes occur
           }
         )
@@ -272,7 +256,7 @@ const NotificationCenter = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-gray-100 z-50 max-h-96 overflow-hidden md:w-96 md:right-0"
+            className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-gray-100 z-50 max-h-96 overflow-hidden md:w-96 md:right-0"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
