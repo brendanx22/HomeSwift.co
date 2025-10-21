@@ -55,8 +55,8 @@ export class PropertyAPI {
       // Add default landlord fields for frontend compatibility
       const properties = (data || []).map(property => ({
         ...property,
-        landlord_name: null,
-        landlord_profile_image: null
+        landlord_name: 'Landlord',
+        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
       }));
 
       console.log('✅ getProperties query successful, found:', properties.length, 'properties');
@@ -83,8 +83,8 @@ export class PropertyAPI {
       // Add default landlord fields for frontend compatibility
       const properties = (data || []).map(property => ({
         ...property,
-        landlord_name: null,
-        landlord_profile_image: null
+        landlord_name: 'Landlord',
+        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
       }));
 
       return { success: true, properties };
@@ -128,8 +128,8 @@ export class PropertyAPI {
       // Add default landlord fields for frontend compatibility
       const properties = (data || []).map(property => ({
         ...property,
-        landlord_name: null,
-        landlord_profile_image: null
+        landlord_name: 'Landlord',
+        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
       }));
 
       console.log('✅ getAllProperties query successful, found:', properties.length, 'properties');
@@ -165,12 +165,52 @@ export class PropertyAPI {
         landlord_id: propertyData.landlord_id
       });
 
-      // For now, we'll work with just the landlord_id
-      // The frontend can handle displaying landlord info based on available data
+      // Fetch landlord information if landlord_id exists
+      let landlordInfo = {
+        landlord_name: 'Landlord',
+        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+      };
+
+      if (propertyData.landlord_id) {
+        try {
+          // Try to get landlord info from user_profiles table
+          const { data: profileData, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('full_name, avatar_url, first_name, last_name')
+            .eq('id', propertyData.landlord_id)
+            .single();
+
+          if (!profileError && profileData) {
+            landlordInfo = {
+              landlord_name: profileData.full_name ||
+                           `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() ||
+                           'Landlord',
+              landlord_profile_image: profileData.avatar_url ||
+                                    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+            };
+            console.log('✅ Landlord profile fetched:', landlordInfo.landlord_name);
+          } else {
+            // Check if user_profiles table exists by trying a simple query
+            const { data: tableCheck, error: tableError } = await supabase
+              .from('user_profiles')
+              .select('id')
+              .limit(1);
+
+            if (tableError && tableError.code === '42P01') {
+              // Table doesn't exist, that's okay - use default
+              console.log('ℹ️ user_profiles table does not exist yet, using default landlord info');
+            } else {
+              console.warn('⚠️ Landlord profile not found, using default');
+            }
+          }
+        } catch (landlordErr) {
+          console.warn('⚠️ Error fetching landlord info, using defaults:', landlordErr.message);
+        }
+      }
+
       const property = {
         ...propertyData,
-        landlord_name: null, // Will be set to a default or handled by frontend
-        landlord_profile_image: null // Will be set to a default or handled by frontend
+        ...landlordInfo
       };
 
       return { success: true, property };
@@ -305,8 +345,8 @@ export class PropertyAPI {
       // Add default landlord fields for frontend compatibility
       const properties = (propertiesData || []).map(property => ({
         ...property,
-        landlord_name: null,
-        landlord_profile_image: null
+        landlord_name: 'Landlord',
+        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
       }));
 
       // Combine the data
@@ -445,8 +485,8 @@ export class PropertyAPI {
       // Add default landlord fields for frontend compatibility
       const properties = (data || []).map(property => ({
         ...property,
-        landlord_name: null,
-        landlord_profile_image: null
+        landlord_name: 'Landlord',
+        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
       }));
 
       return { success: true, properties };

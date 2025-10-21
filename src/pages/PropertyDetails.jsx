@@ -230,7 +230,7 @@ export default function PropertyDetails() {
         property_bedrooms: property.bedrooms || property.rooms || 0,
         property_bathrooms: property.bathrooms || 0,
         landlord_id: property.landlord_id,
-        landlord_name: property.landlord_name || 'Landlord',
+        landlord_name: property.landlord_name || 'Property Owner',
 
         // Booking details
         move_in_date: moveInDate,
@@ -590,7 +590,7 @@ export default function PropertyDetails() {
                   alt={property.landlord_name || "Landlord"}
                   className="w-9 h-9 rounded-full object-cover"
                 />
-                <span className="text-sm font-medium">{property.landlord_name || 'Landlord'}</span>
+                <span className="text-sm font-medium">{property.landlord_name || 'Property Owner'}</span>
                 <CheckCircle2 className="w-[18px] h-[18px] text-[#FF6B35] fill-[#FF6B35]" />
               </div>
             </div>
