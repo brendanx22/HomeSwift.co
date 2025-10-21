@@ -58,11 +58,15 @@ const LandlordDashboard = () => {
   // All hooks must be at the top, before any conditional logic
   // State for dashboard
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeView, setActiveView] = useState('dashboard'); // Can be 'dashboard', 'properties', 'inquiries', etc.
   const [compactMode, setCompactMode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showProfilePopup, setShowProfilePopup] = useState(false);
   const [userAvatar, setUserAvatar] = useState(null);
+  const [selectedProperties, setSelectedProperties] = useState([]);
+  const [showPropertyModal, setShowPropertyModal] = useState(false);
+  const [editingProperty, setEditingProperty] = useState(null);
   const [stats, setStats] = useState({
     totalListings: 0,
     totalViews: 0,
@@ -187,30 +191,48 @@ const LandlordDashboard = () => {
         }
       }
 
-      // Fetch recent inquiries (last 5)
-      const { data: inquiries, error: inquiriesError } = await supabase
-        .from('inquiries')
-        .select('*')
+      // Fetch recent inquiries (bookings) for this landlord
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          tenant_name,
+          tenant_email,
+          tenant_phone,
+          property_title,
+          property_location,
+          status,
+          created_at,
+          move_in_date,
+          lease_duration,
+          special_requests,
+          total_amount
+        `)
         .eq('landlord_id', user.id)
         .order('created_at', { ascending: false })
         .limit(5);
 
-      if (inquiriesError) {
-        // console.error('Error fetching recent inquiries:', inquiriesError);
+      if (bookingsError) {
+        console.error('Error fetching recent bookings:', bookingsError);
       } else {
-        // Transform inquiries data to match expected format
-        const transformedLeads = inquiries?.map(inquiry => ({
-          id: inquiry.id,
-          name: 'Potential Tenant', // Since we don't have renter info in inquiries table yet
-          email: 'inquiry@example.com', // Placeholder - would need to join with user_profiles
-          time: formatTimeAgo(inquiry.created_at),
-          message: inquiry.message,
-          phone: '+1 (555) 123-4567', // Placeholder
-          avatar: 'PT' // Placeholder initials
+        // Transform bookings data to match expected format for inquiries
+        const transformedBookings = bookings?.map(booking => ({
+          id: booking.id,
+          name: booking.tenant_name,
+          email: booking.tenant_email,
+          time: formatTimeAgo(booking.created_at),
+          message: booking.special_requests || `Booking inquiry for ${booking.property_title}`,
+          phone: booking.tenant_phone,
+          avatar: booking.tenant_name.split(' ').map(n => n[0]).join('').toUpperCase(),
+          status: booking.status,
+          property_title: booking.property_title,
+          move_in_date: booking.move_in_date,
+          lease_duration: booking.lease_duration,
+          total_amount: booking.total_amount
         })) || [];
 
-        setRecentLeads(transformedLeads);
-        // console.log('💬 Recent leads loaded:', transformedLeads?.length || 0);
+        setRecentLeads(transformedBookings);
+        console.log('💬 Recent bookings loaded as inquiries:', transformedBookings?.length || 0);
       }
 
     } catch (error) {
@@ -243,15 +265,19 @@ const LandlordDashboard = () => {
       const totalProperties = properties?.length || 0;
       const featuredProperties = properties?.filter(p => p.is_featured).length || 0;
 
-      // Fetch inquiries for this landlord
-      const { data: inquiries, error: inquiriesError } = await supabase
-        .from('inquiries')
-        .select('*')
+      // Fetch bookings for this landlord
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('id, status')
         .eq('landlord_id', user.id);
 
-      if (inquiriesError) {
-        // console.error('Error fetching inquiries:', inquiriesError);
+      if (bookingsError) {
+        console.error('Error fetching bookings for stats:', bookingsError);
       }
+
+      // Calculate total inquiries from bookings data
+      const totalBookings = bookings?.length || 0;
+      const pendingBookings = bookings?.filter(b => b.status === 'pending').length || 0;
 
       // Fetch property views for this landlord's properties
       let totalViews = 0;
@@ -271,17 +297,14 @@ const LandlordDashboard = () => {
         // console.log('ℹ️ No properties found, skipping property views query');
       }
 
-      // Calculate total inquiries from real data
-      const totalInquiries = inquiries?.length || 0;
-
       // Use real data instead of mock calculations
       setStats({
         totalListings: totalProperties,
         totalViews: totalViews, // Use real view data
         activeRentals: totalProperties, // All properties are considered "active" for now
         propertiesSold: 0, // Would need a "sold" status field in properties table
-        activeLeads: totalInquiries,
-        inquiries: totalInquiries
+        activeLeads: totalBookings, // Use bookings as inquiries
+        inquiries: totalBookings // Use bookings as inquiries
       });
 
       // console.log('📊 Dashboard stats updated:', {
@@ -317,7 +340,7 @@ const LandlordDashboard = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-4"
+        className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br from-white via-gray-50 to-white p-4"
       >
         <div className="relative">
           {/* Animated logo */}
@@ -465,6 +488,14 @@ const LandlordDashboard = () => {
 
   const { greeting, message, showHolidayIcon } = getDynamicGreeting();
 
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   const removeProperty = async (propertyId) => {
     try {
       // console.log('🗑️ Deleting property:', propertyId);
@@ -558,34 +589,10 @@ const LandlordDashboard = () => {
 
   const handleNavigation = (id) => {
     setActiveTab(id);
+    setActiveView(id); // Set the active view to match the navigation
 
-    // Dashboard is the current page, so no navigation needed
-    if (id === 'dashboard') {
-      return;
-    }
-
-    if (id === 'properties') {
-      navigate('/landlord-properties');
-    }
-    if (id === 'inquiries') {
-      navigate('/inquiries');
-    }
-    if (id === 'manage') {
-      navigate('/manage');
-    }
-    if (id === 'analytics') {
-      navigate('/analytics');
-    }
-    if (id === 'calendar') {
-      // For now, show a placeholder message or navigate to a calendar page
-      // TODO: Create a dedicated Calendar page for managing appointments and viewings
-      toast.info('Calendar feature coming soon! Manage your property viewings and appointments here.', {
-        duration: 4000,
-        icon: '📅',
-      });
-      // Uncomment when calendar page is created:
-      // navigate('/calendar');
-    }
+    // Dashboard is the current page, so no navigation needed for other views
+    // Keep everything within the same component for better UX
   };
 
   const getStatusColor = (status) => {
@@ -671,20 +678,44 @@ const LandlordDashboard = () => {
     return `Listed ${Math.ceil(diffDays / 30)} months ago`;
   };
 
-  const formatTimeAgo = (createdAt) => {
-    if (!createdAt) return 'Recently';
+  // Property Management Functions
+  const handleSelectProperty = (propertyId) => {
+    setSelectedProperties(prev =>
+      prev.includes(propertyId)
+        ? prev.filter(id => id !== propertyId)
+        : [...prev, propertyId]
+    );
+  };
 
-    const date = new Date(createdAt);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffMinutes = Math.floor(diffTime / (1000 * 60));
-    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const handleSelectAllProperties = () => {
+    setSelectedProperties(
+      selectedProperties.length === recentProperties.length
+        ? []
+        : recentProperties.map(p => p.id)
+    );
+  };
 
-    if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
-    if (diffHours < 24) return `${diffHours} hours ago`;
-    if (diffDays === 1) return '1 day ago';
-    return `${diffDays} days ago`;
+  const handleEditProperty = (property) => {
+    setEditingProperty(property);
+    setShowPropertyModal(true);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedProperties.length === 0) return;
+
+    for (const propertyId of selectedProperties) {
+      try {
+        await removeProperty(propertyId);
+      } catch (error) {
+        console.error(`Failed to delete property ${propertyId}:`, error);
+      }
+    }
+
+    setSelectedProperties([]);
+    await loadDashboardData();
+    await loadRecentData();
+
+    toast.success(`Deleted ${selectedProperties.length} properties`);
   };
 
 return (
@@ -695,7 +726,7 @@ return (
         <div className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
           <div className="flex items-center justify-between max-w-full">
             {/* Logo - Better mobile sizing */}
-            <div className="flex items-center min-w-0 flex-shrink-0">
+            <div className="flex items-center min-w-0 shrink-0">
               <h1 className="text-lg sm:text-xl font-bold text-[#FF6B35] tracking-tight">
                 HomeSwift
               </h1>
@@ -703,7 +734,7 @@ return (
 
             <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 min-w-0 flex-1 justify-end">
               {/* Mobile Search Button - Improved */}
-              <button className="sm:hidden p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors flex-shrink-0">
+              <button className="sm:hidden p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors shrink-0">
                 <Search className="w-4 h-4 text-gray-600" />
               </button>
 
@@ -718,12 +749,12 @@ return (
               </div>
 
               {/* Notifications - Better mobile styling */}
-              <div className="relative flex-shrink-0">
+              <div className="relative shrink-0">
                 <NotificationCenter />
               </div>
 
               {/* User Profile - Cleaner mobile layout */}
-              <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-shrink-0">
+              <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 shrink-0">
                 <button
                   onClick={() => setShowProfilePopup(true)}
                   className="w-7 h-7 sm:w-8 sm:h-8 bg-[#FF6B35] rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-shadow"
@@ -758,12 +789,12 @@ return (
               {/* Add Property Button - Much improved mobile styling */}
               <button
                 onClick={() => navigate('/list-property')}
-                className="text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold flex items-center space-x-1.5 sm:space-x-2 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 flex-shrink-0"
+                className="text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold flex items-center space-x-1.5 sm:space-x-2 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 shrink-0"
                 style={{ backgroundColor: '#FF6B35' }}
                 onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#e85e2f')}
                 onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#FF6B35')}
               >
-                <Plus className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                <Plus className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
                 <span className="hidden sm:inline text-sm">Add Property</span>
                 <span className="sm:hidden text-sm font-bold">+</span>
               </button>
@@ -797,7 +828,7 @@ return (
             <div className="flex items-center justify-between mb-8">
               <button
                 onClick={() => setCompactMode(!compactMode)}
-                className="p-1 rounded hover:bg-gray-600 transition-colors text-[#fff]"
+                className="p-1 rounded hover:bg-gray-600 transition-colors text-white"
               >
                 {compactMode ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
               </button>
@@ -814,14 +845,14 @@ return (
                     onClick={() => handleNavigation(item.id)}
                     className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive
-                        ? 'text-[#fff]'
+                        ? 'text-white'
                         : 'text-[#2C3E50] hover:bg-gray-600 '
                     } ${compactMode ? 'justify-center px-2' : ''}`}
                     style={isActive ? { backgroundColor: '#FF6B35' } : {}}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    <Icon className="w-4 h-4 shrink-0" />
                     {!compactMode && (
                       <>
                         <span>{item.label}</span>
@@ -848,7 +879,7 @@ return (
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center shrink-0 overflow-hidden">
                   {userAvatar ? (
                     <img
                       src={userAvatar}
@@ -876,7 +907,7 @@ return (
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Settings className="w-4 h-4 flex-shrink-0" />
+                <Settings className="w-4 h-4 shrink-0" />
                 {!compactMode && <span>Settings</span>}
               </motion.button>
               <motion.button
@@ -887,7 +918,7 @@ return (
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <LogOut className="w-4 h-4 flex-shrink-0" />
+                <LogOut className="w-4 h-4 shrink-0" />
                 {!compactMode && <span>Log out</span>}
               </motion.button>
             </nav>
@@ -1036,19 +1067,40 @@ return (
         compactMode ? 'lg:ml-16' : 'lg:ml-64'
       }`}>
         <div className="max-w-7xl mx-auto">
-          {/* Welcome Section */}
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-[#2C3E50] mb-2">
-              {greeting}, {firstName}! {showHolidayIcon && '✨'}
-            </h2>
-            <p className="text-gray-600">{message}</p>
-          </div>
+          {/* Render different views based on activeView */}
+          {activeView === 'dashboard' && (
+            <>
+              {/* Welcome Section */}
+              <div className="mb-8">
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-linear-to-r from-[#FF6B35] to-[#e85e2f] rounded-2xl p-6 sm:p-8 text-white"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-2xl sm:text-3xl font-bold mb-2">
+                        {greeting}, {firstName}! {showHolidayIcon && '✨'}
+                      </h2>
+                      <p className="text-orange-100">{message}</p>
+                    </div>
+                    <div className="mt-4 sm:mt-0">
+                      <motion.button
+                        onClick={() => navigate('/list-property')}
+                        className="bg-white text-[#FF6B35] px-6 py-3 rounded-full font-semibold flex items-center space-x-2 hover:bg-gray-50 transition-colors"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Plus className="w-5 h-5" />
+                        <span>Add Property</span>
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
 
-          {/* Main Dashboard Grid: Stats Grid and Recent Leads side by side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Stats Grid Section - Left Column */}
-            <div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+              {/* Stats Grid - Modern Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
                 {statsData.map((stat, index) => {
                   const Icon = stat.icon;
                   return (
@@ -1057,229 +1109,480 @@ return (
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="bg-transparent border border-[#2C3E50] rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
+                      className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow"
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                          {stat.title}
-                        </h3>
-                        {/* <Icon className="w-5 h-5 text-[#2C3E50]" /> */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-linear-to-br from-[#FF6B35] to-[#e85e2f] rounded-full flex items-center justify-center">
+                          <Icon className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-right">
+                          {stat.trend && (
+                            <div className={`text-sm ${stat.trendColor} font-medium`}>
+                              {stat.trend}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-5xl font-bold text-[#2C3E50] mb-2">{stat.value}</div>
-                      {stat.trend && (
-                        <div className={`text-xs ${stat.trendColor}`}>
-                          ↑ {stat.trend}
-                        </div>
-                      )}
-                      {stat.status && (
-                        <div className={`text-xs ${stat.statusColor}`}>
-                          {stat.status}
-                        </div>
-                      )}
+                      <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
+                      <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                        {stat.title}
+                      </div>
                     </motion.div>
                   );
                 })}
               </div>
-            </div>
 
-            {/* Recent Leads & Inquiries Section - Right Column */}
-            <div className="border-2 border-[#2C3E50] rounded-2xl p-4 sm:p-6 shadow-lg bg-white">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  <h3 className="text-lg sm:text-2xl font-bold text-[#2C3E50]">Recent Leads & Inquiries</h3>
-                  <span className="text-white text-xs px-2 py-1 rounded-full" style={{ backgroundColor: '#FF6B35' }}>0 New</span>
-                </div>
-                <button className="text-gray-500 hover:text-gray-700 text-sm flex items-center space-x-1">
-                  <span className="hidden sm:inline">View all</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Scrollable Container for Leads */}
-              <div className="space-y-4 overflow-y-auto max-h-[500px] pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                {recentLeads.length === 0 ? (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-white border border-gray-200 rounded-xl p-8 text-center flex-1 flex items-center justify-center"
-                  >
-                    <div className="flex flex-col items-center space-y-3">
-                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                        <FolderOpen className="w-6 h-6 text-gray-400" />
+              {/* Two Column Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Recent Leads */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                        <MessageSquare className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h4 className="text-base font-semibold text-[#2C3E50] mb-1">No New Leads Just Yet</h4>
-                        <p className="text-gray-600 text-sm max-w-xs">
-                          Keep your listings active and engaging. Interested renters or buyers will show up here.
-                        </p>
+                        <h3 className="text-lg font-bold text-gray-900">Recent Inquiries</h3>
+                        <p className="text-sm text-gray-500">{stats.activeLeads} new this week</p>
                       </div>
                     </div>
-                  </motion.div>
-                ) : (
-                  recentLeads.map((lead) => (
-                    <motion.div
-                      key={lead.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="bg-transparent border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start space-x-3">
-                        <div className="w-10 h-10 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">
-                          {lead.avatar}
+                    <button className="text-[#FF6B35] hover:text-[#e85e2f] text-sm font-medium">
+                      View all
+                    </button>
+                  </div>
+
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {recentLeads.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <MessageSquare className="w-8 h-8 text-gray-400" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-[#2C3E50] text-sm">{lead.name}</h4>
-                              <p className="text-gray-500 text-xs truncate">{lead.email}</p>
-                            </div>
-                            <span className="text-gray-400 text-xs ml-2 flex-shrink-0">{lead.time}</span>
-                          </div>
-                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
-                            <p className="text-sm font-medium text-[#2C3E50] mb-2">Inquiry</p>
-                            <p className="text-gray-600 text-sm leading-relaxed">{lead.message}</p>
-                          </div>
-                          <div className="flex items-center space-x-3">
-                            <div className="flex items-center space-x-2 text-[#2C3E50] text-sm">
-                              <Phone className="w-4 h-4" />
-                              <span>{lead.phone}</span>
-                            </div>
-                            <button className="px-3 py-1.5 hover:bg-green-700 text-[#2C3E50] font-semibold text-xs rounded-lg transition-colors">
-                              Call
-                            </button>
-                            <button className="px-3 py-1.5  text-[#2C3E50] font-semibold text-xs rounded-lg transition-colors">
-                              Reply
-                            </button>
-                          </div>
-                        </div>
+                        <h4 className="text-base font-semibold text-gray-900 mb-2">No Inquiries Yet</h4>
+                        <p className="text-gray-600 text-sm">Your property inquiries will appear here</p>
                       </div>
-                    </motion.div>
-                  ))
-                )}
+                    ) : (
+                      recentLeads.map((lead, index) => (
+                        <motion.div
+                          key={lead.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className="w-10 h-10 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-medium shrink-0">
+                              {lead.avatar}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between mb-2">
+                                <h4 className="font-semibold text-gray-900 text-sm">{lead.name}</h4>
+                                <span className="text-gray-400 text-xs shrink-0">{lead.time}</span>
+                              </div>
+                              <p className="text-gray-600 text-sm mb-3 line-clamp-2">{lead.message}</p>
+                              <div className="flex items-center space-x-2">
+                                <button className="px-3 py-1 bg-[#FF6B35] text-white text-xs rounded-lg hover:bg-[#e85e2f] transition-colors">
+                                  Reply
+                                </button>
+                                <button className="px-3 py-1 border border-gray-300 text-gray-700 text-xs rounded-lg hover:bg-gray-50 transition-colors">
+                                  View
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+
+                {/* Quick Actions */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+                >
+                  <h3 className="text-lg font-bold text-gray-900 mb-6">Quick Actions</h3>
+                  <div className="space-y-3">
+                    <motion.button
+                      onClick={() => setActiveView('properties')}
+                      className="w-full flex items-center space-x-3 p-4 bg-linear-to-r from-[#FF6B35] to-[#e85e2f] text-white rounded-xl hover:shadow-lg transition-all"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Building className="w-5 h-5" />
+                      <span className="font-medium">Manage Properties</span>
+                      <span className="ml-auto bg-white bg-opacity-20 px-2 py-1 rounded-full text-xs">
+                        {stats.totalListings}
+                      </span>
+                    </motion.button>
+
+                    <motion.button
+                      onClick={() => setActiveView('inquiries')}
+                      className="w-full flex items-center space-x-3 p-4 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <MessageSquare className="w-5 h-5" />
+                      <span className="font-medium">View Inquiries</span>
+                      <span className="ml-auto bg-[#FF6B35] text-white px-2 py-1 rounded-full text-xs">
+                        {stats.activeLeads}
+                      </span>
+                    </motion.button>
+
+                    <motion.button
+                      onClick={() => navigate('/list-property')}
+                      className="w-full flex items-center space-x-3 p-4 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span className="font-medium">Add New Property</span>
+                    </motion.button>
+                  </div>
+                </motion.div>
               </div>
-            </div>
-          </div>
 
-          {/* My Recent Listings */}
-          <div>
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-[#2C3E50] mb-2">
-                My Listings {recentListings.length > 0 && `(${recentListings.length})`}
-              </h3>
-              <p className="text-gray-600">
-                {recentListings.length > 0
-                  ? 'Recent Listings are houses that have been uploaded for a week'
-                  : 'All your property listings will appear here. Begin by uploading details and images of your house or apartment.'
-                }
-              </p>
-            </div>
-
-            {recentListings.length === 0 ? (
+              {/* Recent Properties Preview */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white border border-gray-200 rounded-xl p-12 text-center"
+                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
               >
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                    <Upload className="w-8 h-8 text-gray-400" />
-                  </div>
+                <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h4 className="text-lg font-semibold text-[#2C3E50] mb-2">Start by uploading a file</h4>
-                    <p className="text-gray-600 max-w-md">
-                      All your property listings will appear here. Begin by uploading details and images of your house or apartment.
-                    </p>
+                    <h3 className="text-lg font-bold text-gray-900">Recent Properties</h3>
+                    <p className="text-gray-600 text-sm">Your latest property listings</p>
                   </div>
                   <button
-                    onClick={() => navigate('/list-property')}
-                    className="mt-4 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
-                    style={{ backgroundColor: '#FF6B35' }}
-                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#e85e2f')}
-                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#FF6B35')}
+                    onClick={() => setActiveView('properties')}
+                    className="text-[#FF6B35] hover:text-[#e85e2f] text-sm font-medium"
                   >
-                    <Plus className="w-5 h-5" />
-                    <span>Add Your First Property</span>
+                    View all →
                   </button>
                 </div>
+
+                {recentListings.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Building className="w-10 h-10 text-gray-400" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">No Properties Yet</h4>
+                    <p className="text-gray-600 mb-6">Start by adding your first property</p>
+                    <motion.button
+                      onClick={() => navigate('/list-property')}
+                      className="bg-[#FF6B35] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#e85e2f] transition-colors"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Add Property
+                    </motion.button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {recentListings.slice(0, 3).map((listing, index) => (
+                      <motion.div
+                        key={listing.id}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="bg-gray-50 rounded-xl overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                        onClick={() => handleEditProperty(listing)}
+                      >
+                        <div className="relative h-48">
+                          {listing.images && listing.images.length > 0 ? (
+                            <img
+                              src={listing.images[0]}
+                              alt={listing.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                              <Building className="w-12 h-12 text-gray-400" />
+                            </div>
+                          )}
+                          <div className="absolute top-4 left-4">
+                            <span className="px-3 py-1 bg-[#FF6B35] text-white text-xs font-medium rounded-full">
+                              {listing.propertyType || 'Property'}
+                            </span>
+                          </div>
+                          <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+                            {listing.views || 0} views
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <h4 className="font-bold text-gray-900 mb-1 line-clamp-1">{listing.title}</h4>
+                          <p className="text-gray-600 text-sm mb-3 line-clamp-1">{formatPropertyAddress(listing)}</p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-lg font-bold text-[#FF6B35]">
+                              ₦{listing.price?.toLocaleString() || '0'}
+                            </span>
+                            <span className="text-xs text-gray-500">{formatListedDate(listing.created_at)}</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </motion.div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {recentListings.map((listing, index) => (
-                  <motion.div
-                    key={listing.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm"
-                  >
-                    <div className="relative h-48">
-                      {listing.images && listing.images.length > 0 ? (
-                        <img
-                          src={listing.images[0]}
-                          alt={listing.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                          <Building className="w-12 h-12 text-gray-400" />
-                        </div>
-                      )}
-                      <div className="absolute top-4 left-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusColor(listing.status)}`}>
-                          {listing.status || 'Active'}
-                        </span>
-                      </div>
-                      <div className="absolute top-4 right-4 bg-[#FF6B35] text-white px-2 py-1 rounded text-xs font-medium">
-                        {listing.propertyType || 'Property'}
-                      </div>
-                      <div className="absolute bottom-4 right-4 text-white text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
-                        {listing.views || 0} Views
-                      </div>
+            </>
+          )}
+
+          {/* Properties Management View */}
+          {activeView === 'properties' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              {/* Properties Header */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Property Management</h2>
+                    <p className="text-gray-600">Manage your property listings and performance</p>
+                  </div>
+                  <div className="flex items-center space-x-3 mt-4 sm:mt-0">
+                    {selectedProperties.length > 0 && (
+                      <motion.button
+                        onClick={handleDeleteSelected}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        Delete Selected ({selectedProperties.length})
+                      </motion.button>
+                    )}
+                    <motion.button
+                      onClick={() => navigate('/list-property')}
+                      className="bg-[#FF6B35] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#e85e2f] transition-colors flex items-center space-x-2"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span>Add Property</span>
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Properties Stats */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-gray-900">{stats.totalListings}</div>
+                    <div className="text-sm text-gray-600">Total Properties</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-gray-900">{stats.totalViews}</div>
+                    <div className="text-sm text-gray-600">Total Views</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-gray-900">{stats.activeLeads}</div>
+                    <div className="text-sm text-gray-600">Active Inquiries</div>
+                  </div>
+                </div>
+
+                {/* Properties List */}
+                {recentListings.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Building className="w-10 h-10 text-gray-400" />
                     </div>
-
-                    <div className="p-4">
-                      <h4 className="font-bold text-[#2C3E50] mb-2">{listing.title}</h4>
-                      <p className="text-gray-600 text-sm mb-4">{formatPropertyAddress(listing)}</p>
-
-                      <div className="flex items-center space-x-4 mb-4 text-sm text-gray-500">
-                        <div className="flex items-center space-x-1">
-                          <Bed className="w-4 h-4" />
-                          <span>{listing.rooms || 0}</span>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Properties Listed</h3>
+                    <p className="text-gray-600 mb-6">Start by adding your first property to the platform</p>
+                    <motion.button
+                      onClick={() => navigate('/list-property')}
+                      className="bg-[#FF6B35] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#e85e2f] transition-colors"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Add Your First Property
+                    </motion.button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {recentListings.map((listing, index) => (
+                      <motion.div
+                        key={listing.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className={`bg-white rounded-xl border-2 overflow-hidden shadow-lg transition-all hover:shadow-xl ${
+                          selectedProperties.includes(listing.id) ? 'border-[#FF6B35] ring-2 ring-[#FF6B35] ring-opacity-20' : 'border-gray-200'
+                        }`}
+                      >
+                        {/* Selection Checkbox */}
+                        <div className="absolute top-4 left-4 z-10">
+                          <input
+                            type="checkbox"
+                            checked={selectedProperties.includes(listing.id)}
+                            onChange={() => handleSelectProperty(listing.id)}
+                            className="w-4 h-4 text-[#FF6B35] bg-white border-gray-300 rounded focus:ring-[#FF6B35]"
+                          />
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <Bath className="w-4 h-4" />
-                          <span>{listing.bathrooms || 0}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <span className="text-lg font-bold text-[#FF6B35]">
-                            ₦{listing.price?.toLocaleString() || '0'}
-                          </span>
-                        </div>
-                      </div>
 
-                      <div className="flex items-center space-x-2 mb-4 text-sm text-gray-500">
-                        <Clock className="w-4 h-4" />
-                        <span>{formatListedDate(listing.created_at)}</span>
-                      </div>
+                        <div className="relative h-48">
+                          {listing.images && listing.images.length > 0 ? (
+                            <img
+                              src={listing.images[0]}
+                              alt={listing.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                              <Building className="w-12 h-12 text-gray-400" />
+                            </div>
+                          )}
+                          <div className="absolute top-4 right-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${
+                              listing.is_featured ? 'bg-green-500' : 'bg-gray-600'
+                            }`}>
+                              {listing.is_featured ? 'Featured' : 'Standard'}
+                            </span>
+                          </div>
+                          <div className="absolute bottom-4 right-4 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+                            {listing.views || 0} views
+                          </div>
+                        </div>
 
-                      <div className="flex items-center space-x-2">
-                        <button className="flex items-center space-x-1 px-3 py-2 border border-[#FF6B35] rounded-lg text-[#FF6B35] hover:bg-[#FF6B35] hover:text-white transition-colors">
-                          <Edit className="w-4 h-4" />
-                          <span className="text-sm">Edit</span>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteProperty(listing.id)}
-                          className="flex items-center space-x-1 px-3 py-2 border border-red-500 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                        <div className="p-4">
+                          <h4 className="font-bold text-gray-900 mb-1 line-clamp-1">{listing.title}</h4>
+                          <p className="text-gray-600 text-sm mb-3 line-clamp-1">{formatPropertyAddress(listing)}</p>
+
+                          <div className="flex items-center space-x-4 mb-4 text-sm">
+                            <div className="flex items-center space-x-1 text-gray-600">
+                              <Bed className="w-4 h-4" />
+                              <span>{listing.bedrooms || listing.rooms || 0}</span>
+                            </div>
+                            <div className="flex items-center space-x-1 text-gray-600">
+                              <Bath className="w-4 h-4" />
+                              <span>{listing.bathrooms || 0}</span>
+                            </div>
+                            <div className="text-lg font-bold text-[#FF6B35]">
+                              ₦{listing.price?.toLocaleString() || '0'}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                            <span>{formatListedDate(listing.created_at)}</span>
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              listing.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {listing.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <motion.button
+                              onClick={() => handleEditProperty(listing)}
+                              className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <Edit className="w-4 h-4" />
+                              <span className="text-sm">Edit</span>
+                            </motion.button>
+                            <motion.button
+                              onClick={() => handleDeleteProperty(listing.id)}
+                              className="flex items-center justify-center space-x-2 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </motion.button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </motion.div>
+          )}
+
+          {/* Inquiries View */}
+          {activeView === 'inquiries' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Property Inquiries</h2>
+                  <p className="text-gray-600">Manage inquiries from potential tenants</p>
+                </div>
+                <div className="text-sm text-gray-500">
+                  {stats.activeLeads} active inquiries
+                </div>
+              </div>
+
+              {recentLeads.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MessageSquare className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Inquiries Yet</h3>
+                  <p className="text-gray-600">Inquiries from interested tenants will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentLeads.map((lead, index) => (
+                    <motion.div
+                      key={lead.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-start space-x-4">
+                        <div className="w-12 h-12 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-medium shrink-0">
+                          {lead.avatar}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h4 className="font-semibold text-gray-900">{lead.name}</h4>
+                              <p className="text-gray-600 text-sm">{lead.email}</p>
+                            </div>
+                            <span className="text-gray-400 text-sm">{lead.time}</span>
+                          </div>
+                          <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+                            <p className="text-gray-700 leading-relaxed">{lead.message}</p>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <span className="flex items-center space-x-2 text-gray-600 text-sm">
+                              <Phone className="w-4 h-4" />
+                              <span>{lead.phone}</span>
+                            </span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              lead.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              lead.status === 'approved' ? 'bg-green-100 text-green-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {lead.status}
+                            </span>
+                          </div>
+                          {lead.property_title && (
+                            <div className="mt-2 text-sm text-gray-600">
+                              <span className="font-medium">Property:</span> {lead.property_title}
+                            </div>
+                          )}
+                          {lead.move_in_date && lead.lease_duration && (
+                            <div className="mt-1 text-sm text-gray-600">
+                              <span className="font-medium">Move-in:</span> {formatDate(lead.move_in_date)} • {lead.lease_duration} months • ₦{lead.total_amount?.toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
         </div>
       </main>
     </div>

@@ -610,11 +610,13 @@ export default function ChatPage() {
           
         if (error) console.error('Error saving search history:', error);
       }
-      // Navigate to the results page with the query
+      // Navigate to the results page with the query - ensure proper navigation
       const searchParams = new URLSearchParams({ search: query });
       if (searchLocation) searchParams.set('location', searchLocation);
       if (propertyType) searchParams.set('type', propertyType);
-      navigate(`/browse?${searchParams.toString()}`);
+
+      // Use window.location for direct navigation to avoid dashboard interference
+      window.location.href = `/browse?${searchParams.toString()}`;
     } catch (error) {
       console.error('Search error:', error);
       setSearchError('Search failed. Please try again.');
@@ -1158,10 +1160,12 @@ export default function ChatPage() {
       // Add purchase type if specified
       if (purchaseType) searchParams.set('purchaseType', purchaseType);
 
-      // Navigate to intelligent search results
+      // Navigate to intelligent search results - ensure proper navigation
       const searchUrl = `/browse?${searchParams.toString()}`;
       console.log('Intelligent search URL:', searchUrl);
-      navigate(searchUrl);
+
+      // Use window.location for direct navigation to avoid dashboard interference
+      window.location.href = searchUrl;
     } catch (error) {
       console.error('Intelligent search error:', error);
       setSearchError('Search failed. Please try again.');
@@ -1180,7 +1184,7 @@ export default function ChatPage() {
       setSearchLocation(suggestion.location);
     }
 
-    // Trigger search after a brief delay
+    // Trigger search after a brief delay - ensure proper navigation
     setTimeout(() => {
       handleIntelligentSearchSubmit({ preventDefault: () => {} });
     }, 100);
@@ -1464,7 +1468,7 @@ export default function ChatPage() {
   const handleSuggestionSelect = (suggestion) => {
     setSearchQuery(suggestion.title);
     setShowSuggestions(false);
-    // Trigger search with the selected suggestion
+    // Trigger search with the selected suggestion - ensure proper navigation
     setTimeout(() => {
       handleSearchSubmit({ preventDefault: () => {} });
     }, 100);

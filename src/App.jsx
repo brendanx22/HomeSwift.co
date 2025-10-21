@@ -442,15 +442,9 @@ const AppLayout = () => {
             <Route
               path="/browse"
               element={
-                user?.user_type === 'landlord' ? (
-                  <ProtectedRoute requiredRoles={['landlord']}>
-                    <LandlordPropertyBrowse />
-                  </ProtectedRoute>
-                ) : (
-                  <ProtectedRoute requiredRoles={['renter', 'landlord']}>
-                    <PropertyBrowse />
-                  </ProtectedRoute>
-                )
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <PropertyBrowse />
+                </ProtectedRoute>
               }
             />
 

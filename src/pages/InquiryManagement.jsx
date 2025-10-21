@@ -81,72 +81,64 @@ const InquiryManagement = () => {
 
       setLoading(true);
 
-      // For now, we'll use mock data since the leads table doesn't exist yet
-      // In a real implementation, this would query the leads/inquiries table
-      const mockInquiries = [
-        {
-          id: '1',
-          property_id: '305d6b63-5be8-4416-b8b3-f8cd1dff55ac',
-          property_title: '3-Bedroom Apartment in Victoria Island',
-          property_location: 'Victoria Island, Lagos',
-          property_price: 1500000,
-          tenant_id: 'user123',
-          tenant_name: 'John Doe',
-          tenant_email: 'john.doe@email.com',
-          tenant_phone: '+2348012345678',
-          move_in_date: '2024-02-15',
-          lease_duration: 12,
-          special_requests: 'Looking for a place with good security and parking',
-          movemate_enabled: true,
-          total_amount: 1500000,
-          status: 'pending',
-          created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-          updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          priority: 'high'
-        },
-        {
-          id: '2',
-          property_id: '305d6b63-5be8-4416-b8b3-f8cd1dff55ad',
-          property_title: '2-Bedroom Flat in Lekki',
-          property_location: 'Lekki Phase 1, Lagos',
-          property_price: 1200000,
-          tenant_id: 'user456',
-          tenant_name: 'Sarah Johnson',
-          tenant_email: 'sarah.j@email.com',
-          tenant_phone: '+2348098765432',
-          move_in_date: '2024-03-01',
-          lease_duration: 6,
-          special_requests: null,
-          movemate_enabled: false,
-          total_amount: 1200000,
-          status: 'approved',
-          created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
-          updated_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          priority: 'medium'
-        },
-        {
-          id: '3',
-          property_id: '305d6b63-5be8-4416-b8b3-f8cd1dff55ae',
-          property_title: 'Studio Apartment in Ikoyi',
-          property_location: 'Ikoyi, Lagos',
-          property_price: 800000,
-          tenant_id: 'user789',
-          tenant_name: 'Michael Chen',
-          tenant_email: 'michael.chen@email.com',
-          tenant_phone: '+2348076543210',
-          move_in_date: '2024-01-20',
-          lease_duration: 12,
-          special_requests: 'Need pet-friendly accommodation',
-          movemate_enabled: true,
-          total_amount: 800000,
-          status: 'rejected',
-          created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
-          updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          priority: 'low'
-        }
-      ];
+      // Get bookings for properties owned by this landlord
+      const { data: bookings, error } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          tenant_name,
+          tenant_email,
+          tenant_phone,
+          property_id,
+          property_title,
+          property_location,
+          property_price,
+          property_bedrooms,
+          property_bathrooms,
+          landlord_id,
+          landlord_name,
+          move_in_date,
+          lease_duration,
+          special_requests,
+          movemate_enabled,
+          total_amount,
+          status,
+          created_at,
+          updated_at
+        `)
+        .eq('landlord_id', user.id) // Only show bookings for this landlord's properties
+        .order('created_at', { ascending: false });
 
-      setInquiries(mockInquiries);
+      if (error) {
+        console.error('Error loading bookings:', error);
+        toast.error('Failed to load inquiries');
+        return;
+      }
+
+      // Transform bookings data to match the expected format
+      const inquiries = bookings?.map(booking => ({
+        id: booking.id,
+        property_id: booking.property_id,
+        property_title: booking.property_title,
+        property_location: booking.property_location,
+        property_price: booking.property_price,
+        tenant_id: booking.tenant_id,
+        tenant_name: booking.tenant_name,
+        tenant_email: booking.tenant_email,
+        tenant_phone: booking.tenant_phone,
+        move_in_date: booking.move_in_date,
+        lease_duration: booking.lease_duration,
+        special_requests: booking.special_requests,
+        movemate_enabled: booking.movemate_enabled,
+        total_amount: booking.total_amount,
+        status: booking.status,
+        created_at: booking.created_at,
+        updated_at: booking.updated_at,
+        priority: 'medium' // Default priority, can be enhanced later
+      })) || [];
+
+      console.log('✅ Loaded inquiries from bookings table:', inquiries.length);
+      setInquiries(inquiries);
     } catch (error) {
       console.error('Error loading inquiries:', error);
       toast.error('Failed to load inquiries');
@@ -157,6 +149,21 @@ const InquiryManagement = () => {
 
   const updateInquiryStatus = async (inquiryId, newStatus) => {
     try {
+      // Update the booking status in the database
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', inquiryId);
+
+      if (error) {
+        console.error('Error updating booking status:', error);
+        toast.error('Failed to update inquiry status');
+        return;
+      }
+
       // Update local state
       setInquiries(prev =>
         prev.map(inquiry =>
@@ -165,9 +172,6 @@ const InquiryManagement = () => {
             : inquiry
         )
       );
-
-      // In a real implementation, this would update the database
-      // await supabase.from('inquiries').update({ status: newStatus }).eq('id', inquiryId);
 
       toast.success(`Inquiry ${newStatus === 'approved' ? 'approved' : newStatus === 'rejected' ? 'rejected' : 'marked as pending'}`);
     } catch (error) {

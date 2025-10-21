@@ -187,10 +187,37 @@ export default function PropertyDetails() {
 
       const userName = getUserName();
 
+      // Refresh the Supabase session first to ensure we have the latest auth state
+      await supabase.auth.refreshSession();
+
+      // Get the authenticated user ID directly from Supabase
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+
+      if (authError) {
+        console.error('❌ Supabase auth error:', authError);
+        toast.error('Authentication error. Please refresh the page and try again.');
+        return;
+      }
+
+      if (!authUser) {
+        console.error('❌ No authenticated user found in Supabase');
+        toast.error('Please log in again to continue.');
+        return;
+      }
+
+      console.log('🔐 Booking Debug:', {
+        userId: user?.id,
+        authUserId: authUser?.id,
+        authUid: authUser?.id,
+        userEmail: user?.email,
+        authUserEmail: authUser?.email,
+        authError: authError
+      });
+
       // Prepare comprehensive booking data
       const bookingData = {
         // User information
-        tenant_id: user.id,
+        tenant_id: authUser.id, // Use the authenticated user ID from Supabase
         tenant_name: userName,
         tenant_email: user.email,
         tenant_phone: phoneNumber,
@@ -214,6 +241,12 @@ export default function PropertyDetails() {
         status: 'pending',
         created_at: new Date().toISOString()
       };
+
+      console.log('📝 Booking data prepared:', {
+        tenant_id: bookingData.tenant_id,
+        tenant_email: bookingData.tenant_email,
+        property_id: bookingData.property_id
+      });
 
       // Store in database (bookings table)
       const { error: insertError } = await supabase
