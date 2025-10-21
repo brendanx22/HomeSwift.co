@@ -51,13 +51,14 @@ import {
 import ProfilePopup from '../components/ProfilePopup';
 import NotificationCenter from '../components/NotificationCenter';
 
-const formatTimeAgo = (date) => {
-  return formatDistanceToNow(date, { addSuffix: true });
-};
-
 const LandlordDashboard = () => {
   const { user, isAuthenticated, loading: authLoading, logout, hasRole } = useAuth();
   const navigate = useNavigate();
+
+  // Time formatting function
+  const formatTimeAgo = (date) => {
+    return formatDistanceToNow(date, { addSuffix: true });
+  };
   
   // All hooks must be at the top, before any conditional logic
   // State for dashboard
