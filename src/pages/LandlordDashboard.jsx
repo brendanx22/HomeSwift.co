@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabaseClient';
+import { formatDistanceToNow } from 'date-fns';
 import { 
   Search, 
   Bell, 
