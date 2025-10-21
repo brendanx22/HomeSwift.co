@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
+import { supabase } from '../lib/supabaseClient';
 import { 
   Search, 
   Bell, 
