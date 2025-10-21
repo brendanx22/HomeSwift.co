@@ -1745,7 +1745,7 @@ export default function ChatPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="sticky top-0 z-10 flex items-center justify-end p-3 sm:p-6 w-full bg-white/95 backdrop-blur-md border-b border-gray-200/80"
+          className="fixed top-0 z-10 flex items-center justify-end p-3 sm:p-6 w-full bg-white/95 backdrop-blur-md border-b border-gray-200/80 sm:sticky sm:top-0"
           style={{
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)'
           }}

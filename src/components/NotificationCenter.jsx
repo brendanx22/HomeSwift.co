@@ -256,10 +256,10 @@ const NotificationCenter = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden md:w-96"
+            className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-gray-100 z-50 max-h-96 overflow-hidden md:w-96"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <h3 className="font-semibold text-gray-900">Notifications</h3>
               {unreadCount > 0 && (
                 <button
@@ -348,7 +348,7 @@ const NotificationCenter = () => {
 
             {/* Footer */}
             {notifications.length > 0 && (
-              <div className="p-3 border-t border-gray-200 bg-gray-50">
+              <div className="p-3 border-t border-gray-100 bg-gray-50">
                 <button
                   onClick={() => setIsOpen(false)}
                   className="w-full text-center text-sm text-gray-600 hover:text-gray-800 transition-colors"
