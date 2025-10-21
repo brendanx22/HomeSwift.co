@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabaseClient';
-import formatDistanceToNow from 'date-fns/formatDistanceToNow';
 import { 
   Search, 
   Bell, 
@@ -56,23 +55,9 @@ const LandlordDashboard = () => {
   const { user, isAuthenticated, loading: authLoading, logout, hasRole } = useAuth();
   const navigate = useNavigate();
 
-  // Time formatting function with fallback
+  // Time formatting function
   const formatTimeAgo = (date) => {
-    try {
-      return formatDistanceToNow(date, { addSuffix: true });
-    } catch (error) {
-      // Fallback implementation if date-fns fails
-      const now = new Date();
-      const pastDate = new Date(date);
-      const diffInSeconds = Math.floor((now - pastDate) / 1000);
-
-      if (diffInSeconds < 60) return 'Just now';
-      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-      if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-
-      return pastDate.toLocaleDateString();
-    }
+    return formatDistanceToNow(date, { addSuffix: true });
   };
   
   // All hooks must be at the top, before any conditional logic
