@@ -126,12 +126,61 @@ const LandlordDashboard = () => {
         const storedRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
         const currentRole = storedRoles.find(r => r.is_primary)?.role || storedRoles[0]?.role || userType || 'renter';
 
-        // console.log('Dashboard Auth Check:', { currentRole, userType, storedRoles });
+        // console.log('Dashboard Auth Check:', { currentRole, userType, storedRoles, userId: user?.id });
 
-        if (currentRole !== 'landlord') {
-          // console.log('Not a landlord, redirecting to chat');
-          navigate('/chat');
-          return;
+        // More robust role checking - create landlord role if user has properties
+        if (currentRole !== 'landlord' && user?.id) {
+          // Double-check by looking at user metadata or trying to load dashboard data
+          // If they have properties in the database, they're likely a landlord
+          try {
+            const { data: properties, error } = await supabase
+              .from('properties')
+              .select('id')
+              .eq('landlord_id', user.id)
+              .limit(1);
+
+            if (!error && properties && properties.length > 0) {
+              // User has properties, create/update landlord role
+              console.log('✅ User has properties, creating landlord role');
+
+              // Update user metadata to include landlord role
+              const { error: updateError } = await supabase
+                .from('user_profiles')
+                .upsert({
+                  id: user.id,
+                  user_type: 'landlord',
+                  updated_at: new Date().toISOString()
+                });
+
+              if (updateError) {
+                console.error('❌ Error updating user role:', updateError);
+              } else {
+                // Update localStorage with new role
+                const updatedUser = {
+                  ...storedUser,
+                  user_metadata: {
+                    ...storedUser.user_metadata,
+                    user_type: 'landlord'
+                  }
+                };
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+
+                // Update roles array
+                const updatedRoles = [{ role: 'landlord', is_primary: true }];
+                localStorage.setItem('userRoles', JSON.stringify(updatedRoles));
+
+                console.log('✅ Landlord role created successfully');
+              }
+            } else {
+              // console.log('❌ No properties found, redirecting to chat');
+              navigate('/chat');
+              return;
+            }
+          } catch (err) {
+            // console.log('❌ Error checking properties, redirecting to chat');
+            navigate('/chat');
+            return;
+          }
         }
 
         // Load dashboard data
