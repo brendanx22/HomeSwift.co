@@ -697,13 +697,16 @@ const LandlordDashboard = () => {
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'properties', label: 'Properties', icon: Building },
     { id: 'inquiries', label: 'Inquiries', icon: MessageSquare, badge: stats.activeLeads > 0 ? stats.activeLeads.toString() : undefined },
-    { id: 'manage', label: 'Property Manager', icon: Building },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'tools', label: 'Financial Tools', icon: Calculator },
-    { id: 'insurance', label: 'Insurance Calc', icon: Shield },
   ];
 
   const handleNavigation = (id) => {
+    if (id === 'analytics') {
+      // Navigate to external analytics page
+      navigate('/analytics');
+      return;
+    }
+
     setActiveTab(id);
     setActiveView(id); // Set the active view to match the navigation
 
@@ -1107,8 +1110,8 @@ return (
               <span className="text-xs font-medium leading-tight">More</span>
             </motion.button>
 
-            {/* Clean Dropdown Menu */}
-            {mobileMenuOpen && (
+            {/* Clean Dropdown Menu - Only show if there are additional items */}
+            {navigationItems.length > 4 && mobileMenuOpen && (
               <motion.div
                 initial={{ opacity: 0, y: -10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1332,19 +1335,6 @@ return (
                 >
                   <h3 className="text-lg font-bold text-gray-900 mb-6">Quick Actions</h3>
                   <div className="space-y-3">
-                    <motion.button
-                      onClick={() => setActiveView('properties')}
-                      className="w-full flex items-center space-x-3 p-4 bg-linear-to-r from-[#FF6B35] to-[#e85e2f] text-white rounded-xl hover:shadow-lg transition-all"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <Building className="w-5 h-5" />
-                      <span className="font-medium">Manage Properties</span>
-                      <span className="ml-auto bg-white bg-opacity-20 px-2 py-1 rounded-full text-xs">
-                        {stats.totalListings}
-                      </span>
-                    </motion.button>
-
                     <motion.button
                       onClick={() => setActiveView('inquiries')}
                       className="w-full flex items-center space-x-3 p-4 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors"
