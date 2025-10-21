@@ -643,8 +643,12 @@ const InquiryManagement = () => {
                   key={inquiry.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`p-6 hover:bg-gray-50 cursor-pointer ${!inquiry.read ? 'bg-blue-50/30 border-l-4 border-l-blue-400' : ''}`}
-                  onClick={() => {
+                  className={`p-6 hover:bg-gray-50 cursor-pointer transition-all duration-200 ${!inquiry.read ? 'bg-blue-50/30 border-l-4 border-l-blue-400' : ''}`}
+                  onClick={(e) => {
+                    // Prevent event if clicking on interactive elements
+                    if (e.target.closest('button') || e.target.closest('input')) {
+                      return;
+                    }
                     setSelectedInquiry(inquiry);
                     setShowInquiryDetails(true);
                     // Mark as read when opening details
@@ -817,6 +821,7 @@ const InquiryManagement = () => {
                             markInquiryAsRead(inquiry.id);
                           }}
                           className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
+                          title="Mark as Read"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
@@ -827,6 +832,7 @@ const InquiryManagement = () => {
                           toast.info(`Opening chat with ${inquiry.tenant_name}`);
                         }}
                         className="px-3 py-2 bg-[#FF6B35] text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center"
+                        title="Send Message"
                       >
                         <MessageSquare className="w-4 h-4" />
                       </button>
@@ -836,6 +842,7 @@ const InquiryManagement = () => {
                           window.location.href = `tel:${inquiry.tenant_phone}`;
                         }}
                         className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center"
+                        title="Call"
                       >
                         <Phone className="w-4 h-4" />
                       </button>
@@ -849,6 +856,7 @@ const InquiryManagement = () => {
                           }
                         }}
                         className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center"
+                        title="View Details"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
