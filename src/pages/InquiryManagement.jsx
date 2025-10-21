@@ -40,13 +40,22 @@ const InquiryManagement = () => {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState('all');
 
-  // Check authentication
+  // Prevent body scroll when modal is open on mobile
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/landlord/login');
-      return;
+    if (showInquiryDetails) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = '0px'; // Prevent layout shift
+    } else {
+      document.body.style.overflow = 'unset';
+      document.body.style.paddingRight = 'unset';
     }
-  }, [isAuthenticated, navigate]);
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.body.style.paddingRight = 'unset';
+    };
+  }, [showInquiryDetails]);
 
   // Load inquiries
   useEffect(() => {
@@ -634,7 +643,15 @@ const InquiryManagement = () => {
                   key={inquiry.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`p-6 hover:bg-gray-50 ${!inquiry.read ? 'bg-blue-50/30 border-l-4 border-l-blue-400' : ''}`}
+                  className={`p-6 hover:bg-gray-50 cursor-pointer ${!inquiry.read ? 'bg-blue-50/30 border-l-4 border-l-blue-400' : ''}`}
+                  onClick={() => {
+                    setSelectedInquiry(inquiry);
+                    setShowInquiryDetails(true);
+                    // Mark as read when opening details
+                    if (!inquiry.read) {
+                      markInquiryAsRead(inquiry.id);
+                    }
+                  }}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-3 flex-1">
@@ -642,7 +659,10 @@ const InquiryManagement = () => {
                       <input
                         type="checkbox"
                         checked={selectedInquiries.includes(inquiry.id)}
-                        onChange={() => handleSelectInquiry(inquiry.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleSelectInquiry(inquiry.id);
+                        }}
                         className="mt-1 w-4 h-4 text-[#FF6B35] border-gray-300 rounded focus:ring-[#FF6B35]"
                       />
 
@@ -796,10 +816,9 @@ const InquiryManagement = () => {
                             e.stopPropagation();
                             markInquiryAsRead(inquiry.id);
                           }}
-                          className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                          className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
                         >
                           <Eye className="w-4 h-4" />
-                          <span>Mark Read</span>
                         </button>
                       )}
                       <button
@@ -807,20 +826,31 @@ const InquiryManagement = () => {
                           e.stopPropagation();
                           toast.info(`Opening chat with ${inquiry.tenant_name}`);
                         }}
-                        className="flex-1 px-3 py-2 bg-[#FF6B35] text-white rounded-lg font-medium hover:bg-orange-600 transition-colors flex items-center justify-center space-x-2"
+                        className="px-3 py-2 bg-[#FF6B35] text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center"
                       >
                         <MessageSquare className="w-4 h-4" />
-                        <span>Message</span>
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           window.location.href = `tel:${inquiry.tenant_phone}`;
                         }}
-                        className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                        className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center"
                       >
                         <Phone className="w-4 h-4" />
-                        <span>Call</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedInquiry(inquiry);
+                          setShowInquiryDetails(true);
+                          if (!inquiry.read) {
+                            markInquiryAsRead(inquiry.id);
+                          }
+                        }}
+                        className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center"
+                      >
+                        <Eye className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -833,20 +863,24 @@ const InquiryManagement = () => {
 
       {/* Inquiry Details Modal */}
       {showInquiryDetails && selectedInquiry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowInquiryDetails(false)}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white w-full h-full sm:max-w-2xl sm:max-h-[90vh] sm:rounded-2xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="p-6 border-b border-gray-200">
+            <div className="p-4 sm:p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Inquiry Details</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Inquiry Details</h2>
                 <button
                   onClick={() => setShowInquiryDetails(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
@@ -854,7 +888,7 @@ const InquiryManagement = () => {
             </div>
 
             {/* Inquiry Content */}
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Tenant Info */}
               <div className="flex items-start space-x-4">
                 <div className="w-16 h-16 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-bold text-lg overflow-hidden">
@@ -1059,57 +1093,42 @@ const InquiryManagement = () => {
 
                 {/* Mobile Action Buttons in Modal */}
                 <div className="sm:hidden flex items-center space-x-2 mt-4 pt-4 border-t border-gray-200">
-                  {!selectedInquiry.read && (
-                    <button
-                      onClick={() => {
-                        markInquiryAsRead(selectedInquiry.id);
-                        setSelectedInquiry(prev => prev ? { ...prev, read: true } : null);
-                      }}
-                      className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>Mark Read</span>
-                    </button>
-                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       toast.info(`Opening chat with ${selectedInquiry.tenant_name}`);
                     }}
-                    className="flex-1 px-3 py-2 bg-[#FF6B35] text-white rounded-lg font-medium hover:bg-orange-600 transition-colors flex items-center justify-center space-x-2"
+                    className="flex-1 px-3 py-2 bg-[#FF6B35] text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center"
                   >
                     <MessageSquare className="w-4 h-4" />
-                    <span>Message</span>
                   </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       window.location.href = `tel:${selectedInquiry.tenant_phone}`;
                     }}
-                    className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                    className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center"
                   >
                     <Phone className="w-4 h-4" />
-                    <span>Call</span>
                   </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/property/${selectedInquiry.property_id}`);
                     }}
-                    className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                    className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center"
                   >
                     <Building className="w-4 h-4" />
-                    <span>Property</span>
                   </button>
                 </div>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+            <div className="p-4 sm:p-6 border-t border-gray-200 flex gap-3 justify-end">
               <button
                 onClick={() => setShowInquiryDetails(false)}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                className="px-4 sm:px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
               >
                 Close
               </button>

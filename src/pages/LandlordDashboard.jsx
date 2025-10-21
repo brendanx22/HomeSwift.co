@@ -712,7 +712,6 @@ const LandlordDashboard = () => {
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'properties', label: 'Properties', icon: Building },
     { id: 'inquiries', label: 'Inquiries', icon: MessageSquare, badge: stats.activeLeads > 0 ? stats.activeLeads.toString() : undefined },
-    { id: 'manage', label: 'Property Manager', icon: Building },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'tools', label: 'Financial Tools', icon: Calculator },
     { id: 'insurance', label: 'Insurance Calc', icon: Shield },
