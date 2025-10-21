@@ -89,6 +89,7 @@ const InquiryManagement = () => {
           tenant_name,
           tenant_email,
           tenant_phone,
+          tenant_id,
           property_id,
           property_title,
           property_location,
@@ -115,6 +116,24 @@ const InquiryManagement = () => {
         return;
       }
 
+      // Get tenant avatars
+      const tenantIds = [...new Set(bookings?.map(booking => booking.tenant_id).filter(Boolean) || [])];
+
+      let tenantAvatars = {};
+      if (tenantIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('id, avatar_url')
+          .in('id', tenantIds);
+
+        if (!profilesError && profiles) {
+          tenantAvatars = profiles.reduce((acc, profile) => {
+            acc[profile.id] = profile.avatar_url;
+            return acc;
+          }, {});
+        }
+      }
+
       // Transform bookings data to match the expected format
       const inquiries = bookings?.map(booking => ({
         id: booking.id,
@@ -126,6 +145,7 @@ const InquiryManagement = () => {
         tenant_name: booking.tenant_name,
         tenant_email: booking.tenant_email,
         tenant_phone: booking.tenant_phone,
+        tenant_avatar: tenantAvatars[booking.tenant_id] || null,
         move_in_date: booking.move_in_date,
         lease_duration: booking.lease_duration,
         special_requests: booking.special_requests,
@@ -380,8 +400,24 @@ const InquiryManagement = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <div className="w-10 h-10 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-medium">
-                          {inquiry.tenant_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        <div className="w-10 h-10 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-medium overflow-hidden">
+                          {inquiry.tenant_avatar ? (
+                            <img
+                              src={inquiry.tenant_avatar}
+                              alt={inquiry.tenant_name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <span
+                            className="text-white font-medium"
+                            style={{ display: inquiry.tenant_avatar ? 'none' : 'flex' }}
+                          >
+                            {inquiry.tenant_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          </span>
                         </div>
                         <div>
                           <h3 className="font-semibold text-gray-900">{inquiry.tenant_name}</h3>
@@ -430,6 +466,32 @@ const InquiryManagement = () => {
                         <MoreVertical className="w-4 h-4" />
                       </button>
                     </div>
+
+                    {/* Mobile Action Buttons */}
+                    <div className="md:hidden flex items-center space-x-2 mt-4 pt-3 border-t border-gray-100">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Handle message action - could open chat or messaging interface
+                          toast.info(`Opening chat with ${inquiry.tenant_name}`);
+                        }}
+                        className="flex-1 px-3 py-2 bg-[#FF6B35] text-white rounded-lg font-medium hover:bg-orange-600 transition-colors flex items-center justify-center space-x-2"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        <span>Message</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Handle call action
+                          window.location.href = `tel:${inquiry.tenant_phone}`;
+                        }}
+                        className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                      >
+                        <Phone className="w-4 h-4" />
+                        <span>Call</span>
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               ))
@@ -464,8 +526,24 @@ const InquiryManagement = () => {
             <div className="p-6 space-y-6">
               {/* Tenant Info */}
               <div className="flex items-start space-x-4">
-                <div className="w-16 h-16 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  {selectedInquiry.tenant_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                <div className="w-16 h-16 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-bold text-lg overflow-hidden">
+                  {selectedInquiry.tenant_avatar ? (
+                    <img
+                      src={selectedInquiry.tenant_avatar}
+                      alt={selectedInquiry.tenant_name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <span
+                    className="text-white font-bold"
+                    style={{ display: selectedInquiry.tenant_avatar ? 'none' : 'flex' }}
+                  >
+                    {selectedInquiry.tenant_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </span>
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900">{selectedInquiry.tenant_name}</h3>
@@ -548,9 +626,27 @@ const InquiryManagement = () => {
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <button className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                    <MessageSquare className="w-4 h-4 inline mr-2" />
-                    Message
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Handle message action
+                      toast.info(`Opening chat with ${selectedInquiry.tenant_name}`);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B35] rounded-lg hover:bg-orange-600 transition-colors flex items-center space-x-2"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Message</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Handle call action
+                      window.location.href = `tel:${selectedInquiry.tenant_phone}`;
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                  >
+                    <Phone className="w-4 h-4" />
+                    <span>Call</span>
                   </button>
                   <button className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                     <ExternalLink className="w-4 h-4 inline mr-2" />
