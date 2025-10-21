@@ -1,9 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabaseClient';
-import { motion } from 'framer-motion';
-import { toast } from 'react-hot-toast';
+import { formatDistanceToNow } from 'date-fns';
 import { 
   Search, 
   Bell, 
@@ -50,6 +45,10 @@ import {
 } from 'lucide-react';
 import ProfilePopup from '../components/ProfilePopup';
 import NotificationCenter from '../components/NotificationCenter';
+
+const formatTimeAgo = (date) => {
+  return formatDistanceToNow(date, { addSuffix: true });
+};
 
 const LandlordDashboard = () => {
   const { user, isAuthenticated, loading: authLoading, logout, hasRole } = useAuth();
