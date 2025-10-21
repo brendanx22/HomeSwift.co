@@ -107,6 +107,8 @@ const LandlordDashboard = () => {
   // State for recent data - must be before any conditional logic
   const [recentProperties, setRecentProperties] = useState([]);
   const [recentLeads, setRecentLeads] = useState([]);
+  const [allInquiries, setAllInquiries] = useState([]);
+  const [loadingInquiries, setLoadingInquiries] = useState(false);
   
   // Check if user is authenticated and has landlord role
   useEffect(() => {
@@ -136,6 +138,7 @@ const LandlordDashboard = () => {
         // Load dashboard data
         await loadDashboardData();
         await loadRecentData();
+        await loadAllInquiries();
         setLoading(false);
       }
     };
@@ -237,6 +240,64 @@ const LandlordDashboard = () => {
 
     } catch (error) {
       // console.error('❌ Error loading recent data:', error);
+    }
+  };
+
+  // Load all inquiries for the inquiries view
+  const loadAllInquiries = async () => {
+    try {
+      if (!user?.id) return;
+
+      setLoadingInquiries(true);
+
+      const { data: bookings, error } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          tenant_name,
+          tenant_email,
+          tenant_phone,
+          property_title,
+          property_location,
+          status,
+          created_at,
+          move_in_date,
+          lease_duration,
+          special_requests,
+          total_amount
+        `)
+        .eq('landlord_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading all inquiries:', error);
+        toast.error('Failed to load inquiries');
+        return;
+      }
+
+      // Transform bookings data to match expected format for inquiries
+      const transformedBookings = bookings?.map(booking => ({
+        id: booking.id,
+        name: booking.tenant_name,
+        email: booking.tenant_email,
+        time: formatTimeAgo(booking.created_at),
+        message: booking.special_requests || `Booking inquiry for ${booking.property_title}`,
+        phone: booking.tenant_phone,
+        avatar: booking.tenant_name.split(' ').map(n => n[0]).join('').toUpperCase(),
+        status: booking.status,
+        property_title: booking.property_title,
+        move_in_date: booking.move_in_date,
+        lease_duration: booking.lease_duration,
+        total_amount: booking.total_amount
+      })) || [];
+
+      setAllInquiries(transformedBookings);
+      console.log('💬 All inquiries loaded:', transformedBookings?.length || 0);
+    } catch (error) {
+      console.error('❌ Error loading all inquiries:', error);
+      toast.error('Failed to load inquiries');
+    } finally {
+      setLoadingInquiries(false);
     }
   };
 
@@ -517,6 +578,7 @@ const LandlordDashboard = () => {
       // Refresh dashboard data to show updated listings
       await loadDashboardData();
       await loadRecentData();
+      await loadAllInquiries();
 
     } catch (error) {
       // console.error('❌ Failed to delete property:', error);
@@ -590,6 +652,11 @@ const LandlordDashboard = () => {
   const handleNavigation = (id) => {
     setActiveTab(id);
     setActiveView(id); // Set the active view to match the navigation
+
+    // Load inquiries when switching to inquiries view
+    if (id === 'inquiries' && allInquiries.length === 0 && !loadingInquiries) {
+      loadAllInquiries();
+    }
 
     // Dashboard is the current page, so no navigation needed for other views
     // Keep everything within the same component for better UX
@@ -714,6 +781,7 @@ const LandlordDashboard = () => {
     setSelectedProperties([]);
     await loadDashboardData();
     await loadRecentData();
+    await loadAllInquiries();
 
     toast.success(`Deleted ${selectedProperties.length} properties`);
   };
@@ -1150,7 +1218,10 @@ return (
                         <p className="text-sm text-gray-500">{stats.activeLeads} new this week</p>
                       </div>
                     </div>
-                    <button className="text-[#FF6B35] hover:text-[#e85e2f] text-sm font-medium">
+                    <button
+                      onClick={() => setActiveView('inquiries')}
+                      className="text-[#FF6B35] hover:text-[#e85e2f] text-sm font-medium"
+                    >
                       View all
                     </button>
                   </div>
@@ -1514,22 +1585,41 @@ return (
                   <h2 className="text-2xl font-bold text-gray-900">Property Inquiries</h2>
                   <p className="text-gray-600">Manage inquiries from potential tenants</p>
                 </div>
-                <div className="text-sm text-gray-500">
-                  {stats.activeLeads} active inquiries
+                <div className="flex items-center space-x-3">
+                  <div className="text-sm text-gray-500">
+                    {allInquiries.length} total inquiries
+                  </div>
+                  <button
+                    onClick={() => navigate('/landlord/inquiry-management')}
+                    className="px-4 py-2 bg-[#FF6B35] text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                  >
+                    Manage All
+                  </button>
                 </div>
               </div>
 
-              {recentLeads.length === 0 ? (
+              {loadingInquiries ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-[#FF6B35] mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading inquiries...</p>
+                </div>
+              ) : allInquiries.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <MessageSquare className="w-8 h-8 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No Inquiries Yet</h3>
-                  <p className="text-gray-600">Inquiries from interested tenants will appear here</p>
+                  <p className="text-gray-600 mb-4">Inquiries from interested tenants will appear here</p>
+                  <button
+                    onClick={loadAllInquiries}
+                    className="px-4 py-2 bg-[#FF6B35] text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                  >
+                    Refresh
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {recentLeads.map((lead, index) => (
+                  {allInquiries.map((lead, index) => (
                     <motion.div
                       key={lead.id}
                       initial={{ opacity: 0, y: 10 }}

@@ -256,7 +256,7 @@ const NotificationCenter = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden"
+            className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden md:w-96"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -303,7 +303,7 @@ const NotificationCenter = () => {
                       }}
                     >
                       <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0 mt-1">
+                        <div className="shrink-0 mt-1">
                           {getNotificationIcon(notification.type)}
                         </div>
 

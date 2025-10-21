@@ -304,7 +304,7 @@ export default function ChatPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-4"
+        className="flex flex-col items-center justify-center min-h-screen bg-linear-to-brrom-white via-gray-50 to-white p-4"
       >
         <div className="relative">
           {/* Animated logo */}
@@ -1563,7 +1563,7 @@ export default function ChatPage() {
               }}
             >
               {/* HomeSwift sidebar header */}
-              <div className="p-4 flex-shrink-0 bg-gradient-to-br from-white to-gray-50/50 border-b border-gray-100">
+              <div className="p-4 shrink-0 bg-linear-to-brrom-white to-gray-50/50 border-b border-gray-100">
                 <div className="flex items-center justify-between mb-8 mt-6">
                   <div className="flex items-center gap-3">
                     {compactMode ? (
@@ -1638,7 +1638,7 @@ export default function ChatPage() {
                       }`}
                       onClick={() => handleSidebarNavigation(item.label)}
                     >
-                      <item.icon size={18} className="flex-shrink-0" />
+                      <item.icon size={18} className="shrink-0" />
                       {!compactMode && (
                         <span className="text-sm font-medium">{item.label}</span>
                       )}
@@ -1693,13 +1693,13 @@ export default function ChatPage() {
               </div>
 
               {/* HomeSwift sidebar footer */}
-              <div className="p-4 border-t border-gray-100 bg-gradient-to-br from-gray-50/50 to-white flex-shrink-0">
+              <div className="p-4 border-t border-gray-100 bg-linear-to-br from-gray-50/50 to-white shrink-0">
                 <div className="flex items-center justify-between">
                   {!compactMode && (
                     <div className="flex items-center gap-3">
                       {user ? (
                         <>
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#FF6B35] to-[#e85e2f] flex items-center justify-center shrink-0 shadow-sm">
                             <span className="text-white text-sm font-bold">
                               {getUserDisplayName().charAt(0).toUpperCase()}
                             </span>
@@ -1791,7 +1791,7 @@ export default function ChatPage() {
                   }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setShowProfilePopup(true)}
-                  className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-linear-to-br from-[#FF6B35] to-[#e85e2f] text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
                   style={{
                     boxShadow: '0 2px 8px rgba(255, 107, 53, 0.3)'
                   }}
@@ -1857,7 +1857,7 @@ export default function ChatPage() {
                   }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => navigate('/signup')}
-                  className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-[#FF6B35] to-[#e85e2f] text-white hover:shadow-lg rounded-lg transition-all duration-200"
+                  className="px-4 py-2 text-sm font-medium bg-linear-to-r from-[#FF6B35] to-[#e85e2f] text-white hover:shadow-lg rounded-lg transition-all duration-200"
                   style={{
                     boxShadow: '0 2px 8px rgba(255, 107, 53, 0.3)'
                   }}
@@ -2003,7 +2003,7 @@ export default function ChatPage() {
             <motion.form
               onSubmit={handleIntelligentSearchSubmit}
               whileHover={{ scale: 1.005 }}
-              className={`relative flex flex-col bg-white/95 shadow-2xl px-0 py-3 sm:py-6 min-h-[120px] sm:min-h-[140px] backdrop-blur-sm z-20 ${showAdvancedSearch || showSuggestions ? 'rounded-[2rem]' : 'rounded-[2rem]'}`}
+              className={`relative flex flex-col bg-white/95 shadow-2xl px-0 py-3 sm:py-6 min-h-[120px] sm:min-h-[140px] backdrop-blur-sm z-20 ${showAdvancedSearch || showSuggestions ? 'rounded-4xl' : 'rounded-4xl'}`}
               style={{
                 boxShadow: showAdvancedSearch || showSuggestions ? `
                   -2px 0 20px rgba(255, 107, 53, 0.2),
@@ -2035,7 +2035,7 @@ export default function ChatPage() {
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
-                className={`absolute inset-0 pointer-events-none ${showAdvancedSearch || showSuggestions ? 'rounded-[2rem]' : 'rounded-[2rem]'}`}
+                className={`absolute inset-0 pointer-events-none ${showAdvancedSearch || showSuggestions ? 'rounded-[2rem]' : 'rounded-4xl'}`}
                 style={{
                   background: 'radial-gradient(circle at center, rgba(255, 107, 53, 0.1) 0%, transparent 70%)'
                 }}
@@ -2105,7 +2105,7 @@ export default function ChatPage() {
                             onClick={() => { handleFileUploadClick(); setShowPlusDropdown(false); }}
                             className="w-full flex items-center gap-0.5 text-left text-gray-700 hover:text-[#2C3E50] hover:bg-gray-100 px-1.5 py-0.5 rounded text-[10px] leading-tight"
                           >
-                            <FileUp size={8} className="flex-shrink-0" />
+                            <FileUp size={8} className="shrink-0" />
                             <span className="truncate">Upload File</span>
                           </button>
                           <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
@@ -2181,7 +2181,7 @@ export default function ChatPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.98 }}
                   transition={{ duration: 0.25, ease: "easeOut" }}
-                  className="absolute top-full left-2 right-2 bg-white/95 backdrop-blur-md rounded-b-[2rem] shadow-2xl border-l border-r border-b border-gray-200/80 z-10 overflow-hidden"
+                  className="absolute top-full left-2 right-2 bg-white/95 backdrop-blur-md rounded-b-4xl shadow-2xl border-l border-r border-b border-gray-200/80 z-10 overflow-hidden"
                   style={{
                     boxShadow: `
                       0 10px 25px rgba(0, 0, 0, 0.15),

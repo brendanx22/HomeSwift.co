@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { motion } from 'framer-motion';
 import PropertyImageUpload from './PropertyImageUpload';
 import PropertyFeatures from './PropertyFeatures';
 import { PropertyAPI } from '../lib/propertyAPI';
@@ -131,137 +132,247 @@ const ListPropertyForm = ({ onSubmit, submitting = false, errorMessage, successM
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigate('/landlord/dashboard')}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span>Back to Dashboard</span>
-            </button>
-            <div className="h-6 w-px bg-gray-300"></div>
-            <h1 className="text-2xl font-bold text-secondary">List New Property</h1>
+    <div className="min-h-screen bg-gray-50">
+      {/* Modern Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-4">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigate('/landlord/dashboard')}
+                className="p-2 text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">List New Property</h1>
+                <p className="text-sm text-gray-600">Add a new property to your portfolio</p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Form Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8"
+        >
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Property Title */}
             <div>
-              <label className="block text-[#2C3E50] text-sm font-medium mb-2">Property Title *</label>
-              <input name="title" value={values.title} onChange={handleChange} className={`${inputBase}`} placeholder="e.g., Cozy 2-Bedroom Apartment" required />
+              <label className="block text-sm font-semibold text-gray-900 mb-3">Property Title *</label>
+              <input
+                name="title"
+                value={values.title}
+                onChange={handleChange}
+                className={`${inputBase} h-12`}
+                placeholder="e.g., Cozy 2-Bedroom Apartment in Victoria Island"
+                required
+              />
             </div>
+
+            {/* Location */}
             <div>
-              <label className="block text-[#2C3E50] text-sm font-medium mb-2">Price / Rent *</label>
-              <input name="price" type="number" min="0" value={values.price} onChange={handleChange} className={`${inputBase}`} placeholder="e.g., 250000" required />
+              <label className="block text-sm font-semibold text-gray-900 mb-3">Location *</label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input
+                  name="locationCity"
+                  value={values.locationCity}
+                  onChange={handleChange}
+                  className={`${inputBase} h-12`}
+                  placeholder="City"
+                  required
+                />
+                <input
+                  name="locationState"
+                  value={values.locationState}
+                  onChange={handleChange}
+                  className={`${inputBase} h-12`}
+                  placeholder="State"
+                  required
+                />
+                <input
+                  name="locationCountry"
+                  value={values.locationCountry}
+                  onChange={handleChange}
+                  className={`${inputBase} h-12`}
+                  placeholder="Country"
+                  required
+                />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-[#2C3E50] text-sm font-medium mb-2">Location *</label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input name="locationCity" value={values.locationCity} onChange={handleChange} className={`${inputBase}`} placeholder="City" required />
-              <input name="locationState" value={values.locationState} onChange={handleChange} className={`${inputBase}`} placeholder="State" required />
-              <input name="locationCountry" value={values.locationCountry} onChange={handleChange} className={`${inputBase}`} placeholder="Country" required />
+            {/* Property Details */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-3">Property Type *</label>
+                <select
+                  name="propertyType"
+                  value={values.propertyType}
+                  onChange={handleChange}
+                  className={`${inputBase} h-12 cursor-pointer`}
+                  required
+                >
+                  <option value="apartment">Apartment</option>
+                  <option value="house">House</option>
+                  <option value="hostel">Hostel</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-3">Listing Type *</label>
+                <select
+                  name="listingType"
+                  value={values.listingType}
+                  onChange={handleChange}
+                  className={`${inputBase} h-12 cursor-pointer`}
+                  required
+                >
+                  <option value="for-rent">For Rent</option>
+                  <option value="for-sale">For Sale</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-3">Bedrooms *</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={values.rooms}
+                  onChange={(e) => handleNumberChange('rooms', e.target.value)}
+                  className={`${inputBase} h-12`}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-3">Bathrooms *</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={values.bathrooms}
+                  onChange={(e) => handleNumberChange('bathrooms', e.target.value)}
+                  className={`${inputBase} h-12`}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Price */}
             <div>
-              <label className="block text-[#2C3E50] text-sm font-medium mb-2">Property Type *</label>
-              <select name="propertyType" value={values.propertyType} onChange={handleChange} className={`${inputBase} cursor-pointer`} required>
-                <option value="apartment">Apartment</option>
-                <option value="house">House</option>
-                <option value="hostel">Hostel</option>
-              </select>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">Price / Rent *</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">₦</span>
+                <input
+                  name="price"
+                  type="number"
+                  min="0"
+                  value={values.price}
+                  onChange={handleChange}
+                  className={`${inputBase} h-12 pl-10`}
+                  placeholder="e.g., 250000"
+                  required
+                />
+              </div>
             </div>
+
+            {/* Features */}
             <div>
-              <label className="block text-[#2C3E50] text-sm font-medium mb-2">Listing Type *</label>
-              <select name="listingType" value={values.listingType} onChange={handleChange} className={`${inputBase} cursor-pointer`} required>
-                <option value="for-rent">For Rent</option>
-                <option value="for-sale">For Sale</option>
-              </select>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">Features & Amenities</label>
+              <PropertyFeatures
+                selectedAmenities={values.amenities}
+                onChange={(amenities) => setValues((v) => ({ ...v, amenities }))}
+                brand={{ accent }}
+              />
             </div>
+
+            {/* Description */}
             <div>
-              <label className="block text-[#2C3E50] text-sm font-medium mb-2">Rooms *</label>
-              <input type="number" min="0" value={values.rooms} onChange={(e) => handleNumberChange('rooms', e.target.value)} className={`${inputBase}`} />
+              <label className="block text-sm font-semibold text-gray-900 mb-3">Description</label>
+              <textarea
+                name="description"
+                rows={5}
+                value={values.description}
+                onChange={handleChange}
+                className={`${inputBase} resize-none`}
+                placeholder="Describe your property, neighborhood, and any special terms or conditions..."
+              />
             </div>
+
+            {/* Images */}
             <div>
-              <label className="block text-[#2C3E50] text-sm font-medium mb-2">Bathrooms *</label>
-              <input type="number" min="0" step="0.5" value={values.bathrooms} onChange={(e) => handleNumberChange('bathrooms', e.target.value)} className={`${inputBase}`} />
+              <label className="block text-sm font-semibold text-gray-900 mb-3">Property Images</label>
+              <PropertyImageUpload
+                images={values.images}
+                onChange={(images) => setValues((v) => ({ ...v, images }))}
+                brand={{ primary }}
+              />
             </div>
-          </div>
 
-          <PropertyFeatures
-            selectedAmenities={values.amenities}
-            onChange={(amenities) => setValues((v) => ({ ...v, amenities }))}
-            brand={{ accent }}
-          />
+            {/* Submit Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
+              <motion.button
+                type="submit"
+                disabled={isSubmitting || imageConverting}
+                className="flex-1 bg-[#FF6B35] text-white h-12 rounded-lg font-semibold hover:bg-[#e85e2f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={!isSubmitting && !imageConverting ? { scale: 1.02 } : {}}
+                whileTap={!isSubmitting && !imageConverting ? { scale: 0.98 } : {}}
+              >
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Publishing...
+                  </>
+                ) : imageConverting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing Images...
+                  </>
+                ) : (
+                  'Publish Listing'
+                )}
+              </motion.button>
 
-          <div>
-            <label className="block text-[#2C3E50] text-sm font-medium mb-2">Description</label>
-            <textarea name="description" rows={5} value={values.description} onChange={handleChange} className={`${inputBase} resize-none`} placeholder="Describe your property, neighborhood, and any special terms." />
-          </div>
+              <motion.button
+                type="button"
+                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:border-gray-400 hover:bg-gray-50 transition-colors h-12"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  toast.info('Draft saved locally');
+                }}
+              >
+                Save as Draft
+              </motion.button>
+            </div>
 
-          <PropertyImageUpload
-            images={values.images}
-            onChange={(images) => setValues((v) => ({ ...v, images }))}
-            brand={{ primary }}
-          />
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4">
-            <button
-              type="submit"
-              disabled={isSubmitting || imageConverting}
-              className="inline-flex items-center justify-center px-6 py-3 rounded-lg text-white font-semibold transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: primary }}
-              onMouseOver={(e) => !isSubmitting && !imageConverting && (e.currentTarget.style.backgroundColor = '#e85e2f')}
-              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = primary)}
-            >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Publishing...
-                </>
-              ) : imageConverting ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing Images...
-                </>
-              ) : (
-                'Publish Listing'
-              )}
-            </button>
-            <button
-              type="button"
-              className="px-6 py-3 rounded-lg border-2 border-gray-300 text-[#2C3E50] font-semibold hover:border-[#2C3E50] hover:bg-gray-50 transition-all"
-              onClick={() => {
-                toast.info('Draft saved locally');
-              }}
-            >
-              Save as Draft
-            </button>
-          </div>
-
-          {errorMessage && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">⚠ {errorMessage}</div>
-          )}
-          {successMessage && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600">✓ {successMessage}</div>
-          )}
-        </form>
+            {/* Error/Success Messages */}
+            {errorMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"
+              >
+                ⚠ {errorMessage}
+              </motion.div>
+            )}
+            {successMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600"
+              >
+                ✓ {successMessage}
+              </motion.div>
+            )}
+          </form>
+        </motion.div>
       </div>
     </div>
   );
