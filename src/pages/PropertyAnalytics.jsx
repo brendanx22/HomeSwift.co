@@ -36,16 +36,16 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 
 const PropertyAnalytics = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, currentRole } = useAuth();
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30d');
 
   useEffect(() => {
-    if (isAuthenticated && user?.user_type === 'landlord') {
+    if (isAuthenticated && currentRole === 'landlord') {
       loadAnalytics();
     }
-  }, [isAuthenticated, user, timeRange]);
+  }, [isAuthenticated, currentRole, timeRange]);
 
   const loadAnalytics = async () => {
     try {
@@ -338,7 +338,7 @@ const PropertyAnalytics = () => {
     };
   };
 
-  if (!isAuthenticated || user?.user_type !== 'landlord') {
+  if (!isAuthenticated || currentRole !== 'landlord') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
