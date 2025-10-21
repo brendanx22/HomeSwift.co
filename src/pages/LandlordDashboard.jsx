@@ -1644,7 +1644,7 @@ return (
                     {allInquiries.length} total inquiries
                   </div>
                   <button
-                    onClick={() => navigate('/landlord/inquiry-management')}
+                    onClick={() => navigate('/inquiries')}
                     className="px-4 py-2 bg-[#FF6B35] text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
                   >
                     Manage All
