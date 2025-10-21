@@ -36,9 +36,8 @@ const InquiryManagement = () => {
   const [filteredInquiries, setFilteredInquiries] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedInquiries, setSelectedInquiries] = useState([]);
-  const [showBulkActions, setShowBulkActions] = useState(false);
-  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [showInquiryDetails, setShowInquiryDetails] = useState(false);
+  const [selectedInquiry, setSelectedInquiry] = useState(null);
 
   // Prevent body scroll when modal is open on mobile
   useEffect(() => {
@@ -234,6 +233,51 @@ const InquiryManagement = () => {
     } catch (error) {
       console.error('Error marking inquiry as read:', error);
       toast.error('Failed to mark as read');
+    }
+  };
+
+  const updateInquiryPriority = async (inquiryId, newPriority) => {
+    try {
+      // Update local state
+      setInquiries(prev =>
+        prev.map(inquiry =>
+          inquiry.id === inquiryId
+            ? { ...inquiry, priority: newPriority }
+            : inquiry
+        )
+      );
+
+      toast.success(`Priority updated to ${newPriority}`);
+    } catch (error) {
+      console.error('Error updating inquiry priority:', error);
+      toast.error('Failed to update priority');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedInquiries.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .delete()
+        .in('id', selectedInquiries);
+
+      if (error) {
+        console.error('Error deleting bookings:', error);
+        toast.error('Failed to delete inquiries');
+        return;
+      }
+
+      // Update local state
+      setInquiries(prev => prev.filter(inquiry => !selectedInquiries.includes(inquiry.id)));
+
+      setSelectedInquiries([]);
+      setShowBulkActions(false);
+      toast.success(`Deleted ${selectedInquiries.length} inquiries`);
+    } catch (error) {
+      console.error('Error in bulk delete:', error);
+      toast.error('Failed to delete inquiries');
     }
   };
 
