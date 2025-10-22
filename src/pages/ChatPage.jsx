@@ -470,6 +470,7 @@ export default function ChatPage() {
     { id: 'virtual-tours', label: 'Virtual Tours', icon: <Camera className="w-5 h-5" /> },
     { id: 'favorites', label: 'Favorites', icon: <Heart className="w-5 h-5" /> },
     { id: 'search-history', label: 'Search History', icon: <Clock className="w-5 h-5" /> },
+    { id: 'settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
   ];
 
   // Handle sidebar navigation
@@ -502,6 +503,9 @@ export default function ChatPage() {
       case 'Search History':
         // For now, just log - could implement a history modal/page later
         console.log('Search History clicked - implement history page');
+        break;
+      case 'Settings':
+        navigate('/settings');
         break;
       default:
         console.log('Unknown sidebar navigation:', label);

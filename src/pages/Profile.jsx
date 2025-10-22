@@ -3,6 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, MapPin, Calendar, Settings, Edit } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '../lib/supabaseClient';
+import { toast } from 'react-hot-toast';
 
 export default function Profile() {
   const { user } = useAuth();
@@ -16,14 +18,57 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    if (user?.user_metadata) {
-      setProfileData({
-        full_name: user.user_metadata.full_name || '',
-        phone: user.user_metadata.phone || '',
-        location: user.user_metadata.location || '',
-        bio: user.user_metadata.bio || ''
-      });
-    }
+    const loadProfile = async () => {
+      if (!user?.id) return;
+
+      try {
+        // Load profile from user_profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Error loading profile:', profileError);
+        }
+
+        if (profile) {
+          console.log('🔍 Profile - Loading profile from database:', {
+            fullName: profile.full_name,
+            email: profile.email
+          });
+
+          setProfileData({
+            full_name: profile.full_name || '',
+            phone: profile.phone || '',
+            location: profile.location || '',
+            bio: profile.bio || ''
+          });
+        } else {
+          // No profile exists, use user auth data
+          console.log('🔍 Profile - No profile found, using auth data');
+
+          setProfileData({
+            full_name: user.user_metadata?.full_name || '',
+            phone: '',
+            location: '',
+            bio: ''
+          });
+        }
+      } catch (err) {
+        console.error('Error loading profile:', err);
+        // Fallback to user auth data
+        setProfileData({
+          full_name: user.user_metadata?.full_name || '',
+          phone: '',
+          location: '',
+          bio: ''
+        });
+      }
+    };
+
+    loadProfile();
   }, [user]);
 
   const handleInputChange = (field, value) => {
@@ -35,24 +80,65 @@ export default function Profile() {
 
   const handleSave = async () => {
     try {
-      // TODO: Implement profile update API call
-      console.log('Saving profile:', profileData);
       setIsEditing(false);
+
+      // Save profile data to user_profiles table
+      const { error } = await supabase
+        .from('user_profiles')
+        .upsert({
+          id: user.id,
+          full_name: profileData.full_name,
+          phone: profileData.phone,
+          location: profileData.location,
+          bio: profileData.bio,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      console.log('✅ Profile saved successfully');
     } catch (error) {
       console.error('Error saving profile:', error);
+      toast.error('Failed to save profile');
     }
   };
 
-  const handleCancel = () => {
-    // Reset to original data
-    if (user?.user_metadata) {
+  const handleCancel = async () => {
+    // Reload profile data from database
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile) {
+        setProfileData({
+          full_name: profile.full_name || '',
+          phone: profile.phone || '',
+          location: profile.location || '',
+          bio: profile.bio || ''
+        });
+      } else {
+        // Fallback to auth data
+        setProfileData({
+          full_name: user.user_metadata?.full_name || '',
+          phone: '',
+          location: '',
+          bio: ''
+        });
+      }
+    } catch (err) {
+      console.error('Error reloading profile:', err);
+      // Fallback to auth data
       setProfileData({
-        full_name: user.user_metadata.full_name || '',
-        phone: user.user_metadata.phone || '',
-        location: user.user_metadata.location || '',
-        bio: user.user_metadata.bio || ''
+        full_name: user.user_metadata?.full_name || '',
+        phone: '',
+        location: '',
+        bio: ''
       });
     }
+
     setIsEditing(false);
   };
 
@@ -265,17 +351,23 @@ export default function Profile() {
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Settings</h2>
 
               <div className="space-y-4">
-                <button className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <button
+                  onClick={() => navigate('/settings')}
+                  className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
                   <div className="flex items-center">
                     <Settings className="w-5 h-5 text-gray-400 mr-3" />
-                    <span className="text-gray-700">Notification Preferences</span>
+                    <span className="text-gray-700">Settings</span>
                   </div>
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
 
-                <button className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <button
+                  onClick={() => navigate('/settings')}
+                  className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
                   <div className="flex items-center">
                     <Settings className="w-5 h-5 text-gray-400 mr-3" />
                     <span className="text-gray-700">Privacy Settings</span>
@@ -285,7 +377,15 @@ export default function Profile() {
                   </svg>
                 </button>
 
-                <button className="w-full flex items-center justify-between p-4 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
+                <button
+                  onClick={() => {
+                    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                      // TODO: Implement account deletion
+                      console.log('Account deletion requested');
+                    }
+                  }}
+                  className="w-full flex items-center justify-between p-4 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                >
                   <div className="flex items-center">
                     <Settings className="w-5 h-5 text-red-400 mr-3" />
                     <span className="text-red-700">Delete Account</span>

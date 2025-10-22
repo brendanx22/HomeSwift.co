@@ -14,7 +14,8 @@ import {
   Edit,
   Trash2,
   Eye,
-  EyeOff
+  EyeOff,
+  AlertTriangle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,16 +25,18 @@ const LandlordSettings = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // State
-  const [activeTab, setActiveTab] = useState('profile');
-  const [loading, setLoading] = useState(false);
-  const [profileData, setProfileData] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    bio: '',
-    avatar_url: null
+  const [preferences, setPreferences] = useState({
+    emailNotifications: true,
+    pushNotifications: true,
+    propertyAlerts: true,
+    marketingEmails: false,
+    language: 'en',
+    currency: 'NGN'
+  });
+
+  const [securitySettings, setSecuritySettings] = useState({
+    twoFactorEnabled: false,
+    loginAlerts: true
   });
 
   // Check authentication
@@ -50,24 +53,116 @@ const LandlordSettings = () => {
       if (!user?.id) return;
 
       try {
-        const { data, error } = await supabase
-          .from('profiles')
+        // First try to load from user_profiles table (may not exist for all users)
+        const { data: profileData, error: profileError } = await supabase
+          .from('user_profiles')
           .select('*')
           .eq('id', user.id)
-          .single();
+          .maybeSingle(); // Use maybeSingle instead of single to avoid errors
 
-        if (error) throw error;
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Error loading profile:', profileError);
+        }
 
-        if (data) {
-          setProfileData(data);
+        if (profileData) {
+          // Profile exists in database - handle both full_name and first_name/last_name formats
+          const nameParts = profileData.full_name ? profileData.full_name.split(' ') : ['', ''];
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+
+          console.log('🔍 LandlordSettings - Loading profile from database:', {
+            hasAvatar: !!profileData.avatar_url,
+            avatarUrl: profileData.avatar_url,
+            fullName: profileData.full_name,
+            email: profileData.email
+          });
+
+          setProfileData({
+            first_name: firstName,
+            last_name: lastName,
+            email: profileData.email || user.email || '',
+            phone: profileData.phone || '',
+            bio: profileData.bio || '',
+            avatar_url: profileData.avatar_url || null,
+            location: profileData.location || '',
+          });
+        } else {
+          // No profile exists, use user auth data
+          const firstName = user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || '';
+          const lastName = user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '';
+
+          console.log('🔍 LandlordSettings - No profile found, using auth data:', {
+            firstName,
+            lastName,
+            email: user.email,
+            hasAvatar: false
+          });
+
+          setProfileData({
+            first_name: firstName,
+            last_name: lastName,
+            email: user.email || '',
+            phone: '',
+            bio: '',
+            avatar_url: null,
+            location: '',
+          });
         }
       } catch (err) {
         console.error('Error loading profile:', err);
-        toast.error('Failed to load profile data');
+        // Fallback to user auth data if profile loading fails
+        const firstName = user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || '';
+        const lastName = user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '';
+
+        setProfileData({
+          first_name: firstName,
+          last_name: lastName,
+          email: user.email || '',
+          phone: '',
+          bio: '',
+          avatar_url: null,
+          location: '',
+        });
       }
     };
 
     loadProfile();
+  }, [user]);
+
+  // Load preferences and security settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!user?.id) return;
+
+      try {
+        // Load user preferences (if table exists)
+        const { data: prefs } = await supabase
+          .from('user_preferences')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (prefs) {
+          setPreferences(prev => ({ ...prev, ...prefs }));
+        }
+
+        // Load security settings (if table exists)
+        const { data: security } = await supabase
+          .from('user_security_settings')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (security) {
+          setSecuritySettings(prev => ({ ...prev, ...security }));
+        }
+      } catch (error) {
+        // Tables might not exist yet, use defaults
+        console.log('Settings tables not found, using defaults');
+      }
+    };
+
+    loadSettings();
   }, [user]);
 
   // Handle profile update
@@ -76,12 +171,58 @@ const LandlordSettings = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(profileData)
-        .eq('id', user.id);
+      // Combine first and last name back into full_name for database storage
+      const fullName = `${profileData.first_name} ${profileData.last_name}`.trim();
 
-      if (error) throw error;
+      console.log('🔍 LandlordSettings - Saving profile with avatar:', {
+        fullName,
+        email: profileData.email,
+        hasAvatar: !!profileData.avatar_url,
+        avatarUrl: profileData.avatar_url
+      });
+
+      // First check if profile exists, if not create it
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (existingProfile) {
+        // Update existing profile
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({
+            full_name: fullName,
+            email: profileData.email,
+            phone: profileData.phone,
+            location: profileData.location,
+            bio: profileData.bio,
+            avatar_url: profileData.avatar_url,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+
+        if (error) throw error;
+        console.log('✅ LandlordSettings - Existing profile updated');
+      } else {
+        // Create new profile
+        const { error } = await supabase
+          .from('user_profiles')
+          .insert({
+            id: user.id,
+            full_name: fullName,
+            email: profileData.email,
+            phone: profileData.phone,
+            location: profileData.location,
+            bio: profileData.bio,
+            avatar_url: profileData.avatar_url,
+            user_type: 'landlord' // Set user type as landlord
+          });
+
+        if (error) throw error;
+        console.log('✅ LandlordSettings - New profile created');
+      }
 
       toast.success('Profile updated successfully!');
     } catch (err) {
@@ -98,7 +239,7 @@ const LandlordSettings = () => {
 
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -116,19 +257,77 @@ const LandlordSettings = () => {
         avatar_url: data.publicUrl
       }));
 
-      toast.success('Avatar uploaded successfully!');
+      console.log('🔍 LandlordSettings - Avatar uploaded, updating database:', {
+        avatarUrl: data.publicUrl,
+        userId: user.id
+      });
+
+      // Update profile with new avatar URL
+      await supabase
+        .from('user_profiles')
+        .upsert({
+          id: user.id,
+          avatar_url: data.publicUrl,
+          updated_at: new Date().toISOString()
+        });
+
+      console.log('✅ LandlordSettings - Avatar URL saved to database successfully');
+
+      toast.success('Avatar updated successfully!');
     } catch (err) {
       console.error('Error uploading avatar:', err);
       toast.error('Failed to upload avatar');
     }
   };
 
-  // Handle input change
-  const handleInputChange = (field, value) => {
-    setProfileData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  // Handle preferences update
+  const handlePreferencesUpdate = async () => {
+    setLoading(true);
+
+    try {
+      // Save preferences to database
+      const { error } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: user.id,
+          ...preferences,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      toast.success('Preferences updated successfully!');
+    } catch (err) {
+      console.error('Error updating preferences:', err);
+      toast.error('Failed to update preferences');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle security settings update
+  const handleSecurityUpdate = async () => {
+    setLoading(true);
+
+    try {
+      // Save security settings to database
+      const { error } = await supabase
+        .from('user_security_settings')
+        .upsert({
+          user_id: user.id,
+          ...securitySettings,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      toast.success('Security settings updated successfully!');
+    } catch (err) {
+      console.error('Error updating security settings:', err);
+      toast.error('Failed to update security settings');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (authLoading) {
@@ -338,10 +537,18 @@ const LandlordSettings = () => {
                         <h3 className="font-medium text-gray-900">Email Notifications</h3>
                         <p className="text-sm text-gray-600">Receive notifications via email</p>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" defaultChecked />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
-                      </label>
+                      <button
+                        onClick={() => setPreferences(prev => ({ ...prev, emailNotifications: !prev.emailNotifications }))}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          preferences.emailNotifications ? 'bg-[#FF6B35]' : 'bg-gray-200'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            preferences.emailNotifications ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
                     </div>
 
                     <div className="flex items-center justify-between">
@@ -349,22 +556,77 @@ const LandlordSettings = () => {
                         <h3 className="font-medium text-gray-900">Push Notifications</h3>
                         <p className="text-sm text-gray-600">Receive push notifications in your browser</p>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
-                      </label>
+                      <button
+                        onClick={() => setPreferences(prev => ({ ...prev, pushNotifications: !prev.pushNotifications }))}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          preferences.pushNotifications ? 'bg-[#FF6B35]' : 'bg-gray-200'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            preferences.pushNotifications ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
                     </div>
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-medium text-gray-900">Property Inquiries</h3>
-                        <p className="text-sm text-gray-600">Get notified when someone inquires about your properties</p>
+                        <h3 className="font-medium text-gray-900">Property Alerts</h3>
+                        <p className="text-sm text-gray-600">Get notified about new properties matching your criteria</p>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" defaultChecked />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
-                      </label>
+                      <button
+                        onClick={() => setPreferences(prev => ({ ...prev, propertyAlerts: !prev.propertyAlerts }))}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          preferences.propertyAlerts ? 'bg-[#FF6B35]' : 'bg-gray-200'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            preferences.propertyAlerts ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
                     </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Marketing Emails</h3>
+                        <p className="text-sm text-gray-600">Receive promotional emails and updates</p>
+                      </div>
+                      <button
+                        onClick={() => setPreferences(prev => ({ ...prev, marketingEmails: !prev.marketingEmails }))}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          preferences.marketingEmails ? 'bg-[#FF6B35]' : 'bg-gray-200'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            preferences.marketingEmails ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end mt-8">
+                    <button
+                      onClick={handlePreferencesUpdate}
+                      disabled={loading}
+                      className="flex items-center space-x-2 bg-[#FF6B35] text-white px-6 py-3 rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          <span>Save Preferences</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               )}
@@ -373,19 +635,49 @@ const LandlordSettings = () => {
                 <div className="p-6">
                   <h2 className="text-xl font-semibold text-gray-900 mb-6">Security Settings</h2>
                   <div className="space-y-6">
-                    <div>
-                      <h3 className="font-medium text-gray-900 mb-2">Change Password</h3>
-                      <p className="text-sm text-gray-600 mb-4">Update your password to keep your account secure</p>
-                      <button className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600">
-                        Change Password
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Two-Factor Authentication</h3>
+                        <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
+                      </div>
+                      <button
+                        onClick={() => setSecuritySettings(prev => ({ ...prev, twoFactorEnabled: !prev.twoFactorEnabled }))}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          securitySettings.twoFactorEnabled ? 'bg-[#FF6B35]' : 'bg-gray-200'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            securitySettings.twoFactorEnabled ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Login Alerts</h3>
+                        <p className="text-sm text-gray-600">Get notified when someone logs into your account</p>
+                      </div>
+                      <button
+                        onClick={() => setSecuritySettings(prev => ({ ...prev, loginAlerts: !prev.loginAlerts }))}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          securitySettings.loginAlerts ? 'bg-[#FF6B35]' : 'bg-gray-200'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            securitySettings.loginAlerts ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
                       </button>
                     </div>
 
                     <div>
-                      <h3 className="font-medium text-gray-900 mb-2">Two-Factor Authentication</h3>
-                      <p className="text-sm text-gray-600 mb-4">Add an extra layer of security to your account</p>
-                      <button className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
-                        Enable 2FA
+                      <h3 className="font-medium text-gray-900 mb-2">Change Password</h3>
+                      <p className="text-sm text-gray-600 mb-4">Update your password to keep your account secure</p>
+                      <button className="bg-[#FF6B35] text-white px-4 py-2 rounded-lg hover:bg-orange-600">
+                        Change Password
                       </button>
                     </div>
 
@@ -394,6 +686,47 @@ const LandlordSettings = () => {
                       <p className="text-sm text-gray-600 mb-4">Manage your active login sessions</p>
                       <button className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
                         View Sessions
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end mt-8">
+                    <button
+                      onClick={handleSecurityUpdate}
+                      disabled={loading}
+                      className="flex items-center space-x-2 bg-[#FF6B35] text-white px-6 py-3 rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          <span>Save Security Settings</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="border-t pt-8 mt-8">
+                    <h3 className="text-lg font-semibold text-red-600 mb-4">Danger Zone</h3>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                      <div className="flex items-center mb-4">
+                        <AlertTriangle className="w-6 h-6 text-red-500 mr-3" />
+                        <h4 className="font-medium text-red-900">Delete Account</h4>
+                      </div>
+                      <p className="text-red-700 mb-6">
+                        Once you delete your account, there is no going back. Please be certain.
+                      </p>
+                      <button
+                        onClick={handleDeleteAccount}
+                        disabled={loading}
+                        className="flex items-center space-x-2 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Delete Account</span>
                       </button>
                     </div>
                   </div>

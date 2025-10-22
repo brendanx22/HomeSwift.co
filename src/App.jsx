@@ -468,10 +468,10 @@ const AppLayout = () => {
             />
             
             <Route
-              path="/landlord/settings"
+              path="/settings"
               element={
-                <ProtectedRoute requiredRoles={['landlord']}>
-                  <LandlordSettings />
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <Settings />
                 </ProtectedRoute>
               }
             />
