@@ -103,7 +103,27 @@ export default function PropertyDetails() {
         }
       }
 
-      // Check if user_id column exists by trying to insert with it
+      // Check if required columns exist by trying to select them
+      const { data: columnCheck, error: columnError } = await supabase
+        .from('property_views')
+        .select('*')
+        .limit(0);
+
+      if (columnError) {
+        console.warn('⚠️ Could not check property_views table structure:', columnError.message);
+        return; // Skip tracking if we can't check structure
+      }
+
+      const availableColumns = Object.keys(columnCheck || {});
+      const hasPropertyId = availableColumns.includes('property_id');
+      const hasUserId = availableColumns.includes('user_id');
+
+      if (!hasPropertyId || !hasUserId) {
+        console.log('ℹ️ property_views table missing required columns, skipping view tracking');
+        return; // Skip tracking if required columns don't exist
+      }
+
+      // Try to insert property view
       const { error } = await supabase
         .from('property_views')
         .insert([{

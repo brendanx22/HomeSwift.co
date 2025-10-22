@@ -64,7 +64,7 @@ export class PropertyAPI {
           // Add default landlord fields for frontend compatibility
           return {
             ...property,
-            landlord_name: 'Landlord',
+            landlord_name: 'Property Owner',
             landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
           };
         }
@@ -103,7 +103,7 @@ export class PropertyAPI {
           // Add default landlord fields for frontend compatibility
           return {
             ...property,
-            landlord_name: 'Landlord',
+            landlord_name: 'Property Owner',
             landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
           };
         }
@@ -159,7 +159,7 @@ export class PropertyAPI {
           // Add default landlord fields for frontend compatibility
           return {
             ...property,
-            landlord_name: 'Landlord',
+            landlord_name: 'Property Owner',
             landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
           };
         }
@@ -234,6 +234,15 @@ export class PropertyAPI {
                                       "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
               };
               console.log('✅ Using current user info for landlord:', landlordInfo.landlord_name);
+            } else {
+              // For existing properties without user_profiles table, use ID-based fallback
+              if (propertyData.landlord_id) {
+                landlordInfo = {
+                  landlord_name: `Property Owner ${propertyData.landlord_id.slice(-6)}`,
+                  landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                };
+                console.log('✅ Using ID-based fallback name:', landlordInfo.landlord_name);
+              }
             }
           } else if (!tableError) {
             // Table exists, try to fetch landlord profile - but be more defensive
@@ -289,7 +298,17 @@ export class PropertyAPI {
                     };
                     console.log('✅ Using current user info for landlord:', landlordInfo.landlord_name);
                   } else {
-                    console.log('ℹ️ Current user is not the landlord, using default');
+                    console.log('ℹ️ Current user is not the landlord, using ID-based fallback');
+                    // For existing properties without user_profiles data, use a meaningful fallback
+                    if (propertyData.landlord_id) {
+                      landlordInfo = {
+                        landlord_name: `Property Owner ${propertyData.landlord_id.slice(-6)}`,
+                        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                      };
+                      console.log('✅ Using ID-based fallback name:', landlordInfo.landlord_name);
+                    } else {
+                      console.log('ℹ️ No landlord_id found, using generic fallback');
+                    }
                   }
                 }
               }
@@ -510,7 +529,7 @@ export class PropertyAPI {
       const propertiesWithLandlordInfo = await Promise.all(
         (propertiesData || []).map(async (property) => {
           let landlordInfo = {
-            landlord_name: 'Landlord',
+            landlord_name: 'Property Owner',
             landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
           };
 
@@ -560,10 +579,18 @@ export class PropertyAPI {
                                      (profileData.first_name && profileData.last_name ?
                                        `${profileData.first_name} ${profileData.last_name}` :
                                        profileData.first_name || profileData.last_name) ||
-                                     'Landlord',
+                                     'Property Owner',
                         landlord_profile_image: profileData.avatar_url ||
                                               "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
                       };
+                    } else {
+                      // Profile not found, use ID-based fallback
+                      if (property.landlord_id) {
+                        landlordInfo = {
+                          landlord_name: `Property Owner ${property.landlord_id.slice(-6)}`,
+                          landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                        };
+                      }
                     }
                   }
                 } catch (checkError) {
@@ -719,7 +746,7 @@ export class PropertyAPI {
       const propertiesWithLandlordInfo = await Promise.all(
         (data || []).map(async (property) => {
           let landlordInfo = {
-            landlord_name: 'Landlord',
+            landlord_name: 'Property Owner',
             landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
           };
 
@@ -769,10 +796,18 @@ export class PropertyAPI {
                                      (profileData.first_name && profileData.last_name ?
                                        `${profileData.first_name} ${profileData.last_name}` :
                                        profileData.first_name || profileData.last_name) ||
-                                     'Landlord',
+                                     'Property Owner',
                         landlord_profile_image: profileData.avatar_url ||
                                               "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
                       };
+                    } else {
+                      // Profile not found, use ID-based fallback
+                      if (property.landlord_id) {
+                        landlordInfo = {
+                          landlord_name: `Property Owner ${property.landlord_id.slice(-6)}`,
+                          landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                        };
+                      }
                     }
                   }
                 } catch (checkError) {
