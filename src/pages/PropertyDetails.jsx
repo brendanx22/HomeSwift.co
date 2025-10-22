@@ -87,18 +87,39 @@ export default function PropertyDetails() {
 
   const trackPropertyView = async (propertyId, landlordId, propertyTitle) => {
     try {
-      // Try to record the property view in the database (optional feature)
+      // Check if property_views table exists and has user_id column
+      const { data: tableCheck, error: tableError } = await supabase
+        .from('property_views')
+        .select('id')
+        .limit(1);
+
+      if (tableError) {
+        if (tableError.code === '42P01') {
+          console.log('ℹ️ property_views table does not exist yet');
+          return; // Table doesn't exist, skip tracking
+        } else {
+          console.warn('⚠️ Error checking property_views table:', tableError.message);
+          return; // Skip tracking if table issues
+        }
+      }
+
+      // Check if user_id column exists by trying to insert with it
       const { error } = await supabase
         .from('property_views')
         .insert([{
           property_id: propertyId,
-          user_id: user.id
+          user_id: user.id,
+          created_at: new Date().toISOString()
         }]);
 
       if (error) {
-        console.warn('Property view tracking failed (table may not exist):', error.message);
-        // Don't fail the entire flow if property view tracking fails
-        return;
+        if (error.message.includes("column 'user_id' does not exist")) {
+          console.log('ℹ️ property_views table exists but user_id column missing, skipping view tracking');
+          return; // Column doesn't exist, skip tracking
+        } else {
+          console.warn('Property view tracking failed:', error.message);
+          return; // Other error, skip tracking
+        }
       }
 
       // Create notification for landlord (if tracking succeeded)

@@ -196,39 +196,65 @@ export class PropertyAPI {
               console.log('✅ Using current user info for landlord:', landlordInfo.landlord_name);
             }
           } else if (!tableError) {
-            // Table exists, try to fetch landlord profile
+            // Table exists, try to fetch landlord profile - but be more defensive
             console.log('✅ user_profiles table exists, querying for landlord data...');
-            const { data: profileData, error: profileError } = await supabase
-              .from('user_profiles')
-              .select('full_name, avatar_url, first_name, last_name')
-              .eq('id', propertyData.landlord_id)
-              .single();
 
-            if (!profileError && profileData) {
-              landlordInfo = {
-                landlord_name: profileData.full_name ||
-                             `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() ||
-                             'Landlord',
-                landlord_profile_image: profileData.avatar_url ||
-                                      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-              };
-              console.log('✅ Landlord profile fetched:', landlordInfo.landlord_name);
-            } else {
-              console.log('ℹ️ Landlord profile not found in user_profiles, checking current user...');
-              // Try current user as fallback
-              if (currentUser && currentUser.id === propertyData.landlord_id) {
-                landlordInfo = {
-                  landlord_name: currentUser.user_metadata?.full_name ||
-                               currentUser.user_metadata?.name ||
-                               currentUser.email?.split('@')[0] ||
-                               'Landlord',
-                  landlord_profile_image: currentUser.user_metadata?.avatar_url ||
-                                        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-                };
-                console.log('✅ Using current user info for landlord:', landlordInfo.landlord_name);
+            // First check what columns are available in the table
+            try {
+              const { data: columnCheck, error: columnError } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .limit(0);
+
+              if (columnError) {
+                console.warn('⚠️ Could not check user_profiles table structure:', columnError.message);
               } else {
-                console.log('ℹ️ Current user is not the landlord, using default');
+                // Check if the columns we need exist
+                const availableColumns = Object.keys(columnCheck || {});
+                const neededColumns = ['full_name', 'avatar_url', 'first_name', 'last_name'];
+
+                // Build query with only available columns
+                const availableNeededColumns = neededColumns.filter(col => availableColumns.includes(col));
+                const selectClause = availableNeededColumns.length > 0 ? availableNeededColumns.join(',') : 'id';
+
+                const { data: profileData, error: profileError } = await supabase
+                  .from('user_profiles')
+                  .select(selectClause)
+                  .eq('id', propertyData.landlord_id)
+                  .single();
+
+                if (!profileError && profileData) {
+                  // Use whatever columns are available
+                  landlordInfo = {
+                    landlord_name: profileData.full_name ||
+                                 (profileData.first_name && profileData.last_name ?
+                                   `${profileData.first_name} ${profileData.last_name}` :
+                                   profileData.first_name || profileData.last_name) ||
+                                 'Landlord',
+                    landlord_profile_image: profileData.avatar_url ||
+                                          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                  };
+                  console.log('✅ Landlord profile fetched:', landlordInfo.landlord_name);
+                } else {
+                  console.log('ℹ️ Landlord profile not found in user_profiles, checking current user...');
+                  // Try current user as fallback
+                  if (currentUser && currentUser.id === propertyData.landlord_id) {
+                    landlordInfo = {
+                      landlord_name: currentUser.user_metadata?.full_name ||
+                                   currentUser.user_metadata?.name ||
+                                   currentUser.email?.split('@')[0] ||
+                                   'Landlord',
+                      landlord_profile_image: currentUser.user_metadata?.avatar_url ||
+                                            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                    };
+                    console.log('✅ Using current user info for landlord:', landlordInfo.landlord_name);
+                  } else {
+                    console.log('ℹ️ Current user is not the landlord, using default');
+                  }
+                }
               }
+            } catch (checkError) {
+              console.warn('⚠️ Error checking table structure, using default landlord info');
             }
           } else {
             console.warn('⚠️ Error checking user_profiles table:', tableError.message);
@@ -394,21 +420,41 @@ export class PropertyAPI {
                 // Table doesn't exist - use default
                 console.log('ℹ️ user_profiles table does not exist for saved properties');
               } else if (!tableError) {
-                // Table exists, try to fetch landlord profile
-                const { data: profileData, error: profileError } = await supabase
-                  .from('user_profiles')
-                  .select('full_name, avatar_url, first_name, last_name')
-                  .eq('id', property.landlord_id)
-                  .single();
+                // Table exists, try to fetch landlord profile - but be more defensive
+                try {
+                  const { data: columnCheck, error: columnError } = await supabase
+                    .from('user_profiles')
+                    .select('*')
+                    .limit(0);
 
-                if (!profileError && profileData) {
-                  landlordInfo = {
-                    landlord_name: profileData.full_name ||
-                                 `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() ||
-                                 'Landlord',
-                    landlord_profile_image: profileData.avatar_url ||
-                                          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-                  };
+                  if (columnError) {
+                    console.warn('⚠️ Could not check user_profiles table structure for saved properties');
+                  } else {
+                    const availableColumns = Object.keys(columnCheck || {});
+                    const neededColumns = ['full_name', 'avatar_url', 'first_name', 'last_name'];
+                    const availableNeededColumns = neededColumns.filter(col => availableColumns.includes(col));
+                    const selectClause = availableNeededColumns.length > 0 ? availableNeededColumns.join(',') : 'id';
+
+                    const { data: profileData, error: profileError } = await supabase
+                      .from('user_profiles')
+                      .select(selectClause)
+                      .eq('id', property.landlord_id)
+                      .single();
+
+                    if (!profileError && profileData) {
+                      landlordInfo = {
+                        landlord_name: profileData.full_name ||
+                                     (profileData.first_name && profileData.last_name ?
+                                       `${profileData.first_name} ${profileData.last_name}` :
+                                       profileData.first_name || profileData.last_name) ||
+                                     'Landlord',
+                        landlord_profile_image: profileData.avatar_url ||
+                                              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                      };
+                    }
+                  }
+                } catch (checkError) {
+                  console.warn('⚠️ Error checking table structure for saved property');
                 }
               }
             } catch (landlordErr) {
@@ -576,21 +622,41 @@ export class PropertyAPI {
                 // Table doesn't exist - use default
                 console.log('ℹ️ user_profiles table does not exist for search results');
               } else if (!tableError) {
-                // Table exists, try to fetch landlord profile
-                const { data: profileData, error: profileError } = await supabase
-                  .from('user_profiles')
-                  .select('full_name, avatar_url, first_name, last_name')
-                  .eq('id', property.landlord_id)
-                  .single();
+                // Table exists, try to fetch landlord profile - but be more defensive
+                try {
+                  const { data: columnCheck, error: columnError } = await supabase
+                    .from('user_profiles')
+                    .select('*')
+                    .limit(0);
 
-                if (!profileError && profileData) {
-                  landlordInfo = {
-                    landlord_name: profileData.full_name ||
-                                 `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() ||
-                                 'Landlord',
-                    landlord_profile_image: profileData.avatar_url ||
-                                          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-                  };
+                  if (columnError) {
+                    console.warn('⚠️ Could not check user_profiles table structure for search results');
+                  } else {
+                    const availableColumns = Object.keys(columnCheck || {});
+                    const neededColumns = ['full_name', 'avatar_url', 'first_name', 'last_name'];
+                    const availableNeededColumns = neededColumns.filter(col => availableColumns.includes(col));
+                    const selectClause = availableNeededColumns.length > 0 ? availableNeededColumns.join(',') : 'id';
+
+                    const { data: profileData, error: profileError } = await supabase
+                      .from('user_profiles')
+                      .select(selectClause)
+                      .eq('id', property.landlord_id)
+                      .single();
+
+                    if (!profileError && profileData) {
+                      landlordInfo = {
+                        landlord_name: profileData.full_name ||
+                                     (profileData.first_name && profileData.last_name ?
+                                       `${profileData.first_name} ${profileData.last_name}` :
+                                       profileData.first_name || profileData.last_name) ||
+                                     'Landlord',
+                        landlord_profile_image: profileData.avatar_url ||
+                                              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                      };
+                    }
+                  }
+                } catch (checkError) {
+                  console.warn('⚠️ Error checking table structure for search result');
                 }
               }
             } catch (landlordErr) {
