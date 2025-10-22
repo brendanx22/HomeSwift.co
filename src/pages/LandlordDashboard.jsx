@@ -16,7 +16,7 @@ import {
   BarChart3, 
   MapPin, 
   User, 
-  Settings, 
+  Settings as SettingsIcon, 
   LogOut, 
   Phone, 
   MessageSquare, 

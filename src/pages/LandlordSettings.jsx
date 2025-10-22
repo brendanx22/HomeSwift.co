@@ -25,19 +25,18 @@ const LandlordSettings = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  const [preferences, setPreferences] = useState({
-    emailNotifications: true,
-    pushNotifications: true,
-    propertyAlerts: true,
-    marketingEmails: false,
-    language: 'en',
-    currency: 'NGN'
+  const [profileData, setProfileData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    bio: '',
+    avatar_url: null,
+    location: ''
   });
 
-  const [securitySettings, setSecuritySettings] = useState({
-    twoFactorEnabled: false,
-    loginAlerts: true
-  });
+  const [activeTab, setActiveTab] = useState('profile');
+  const [loading, setLoading] = useState(false);
 
   // Check authentication
   useEffect(() => {
@@ -164,6 +163,41 @@ const LandlordSettings = () => {
 
     loadSettings();
   }, [user]);
+
+  // Handle input changes
+  const handleInputChange = (field, value) => {
+    setProfileData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Handle account deletion
+  const handleDeleteAccount = async () => {
+    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Delete user data
+      await supabase.from('user_profiles').delete().eq('id', user.id);
+      await supabase.from('properties').delete().eq('user_id', user.id);
+      await supabase.from('bookings').delete().eq('landlord_id', user.id);
+
+      // Sign out user
+      await supabase.auth.signOut();
+
+      toast.success('Account deleted successfully');
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast.error('Failed to delete account');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handle profile update
   const handleProfileUpdate = async (e) => {

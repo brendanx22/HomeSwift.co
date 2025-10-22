@@ -9,7 +9,7 @@ import {
   Heart,
   MessageSquare,
   Home,
-  Settings,
+  Settings as SettingsIcon,
   ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
