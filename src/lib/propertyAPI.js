@@ -395,6 +395,19 @@ export class PropertyAPI {
                 landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
               };
               console.log('✅ Landlord profile fetched for property creation:', landlordInfo.landlord_name);
+            } else {
+              // Try to get avatar from auth.users metadata using RPC or direct query
+              try {
+                // Since we can't use admin methods in client code, we'll use a default avatar
+                // The avatar will be fetched when properties are displayed via the getProperty method
+                landlordInfo = {
+                  landlord_name: 'Property Owner',
+                  landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                };
+                console.log('ℹ️ Using default avatar - will be updated when property is viewed');
+              } catch (authErr) {
+                console.warn('⚠️ Could not fetch from auth.users, using defaults:', authErr.message);
+              }
             }
           }
         } catch (landlordErr) {
