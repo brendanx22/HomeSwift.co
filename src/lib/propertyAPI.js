@@ -198,6 +198,12 @@ export class PropertyAPI {
         landlord_id: propertyData.landlord_id
       });
 
+      // Initialize landlord info with defaults
+      let landlordInfo = {
+        landlord_name: 'Property Owner',
+        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+      };
+
       // If property already has landlord info stored, use it
       if (propertyData.landlord_name) {
         landlordInfo = {
