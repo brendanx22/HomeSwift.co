@@ -295,7 +295,13 @@ export default function SignupPage() {
             className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
             disabled={loading}
           >
-            {loading ? 'Sending...' : 'Resend Verification Email'}
+            {loading ? (
+              <div className="flex items-center">
+                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-1"></div>
+              </div>
+            ) : (
+              'Resend Verification Email'
+            )}
           </button>
         </div>,
         { 
@@ -724,7 +730,13 @@ export default function SignupPage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                'Create Account'
+              )}
             </motion.button>
 
             {/* Disabled reasons for clarity */}

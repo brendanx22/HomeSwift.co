@@ -274,8 +274,8 @@ const NotificationCenter = () => {
             {/* Notifications List */}
             <div className="max-h-80 overflow-y-auto">
               {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-[#FF6B35]"></div>
+                <div className="flex flex-col items-center justify-center py-8">
+                  <div className="w-8 h-8 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full animate-spin"></div>
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">

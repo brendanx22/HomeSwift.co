@@ -1,8 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { motion } from 'framer-motion';
-import { toast } from 'react-hot-toast';
+import Loading from '../components/Loading';
 import { supabase } from '../lib/supabaseClient';
 import { formatDistanceToNow } from 'date-fns';
 import { 
@@ -450,47 +446,7 @@ const LandlordDashboard = () => {
   
   // Show loading state
   if (authLoading || loading) {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br from-white via-gray-50 to-white p-4"
-      >
-        <div className="relative">
-          {/* Animated logo */}
-          <motion.div
-            animate={{
-              scale: [1, 1.1, 1],
-              rotate: [0, 5, -5, 0]
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="mb-8"
-          >
-            <img
-              src="/images/logo.png"
-              alt="HomeSwift"
-              className="w-20 h-20 object-cover rounded-2xl shadow-lg"
-            />
-          </motion.div>
-
-          {/* Animated spinner */}
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{
-              duration: 1,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full mx-auto"
-          />
-        </div>
-      </motion.div>
-    );
+    return <Loading />;
   }
   
   // If not authenticated, redirect to login
@@ -1643,9 +1599,8 @@ return (
               </div>
 
               {loadingInquiries ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-[#FF6B35] mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading inquiries...</p>
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full animate-spin"></div>
                 </div>
               ) : allInquiries.length === 0 ? (
                 <div className="text-center py-12">

@@ -31,9 +31,7 @@ import {
   LineChart,
   Line
 } from 'recharts';
-import { format } from 'date-fns';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabaseClient';
+import Loading from '../components/Loading';
 
 const PropertyAnalytics = () => {
   const { user, isAuthenticated, currentRole } = useAuth();
@@ -468,11 +466,7 @@ const PropertyAnalytics = () => {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-300 border-t-[#FF6B35]"></div>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

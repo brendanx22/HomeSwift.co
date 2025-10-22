@@ -1,7 +1,4 @@
-import { useNavigate, useLocation, Link, Outlet } from "react-router-dom";
-import React, { useEffect, useRef, useState, useCallback } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
+import Loading from '../components/Loading';
 import ProfilePopup from '../components/ProfilePopup';
 import NotificationCenter from '../components/NotificationCenter';
 
@@ -299,47 +296,7 @@ export default function ChatPage() {
   
   // Show loading state while checking auth
   if (authLoading) {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="flex flex-col items-center justify-center min-h-screen bg-linear-to-brrom-white via-gray-50 to-white p-4"
-      >
-        <div className="relative">
-          {/* Animated logo */}
-          <motion.div
-            animate={{
-              scale: [1, 1.1, 1],
-              rotate: [0, 5, -5, 0]
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="mb-8"
-          >
-            <img
-              src="/images/logo.png"
-              alt="HomeSwift"
-              className="w-20 h-20 object-cover rounded-2xl shadow-lg"
-            />
-          </motion.div>
-
-          {/* Animated spinner */}
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{
-              duration: 1,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full mx-auto"
-          />
-        </div>
-      </motion.div>
-    );
+    return <Loading />;
   }
 
   // Prefill search fields from URL params (supports HeroSection redirect to chat)

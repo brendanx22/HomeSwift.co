@@ -1,7 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, Users } from 'lucide-react';
+import Loading from '../components/Loading';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI } from '../utils/api';
 import { Toaster, toast } from 'react-hot-toast';
@@ -307,8 +304,7 @@ export default function LoginPage() {
             >
               {loading ? (
                 <div className="flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Signing In...
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : (
                 'Sign In'

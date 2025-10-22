@@ -1,6 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Heart, MapPin, Bed, Bath, Square, ArrowLeft } from 'lucide-react';
+import Loading from '../components/Loading';
 import { motion } from 'framer-motion';
 import { PropertyAPI } from '../lib/propertyAPI';
 import { useAuth } from '../contexts/AuthContext';
@@ -105,14 +103,7 @@ export default function SavedProperties() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading saved properties...</p>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

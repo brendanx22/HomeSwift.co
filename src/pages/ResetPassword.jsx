@@ -152,7 +152,13 @@ const ResetPassword = () => {
               disabled={loading || !password || !confirmPassword}
               className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${(loading || !password || !confirmPassword) ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
-              {loading ? 'Resetting...' : 'Reset Password'}
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                'Reset Password'
+              )}
             </button>
           </div>
 
