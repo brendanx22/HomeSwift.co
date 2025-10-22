@@ -1,6 +1,9 @@
 import Loading from '../components/Loading';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'react-hot-toast';
 import { 
   Search, 
   Bell, 
