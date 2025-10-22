@@ -23,6 +23,20 @@ export default defineConfig({
     sourcemap: false,
     minify: "terser",
     chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        // Ensure consistent chunk naming for better caching
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+        // Set manual chunks for better loading
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['framer-motion', 'lucide-react'],
+          supabase: ['@supabase/supabase-js', '@supabase/auth-helpers-react'],
+        }
+      }
+    }
   },
   base: "/",
   optimizeDeps: {

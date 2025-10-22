@@ -273,17 +273,35 @@ export class PropertyAPI {
                   .single();
 
                 if (!profileError && profileData) {
-                  // Use whatever columns are available
-                  landlordInfo = {
-                    landlord_name: profileData.full_name ||
-                                 (profileData.first_name && profileData.last_name ?
-                                   `${profileData.first_name} ${profileData.last_name}` :
-                                   profileData.first_name || profileData.last_name) ||
-                                 'Landlord',
-                    landlord_profile_image: profileData.avatar_url ||
-                                          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-                  };
-                  console.log('✅ Landlord profile fetched:', landlordInfo.landlord_name);
+                  // Check if profile data actually contains meaningful information
+                  const hasMeaningfulData = profileData.full_name ||
+                                          (profileData.first_name && profileData.last_name) ||
+                                          profileData.first_name ||
+                                          profileData.last_name;
+
+                  if (hasMeaningfulData) {
+                    // Use profile data if it contains meaningful information
+                    landlordInfo = {
+                      landlord_name: profileData.full_name ||
+                                   (profileData.first_name && profileData.last_name ?
+                                     `${profileData.first_name} ${profileData.last_name}` :
+                                     profileData.first_name || profileData.last_name) ||
+                                   'Property Owner',
+                      landlord_profile_image: profileData.avatar_url ||
+                                            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                    };
+                    console.log('✅ Landlord profile fetched:', landlordInfo.landlord_name);
+                  } else {
+                    // Profile data exists but is empty, use ID-based fallback
+                    console.log('ℹ️ Profile data empty, using ID-based fallback');
+                    if (propertyData.landlord_id) {
+                      landlordInfo = {
+                        landlord_name: `Property Owner ${propertyData.landlord_id.slice(-6)}`,
+                        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                      };
+                      console.log('✅ Using ID-based fallback name:', landlordInfo.landlord_name);
+                    }
+                  }
                 } else {
                   console.log('ℹ️ Landlord profile not found in user_profiles, checking current user...');
                   // Try current user as fallback
@@ -292,7 +310,7 @@ export class PropertyAPI {
                       landlord_name: currentUser.user_metadata?.full_name ||
                                    currentUser.user_metadata?.name ||
                                    currentUser.email?.split('@')[0] ||
-                                   'Landlord',
+                                   'Property Owner',
                       landlord_profile_image: currentUser.user_metadata?.avatar_url ||
                                             "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
                     };
@@ -346,7 +364,7 @@ export class PropertyAPI {
 
       // Get landlord information for storage
       let landlordInfo = {
-        landlord_name: 'Landlord',
+        landlord_name: 'Property Owner',
         landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
       };
 
@@ -574,15 +592,31 @@ export class PropertyAPI {
                       .single();
 
                     if (!profileError && profileData) {
-                      landlordInfo = {
-                        landlord_name: profileData.full_name ||
-                                     (profileData.first_name && profileData.last_name ?
-                                       `${profileData.first_name} ${profileData.last_name}` :
-                                       profileData.first_name || profileData.last_name) ||
-                                     'Property Owner',
-                        landlord_profile_image: profileData.avatar_url ||
-                                              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-                      };
+                      // Check if profile data actually contains meaningful information
+                      const hasMeaningfulData = profileData.full_name ||
+                                              (profileData.first_name && profileData.last_name) ||
+                                              profileData.first_name ||
+                                              profileData.last_name;
+
+                      if (hasMeaningfulData) {
+                        landlordInfo = {
+                          landlord_name: profileData.full_name ||
+                                       (profileData.first_name && profileData.last_name ?
+                                         `${profileData.first_name} ${profileData.last_name}` :
+                                         profileData.first_name || profileData.last_name) ||
+                                       'Property Owner',
+                          landlord_profile_image: profileData.avatar_url ||
+                                                "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                        };
+                      } else {
+                        // Profile data exists but is empty, use ID-based fallback
+                        if (property.landlord_id) {
+                          landlordInfo = {
+                            landlord_name: `Property Owner ${property.landlord_id.slice(-6)}`,
+                            landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                          };
+                        }
+                      }
                     } else {
                       // Profile not found, use ID-based fallback
                       if (property.landlord_id) {
@@ -791,15 +825,31 @@ export class PropertyAPI {
                       .single();
 
                     if (!profileError && profileData) {
-                      landlordInfo = {
-                        landlord_name: profileData.full_name ||
-                                     (profileData.first_name && profileData.last_name ?
-                                       `${profileData.first_name} ${profileData.last_name}` :
-                                       profileData.first_name || profileData.last_name) ||
-                                     'Property Owner',
-                        landlord_profile_image: profileData.avatar_url ||
-                                              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-                      };
+                      // Check if profile data actually contains meaningful information
+                      const hasMeaningfulData = profileData.full_name ||
+                                              (profileData.first_name && profileData.last_name) ||
+                                              profileData.first_name ||
+                                              profileData.last_name;
+
+                      if (hasMeaningfulData) {
+                        landlordInfo = {
+                          landlord_name: profileData.full_name ||
+                                       (profileData.first_name && profileData.last_name ?
+                                         `${profileData.first_name} ${profileData.last_name}` :
+                                         profileData.first_name || profileData.last_name) ||
+                                       'Property Owner',
+                          landlord_profile_image: profileData.avatar_url ||
+                                                "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                        };
+                      } else {
+                        // Profile data exists but is empty, use ID-based fallback
+                        if (property.landlord_id) {
+                          landlordInfo = {
+                            landlord_name: `Property Owner ${property.landlord_id.slice(-6)}`,
+                            landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                          };
+                        }
+                      }
                     } else {
                       // Profile not found, use ID-based fallback
                       if (property.landlord_id) {

@@ -1,0 +1,22 @@
+<IfModule mod_mime.c>
+  # JavaScript modules
+  AddType application/javascript .js
+  AddType application/javascript .mjs
+
+  # Ensure proper MIME types for static assets
+  <IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/javascript application/javascript
+  </IfModule>
+</IfModule>
+
+# Enable compression for JavaScript files
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE application/javascript
+</IfModule>
+
+# Cache control for static assets
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType text/javascript "access plus 1 year"
+</IfModule>
