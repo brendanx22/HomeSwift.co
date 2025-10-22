@@ -3,17 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   User,
-  Mail,
-  Phone,
-  MapPin,
-  Camera,
-  Edit3,
-  Save,
-  X,
   Bell,
   Shield,
   CreditCard,
   Settings as SettingsIcon,
+  Camera,
+  Save,
+  X,
   Trash2,
   AlertTriangle,
   CheckCircle
@@ -25,9 +21,13 @@ import { toast } from 'react-hot-toast';
 export default function Settings() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+
+  // State management
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+
+  // Profile state
   const [profileData, setProfileData] = useState({
     firstName: '',
     lastName: '',
@@ -35,8 +35,10 @@ export default function Settings() {
     phone: '',
     location: '',
     bio: '',
-    avatar_url: ''
+    avatar_url: null
   });
+
+  // Preferences state
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
     pushNotifications: true,
@@ -45,43 +47,41 @@ export default function Settings() {
     language: 'en',
     currency: 'NGN'
   });
+
+  // Security state
   const [securitySettings, setSecuritySettings] = useState({
     twoFactorEnabled: false,
     loginAlerts: true
   });
 
+  // Load user data on component mount
   useEffect(() => {
     if (isAuthenticated && user?.id) {
       loadUserData();
     }
   }, [isAuthenticated, user?.id]);
 
+  // Load all user data from database
   const loadUserData = async () => {
     try {
       setLoading(true);
 
-      // Load user profile from user_profiles table (correct schema)
+      // Load user profile
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', user.id)
-        .maybeSingle(); // Use maybeSingle to handle non-existent profiles
+        .maybeSingle();
 
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Error loading profile:', profileError);
       }
 
       if (profile) {
-        // Profile exists - handle full_name format
+        // Parse full name into first and last name
         const nameParts = profile.full_name ? profile.full_name.split(' ') : ['', ''];
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
-
-        console.log('🔍 Settings - Loading profile from database:', {
-          hasAvatar: !!profile.avatar_url,
-          fullName: profile.full_name,
-          email: profile.email
-        });
 
         setProfileData({
           firstName: firstName,
@@ -90,31 +90,25 @@ export default function Settings() {
           phone: profile.phone || '',
           location: profile.location || '',
           bio: profile.bio || '',
-          avatar_url: profile.avatar_url || ''
+          avatar_url: profile.avatar_url || null
         });
       } else {
-        // No profile exists, use user auth data
+        // No profile exists, use auth data
         const firstName = user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || '';
         const lastName = user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '';
-
-        console.log('🔍 Settings - No profile found, using auth data:', {
-          firstName,
-          lastName,
-          email: user.email
-        });
 
         setProfileData({
           firstName: firstName,
           lastName: lastName,
           email: user.email || '',
           phone: '',
+          location: '',
           bio: '',
-          avatar_url: null,
-          location: ''
+          avatar_url: null
         });
       }
 
-      // Load user preferences (if table exists)
+      // Load user preferences
       try {
         const { data: prefs } = await supabase
           .from('user_preferences')
@@ -126,11 +120,10 @@ export default function Settings() {
           setPreferences(prev => ({ ...prev, ...prefs }));
         }
       } catch (error) {
-        // Preferences table might not exist yet, use defaults
         console.log('User preferences table not found, using defaults');
       }
 
-      // Load security settings (if table exists)
+      // Load security settings
       try {
         const { data: security } = await supabase
           .from('user_security_settings')
@@ -142,7 +135,6 @@ export default function Settings() {
           setSecuritySettings(prev => ({ ...prev, ...security }));
         }
       } catch (error) {
-        // Security settings table might not exist yet, use defaults
         console.log('Security settings table not found, using defaults');
       }
 
@@ -154,21 +146,15 @@ export default function Settings() {
     }
   };
 
+  // Handle profile updates
   const handleProfileUpdate = async () => {
     try {
       setSaving(true);
 
-      // Combine first and last name back into full_name for database storage
+      // Combine first and last name for database storage
       const fullName = `${profileData.firstName} ${profileData.lastName}`.trim();
 
-      console.log('🔍 Settings - Saving profile with avatar:', {
-        fullName,
-        email: profileData.email,
-        hasAvatar: !!profileData.avatar_url,
-        avatarUrl: profileData.avatar_url
-      });
-
-      // Check if profile exists, if not create it
+      // Check if profile exists, create or update accordingly
       const { data: existingProfile } = await supabase
         .from('user_profiles')
         .select('id')
@@ -191,7 +177,6 @@ export default function Settings() {
           .eq('id', user.id);
 
         if (error) throw error;
-        console.log('✅ Settings - Existing profile updated');
       } else {
         // Create new profile
         const { error } = await supabase
@@ -204,11 +189,10 @@ export default function Settings() {
             location: profileData.location,
             bio: profileData.bio,
             avatar_url: profileData.avatar_url,
-            user_type: 'renter' // Set user type as renter
+            user_type: 'renter'
           });
 
         if (error) throw error;
-        console.log('✅ Settings - New profile created');
       }
 
       toast.success('Profile updated successfully!');
@@ -220,7 +204,8 @@ export default function Settings() {
     }
   };
 
-  const handlePreferenceUpdate = async () => {
+  // Handle preferences updates
+  const handlePreferencesUpdate = async () => {
     try {
       setSaving(true);
 
@@ -243,6 +228,7 @@ export default function Settings() {
     }
   };
 
+  // Handle security settings updates
   const handleSecurityUpdate = async () => {
     try {
       setSaving(true);
@@ -266,6 +252,7 @@ export default function Settings() {
     }
   };
 
+  // Handle avatar upload
   const handleAvatarUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -290,11 +277,6 @@ export default function Settings() {
         avatar_url: data.publicUrl
       }));
 
-      console.log('🔍 Settings - Avatar uploaded, updating database:', {
-        avatarUrl: data.publicUrl,
-        userId: user.id
-      });
-
       // Update profile with new avatar URL
       await supabase
         .from('user_profiles')
@@ -304,8 +286,6 @@ export default function Settings() {
           updated_at: new Date().toISOString()
         });
 
-      console.log('✅ Settings - Avatar URL saved to database successfully');
-
       toast.success('Avatar uploaded successfully!');
     } catch (error) {
       console.error('Error uploading avatar:', error);
@@ -313,6 +293,7 @@ export default function Settings() {
     }
   };
 
+  // Handle account deletion
   const handleDeleteAccount = async () => {
     if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
       return;
@@ -321,7 +302,7 @@ export default function Settings() {
     try {
       setSaving(true);
 
-      // Delete user data
+      // Delete user data from all tables
       await supabase.from('user_profiles').delete().eq('id', user.id);
       await supabase.from('saved_properties').delete().eq('user_id', user.id);
       await supabase.from('search_history').delete().eq('user_id', user.id);
@@ -339,6 +320,7 @@ export default function Settings() {
     }
   };
 
+  // Show login prompt if not authenticated
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -358,6 +340,7 @@ export default function Settings() {
     );
   }
 
+  // Show loading spinner while loading data
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -428,6 +411,7 @@ export default function Settings() {
           {/* Main Content */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg shadow-sm p-8">
+              {/* Profile Tab */}
               {activeTab === 'profile' && (
                 <div className="space-y-8">
                   <div className="flex items-center space-x-6">
@@ -563,6 +547,7 @@ export default function Settings() {
                 </div>
               )}
 
+              {/* Preferences Tab */}
               {activeTab === 'preferences' && (
                 <div className="space-y-8">
                   <div>
@@ -624,9 +609,12 @@ export default function Settings() {
                           <option value="EUR">Euro (€)</option>
                         </select>
                       </div>
+                    </div>
+                  </div>
+
                   <div className="flex justify-end">
                     <button
-                      onClick={handlePreferenceUpdate}
+                      onClick={handlePreferencesUpdate}
                       disabled={saving}
                       className="flex items-center space-x-2 bg-[#FF6B35] text-white px-6 py-3 rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
                     >
@@ -646,6 +634,7 @@ export default function Settings() {
                 </div>
               )}
 
+              {/* Security Tab */}
               {activeTab === 'security' && (
                 <div className="space-y-8">
                   <div>
@@ -687,6 +676,7 @@ export default function Settings() {
                             }`}
                           />
                         </button>
+                      </div>
                     </div>
                   </div>
 
@@ -733,6 +723,7 @@ export default function Settings() {
                 </div>
               )}
 
+              {/* Billing Tab */}
               {activeTab === 'billing' && (
                 <div className="space-y-8">
                   <div>
@@ -740,7 +731,7 @@ export default function Settings() {
                     <div className="text-center py-12">
                       <CreditCard className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                       <h4 className="text-lg font-medium text-gray-900 mb-2">No Active Subscriptions</h4>
-                      <p className="text-gray-600 mb-6">You don't have any active subscriptions at the moment.</p>
+                      <p className="text-gray-600 mb-6">You don&apos;t have any active subscriptions at the moment.</p>
                       <button className="bg-[#FF6B35] text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors">
                         View Plans
                       </button>
@@ -749,85 +740,36 @@ export default function Settings() {
                 </div>
               )}
 
+              {/* Notifications Tab */}
               {activeTab === 'notifications' && (
                 <div className="p-6">
                   <h2 className="text-xl font-semibold text-gray-900 mb-6">Notification Preferences</h2>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Email Notifications</h3>
-                        <p className="text-sm text-gray-600">Receive notifications via email</p>
-                      </div>
-                      <button
-                        onClick={() => setPreferences(prev => ({ ...prev, emailNotifications: !prev.emailNotifications }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          preferences.emailNotifications ? 'bg-[#FF6B35]' : 'bg-gray-200'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            preferences.emailNotifications ? 'translate-x-6' : 'translate-x-1'
+                    {[
+                      { key: 'emailNotifications', label: 'Email Notifications', description: 'Receive notifications via email' },
+                      { key: 'pushNotifications', label: 'Push Notifications', description: 'Receive push notifications in browser' },
+                      { key: 'propertyAlerts', label: 'Property Alerts', description: 'Get notified about new properties matching your criteria' },
+                      { key: 'marketingEmails', label: 'Marketing Emails', description: 'Receive promotional emails and updates' }
+                    ].map((pref) => (
+                      <div key={pref.key} className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium text-gray-900">{pref.label}</h3>
+                          <p className="text-sm text-gray-600">{pref.description}</p>
+                        </div>
+                        <button
+                          onClick={() => setPreferences(prev => ({ ...prev, [pref.key]: !prev[pref.key] }))}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            preferences[pref.key] ? 'bg-[#FF6B35]' : 'bg-gray-200'
                           }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Push Notifications</h3>
-                        <p className="text-sm text-gray-600">Receive push notifications in your browser</p>
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              preferences[pref.key] ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => setPreferences(prev => ({ ...prev, pushNotifications: !prev.pushNotifications }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          preferences.pushNotifications ? 'bg-[#FF6B35]' : 'bg-gray-200'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            preferences.pushNotifications ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Property Alerts</h3>
-                        <p className="text-sm text-gray-600">Get notified about new properties matching your criteria</p>
-                      </div>
-                      <button
-                        onClick={() => setPreferences(prev => ({ ...prev, propertyAlerts: !prev.propertyAlerts }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          preferences.propertyAlerts ? 'bg-[#FF6B35]' : 'bg-gray-200'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            preferences.propertyAlerts ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Marketing Emails</h3>
-                        <p className="text-sm text-gray-600">Receive promotional emails and updates</p>
-                      </div>
-                      <button
-                        onClick={() => setPreferences(prev => ({ ...prev, marketingEmails: !prev.marketingEmails }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          preferences.marketingEmails ? 'bg-[#FF6B35]' : 'bg-gray-200'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            preferences.marketingEmails ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
+                    ))}
                   </div>
 
                   <div className="flex justify-end mt-8">
