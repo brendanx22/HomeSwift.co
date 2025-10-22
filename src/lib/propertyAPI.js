@@ -139,7 +139,7 @@ export class PropertyAPI {
       return { success: false, error: error.message };
     }
   }
-  static async getProperty(propertyId) {
+  static async getProperty(propertyId, currentUser = null) {
     try {
       console.log('🔍 Fetching property:', propertyId);
 
@@ -167,45 +167,77 @@ export class PropertyAPI {
 
       // Fetch landlord information if landlord_id exists
       let landlordInfo = {
-        landlord_name: 'Landlord',
+        landlord_name: 'Property Owner',
         landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
       };
 
       if (propertyData.landlord_id) {
+        console.log('🔍 Fetching landlord info for ID:', propertyData.landlord_id);
+
         try {
-          // Try to get landlord info from user_profiles table
-          const { data: profileData, error: profileError } = await supabase
+          // Check if user_profiles table exists first
+          const { data: tableCheck, error: tableError } = await supabase
             .from('user_profiles')
-            .select('full_name, avatar_url, first_name, last_name')
-            .eq('id', propertyData.landlord_id)
-            .single();
+            .select('id')
+            .limit(1);
 
-          if (!profileError && profileData) {
-            landlordInfo = {
-              landlord_name: profileData.full_name ||
-                           `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() ||
-                           'Landlord',
-              landlord_profile_image: profileData.avatar_url ||
-                                    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-            };
-            console.log('✅ Landlord profile fetched:', landlordInfo.landlord_name);
-          } else {
-            // Check if user_profiles table exists by trying a simple query
-            const { data: tableCheck, error: tableError } = await supabase
-              .from('user_profiles')
-              .select('id')
-              .limit(1);
-
-            if (tableError && tableError.code === '42P01') {
-              // Table doesn't exist, that's okay - use default
-              console.log('ℹ️ user_profiles table does not exist yet, using default landlord info');
-            } else {
-              console.warn('⚠️ Landlord profile not found, using default');
+          if (tableError && tableError.code === '42P01') {
+            // Table doesn't exist yet - use current user info if available
+            console.log('ℹ️ user_profiles table does not exist yet, checking current user...');
+            if (currentUser && currentUser.id === propertyData.landlord_id) {
+              landlordInfo = {
+                landlord_name: currentUser.user_metadata?.full_name ||
+                             currentUser.user_metadata?.name ||
+                             currentUser.email?.split('@')[0] ||
+                             'Property Owner',
+                landlord_profile_image: currentUser.user_metadata?.avatar_url ||
+                                      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+              };
+              console.log('✅ Using current user info for landlord:', landlordInfo.landlord_name);
             }
+          } else if (!tableError) {
+            // Table exists, try to fetch landlord profile
+            console.log('✅ user_profiles table exists, querying for landlord data...');
+            const { data: profileData, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('full_name, avatar_url, first_name, last_name')
+              .eq('id', propertyData.landlord_id)
+              .single();
+
+            if (!profileError && profileData) {
+              landlordInfo = {
+                landlord_name: profileData.full_name ||
+                             `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() ||
+                             'Property Owner',
+                landlord_profile_image: profileData.avatar_url ||
+                                      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+              };
+              console.log('✅ Landlord profile fetched:', landlordInfo.landlord_name);
+            } else {
+              console.log('ℹ️ Landlord profile not found in user_profiles, checking current user...');
+              // Try current user as fallback
+              if (currentUser && currentUser.id === propertyData.landlord_id) {
+                landlordInfo = {
+                  landlord_name: currentUser.user_metadata?.full_name ||
+                               currentUser.user_metadata?.name ||
+                               currentUser.email?.split('@')[0] ||
+                               'Property Owner',
+                  landlord_profile_image: currentUser.user_metadata?.avatar_url ||
+                                        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                };
+                console.log('✅ Using current user info for landlord:', landlordInfo.landlord_name);
+              } else {
+                console.log('ℹ️ Current user is not the landlord, using default');
+              }
+            }
+          } else {
+            console.warn('⚠️ Error checking user_profiles table:', tableError.message);
           }
         } catch (landlordErr) {
           console.warn('⚠️ Error fetching landlord info, using defaults:', landlordErr.message);
         }
+      } else {
+        console.log('ℹ️ No landlord_id found, using default landlord info');
       }
 
       const property = {

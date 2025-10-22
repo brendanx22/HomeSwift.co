@@ -61,7 +61,7 @@ export default function PropertyDetails() {
     const loadProperty = async () => {
       try {
         setLoading(true);
-        const { success, property: propertyData } = await PropertyAPI.getProperty(id);
+        const { success, property: propertyData } = await PropertyAPI.getProperty(id, user);
         if (success) {
           setProperty(propertyData);
 
