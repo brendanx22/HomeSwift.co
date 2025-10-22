@@ -65,6 +65,14 @@ export default function PropertyDetails() {
         if (success) {
           setProperty(propertyData);
 
+          // Debug logging to see what avatar data we have
+          console.log('🏠 Property loaded with landlord info:', {
+            landlord_name: propertyData.landlord_name,
+            landlord_profile_image: propertyData.landlord_profile_image,
+            landlord_id: propertyData.landlord_id,
+            current_user_id: user?.id
+          });
+
           // Track property view for notifications
           if (propertyData?.landlord_id && isAuthenticated && user?.id !== propertyData.landlord_id) {
             await trackPropertyView(propertyData.id, propertyData.landlord_id, propertyData.title);

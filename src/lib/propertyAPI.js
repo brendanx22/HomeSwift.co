@@ -198,17 +198,11 @@ export class PropertyAPI {
         landlord_id: propertyData.landlord_id
       });
 
-      // Fetch landlord information if landlord_id exists
-      let landlordInfo = {
-        landlord_name: 'Property Owner',
-        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-      };
-
       // If property already has landlord info stored, use it
       if (propertyData.landlord_name) {
         landlordInfo = {
           landlord_name: propertyData.landlord_name,
-          landlord_profile_image: propertyData.landlord_profile_image || landlordInfo.landlord_profile_image
+          landlord_profile_image: propertyData.landlord_profile_image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
         };
         console.log('✅ Using stored landlord info:', landlordInfo.landlord_name);
       } else if (propertyData.landlord_id) {
