@@ -189,7 +189,7 @@ export class PropertyAPI {
                 landlord_name: currentUser.user_metadata?.full_name ||
                              currentUser.user_metadata?.name ||
                              currentUser.email?.split('@')[0] ||
-                             'Property Owner',
+                             'Landlord',
                 landlord_profile_image: currentUser.user_metadata?.avatar_url ||
                                       "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
               };
@@ -208,7 +208,7 @@ export class PropertyAPI {
               landlordInfo = {
                 landlord_name: profileData.full_name ||
                              `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() ||
-                             'Property Owner',
+                             'Landlord',
                 landlord_profile_image: profileData.avatar_url ||
                                       "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
               };
@@ -221,7 +221,7 @@ export class PropertyAPI {
                   landlord_name: currentUser.user_metadata?.full_name ||
                                currentUser.user_metadata?.name ||
                                currentUser.email?.split('@')[0] ||
-                               'Property Owner',
+                               'Landlord',
                   landlord_profile_image: currentUser.user_metadata?.avatar_url ||
                                         "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
                 };
@@ -374,18 +374,60 @@ export class PropertyAPI {
 
       if (propertiesError) throw propertiesError;
 
-      // Add default landlord fields for frontend compatibility
-      const properties = (propertiesData || []).map(property => ({
-        ...property,
-        landlord_name: 'Landlord',
-        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-      }));
+      // Fetch landlord information for each property
+      const propertiesWithLandlordInfo = await Promise.all(
+        (propertiesData || []).map(async (property) => {
+          let landlordInfo = {
+            landlord_name: 'Landlord',
+            landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+          };
+
+          if (property.landlord_id) {
+            try {
+              // Check if user_profiles table exists first
+              const { data: tableCheck, error: tableError } = await supabase
+                .from('user_profiles')
+                .select('id')
+                .limit(1);
+
+              if (tableError && tableError.code === '42P01') {
+                // Table doesn't exist - use default
+                console.log('ℹ️ user_profiles table does not exist for saved properties');
+              } else if (!tableError) {
+                // Table exists, try to fetch landlord profile
+                const { data: profileData, error: profileError } = await supabase
+                  .from('user_profiles')
+                  .select('full_name, avatar_url, first_name, last_name')
+                  .eq('id', property.landlord_id)
+                  .single();
+
+                if (!profileError && profileData) {
+                  landlordInfo = {
+                    landlord_name: profileData.full_name ||
+                                 `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() ||
+                                 'Landlord',
+                    landlord_profile_image: profileData.avatar_url ||
+                                          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                  };
+                }
+              }
+            } catch (landlordErr) {
+              console.warn('⚠️ Error fetching landlord info for saved property:', landlordErr.message);
+            }
+          }
+
+          return {
+            ...property,
+            ...landlordInfo
+          };
+        })
+      );
 
       // Combine the data
       const savedProperties = savedData.map(saved => ({
         property_id: saved.property_id,
         created_at: saved.created_at,
-        properties: properties.find(prop => prop.id === saved.property_id) || null
+        properties: propertiesWithLandlordInfo.find(prop => prop.id === saved.property_id) || null
       }));
 
       return { success: true, savedProperties };
@@ -514,14 +556,56 @@ export class PropertyAPI {
 
       if (error) throw error;
 
-      // Add default landlord fields for frontend compatibility
-      const properties = (data || []).map(property => ({
-        ...property,
-        landlord_name: 'Landlord',
-        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-      }));
+      // Fetch landlord information for each property
+      const propertiesWithLandlordInfo = await Promise.all(
+        (data || []).map(async (property) => {
+          let landlordInfo = {
+            landlord_name: 'Landlord',
+            landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+          };
 
-      return { success: true, properties };
+          if (property.landlord_id) {
+            try {
+              // Check if user_profiles table exists first
+              const { data: tableCheck, error: tableError } = await supabase
+                .from('user_profiles')
+                .select('id')
+                .limit(1);
+
+              if (tableError && tableError.code === '42P01') {
+                // Table doesn't exist - use default
+                console.log('ℹ️ user_profiles table does not exist for search results');
+              } else if (!tableError) {
+                // Table exists, try to fetch landlord profile
+                const { data: profileData, error: profileError } = await supabase
+                  .from('user_profiles')
+                  .select('full_name, avatar_url, first_name, last_name')
+                  .eq('id', property.landlord_id)
+                  .single();
+
+                if (!profileError && profileData) {
+                  landlordInfo = {
+                    landlord_name: profileData.full_name ||
+                                 `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() ||
+                                 'Landlord',
+                    landlord_profile_image: profileData.avatar_url ||
+                                          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                  };
+                }
+              }
+            } catch (landlordErr) {
+              console.warn('⚠️ Error fetching landlord info for search result:', landlordErr.message);
+            }
+          }
+
+          return {
+            ...property,
+            ...landlordInfo
+          };
+        })
+      );
+
+      return { success: true, properties: propertiesWithLandlordInfo };
     } catch (error) {
       console.error('Error searching properties:', error);
       return { success: false, error: error.message };
