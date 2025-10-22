@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Camera,
   Edit,
-  Settings,
+  Settings as SettingsIcon,
   LogOut,
   User,
   Mail,
@@ -381,7 +381,7 @@ const ProfilePopup = ({ isOpen, onClose, position = 'navbar', onAvatarUpdate }) 
                 }}
                 className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                <Settings className="w-4 h-4" />
+                <SettingsIcon className="w-4 h-4" />
                 <span>Settings</span>
               </button>
             </div>

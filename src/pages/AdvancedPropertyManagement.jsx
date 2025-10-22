@@ -22,7 +22,7 @@ import {
   Download,
   Upload,
   Eye,
-  Settings,
+  Settings as SettingsIcon,
   BarChart3,
   PieChart,
   Activity,
@@ -476,7 +476,7 @@ const AdvancedPropertyManagement = () => {
                 onClick={() => setShowScheduleMaintenance(true)}
                 className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
               >
-                <Settings className="w-4 h-4" />
+                <SettingsIcon className="w-4 h-4" />
                 <span>Schedule Maintenance</span>
               </button>
             </div>
@@ -493,7 +493,7 @@ const AdvancedPropertyManagement = () => {
                 { id: 'overview', label: 'Overview', icon: BarChart3 },
                 { id: 'properties', label: 'Properties', icon: Building },
                 { id: 'tenants', label: 'Tenants', icon: Users },
-                { id: 'maintenance', label: 'Maintenance', icon: Settings },
+                { id: 'maintenance', label: 'Maintenance', icon: SettingsIcon },
                 { id: 'financial', label: 'Financial', icon: DollarSign },
                 { id: 'reports', label: 'Reports', icon: PieChart }
               ].map((tab) => (

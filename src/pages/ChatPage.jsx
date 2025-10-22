@@ -35,7 +35,7 @@ import {
   Filter,
   Camera,
   Clock,
-  Settings,
+  Settings as SettingsIcon,
   ArrowRight,
   Sparkles,
   Plus,
@@ -470,7 +470,7 @@ export default function ChatPage() {
     { id: 'virtual-tours', label: 'Virtual Tours', icon: <Camera className="w-5 h-5" /> },
     { id: 'favorites', label: 'Favorites', icon: <Heart className="w-5 h-5" /> },
     { id: 'search-history', label: 'Search History', icon: <Clock className="w-5 h-5" /> },
-    { id: 'settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
+    { id: 'settings', label: 'Settings', icon: <SettingsIcon className="w-5 h-5" /> },
   ];
 
   // Handle sidebar navigation

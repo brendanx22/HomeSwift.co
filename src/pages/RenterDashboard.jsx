@@ -21,7 +21,7 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
-  Settings,
+  Settings as SettingsIcon,
   LogOut,
   SlidersHorizontal
 } from 'lucide-react';
@@ -322,8 +322,13 @@ export default function RenterDashboard() {
 
             <div className="border-t border-gray-200 mt-6 pt-6">
               <nav className="space-y-2">
-                <motion.button className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all duration-200" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Settings className="w-4 h-4 flex-shrink-0" />
+                <motion.button
+                  onClick={() => navigate('/settings')}
+                  className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all duration-200"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <SettingsIcon className="w-4 h-4 flex-shrink-0" />
                   <span>Settings</span>
                 </motion.button>
                 <motion.button

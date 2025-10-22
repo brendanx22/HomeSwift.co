@@ -10,7 +10,7 @@ import {
   Minimize,
   SkipBack,
   SkipForward,
-  Settings,
+  Settings as SettingsIcon,
   Info,
   MapPin,
   Home,
@@ -203,7 +203,7 @@ const VirtualTour = ({ propertyId, propertyTitle, tourData }) => {
               onClick={() => setShowControls(!showControls)}
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
             >
-              <Settings className="w-5 h-5" />
+              <SettingsIcon className="w-5 h-5" />
               <span className="text-sm">Controls</span>
             </button>
           </div>

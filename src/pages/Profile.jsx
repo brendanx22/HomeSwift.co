@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, MapPin, Calendar, Settings, Edit } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Calendar, Settings as SettingsIcon, Edit } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'react-hot-toast';
@@ -356,7 +356,7 @@ export default function Profile() {
                   className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center">
-                    <Settings className="w-5 h-5 text-gray-400 mr-3" />
+                    <SettingsIcon className="w-5 h-5 text-gray-400 mr-3" />
                     <span className="text-gray-700">Settings</span>
                   </div>
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -369,7 +369,7 @@ export default function Profile() {
                   className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center">
-                    <Settings className="w-5 h-5 text-gray-400 mr-3" />
+                    <SettingsIcon className="w-5 h-5 text-gray-400 mr-3" />
                     <span className="text-gray-700">Privacy Settings</span>
                   </div>
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -387,7 +387,7 @@ export default function Profile() {
                   className="w-full flex items-center justify-between p-4 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
                 >
                   <div className="flex items-center">
-                    <Settings className="w-5 h-5 text-red-400 mr-3" />
+                    <SettingsIcon className="w-5 h-5 text-red-400 mr-3" />
                     <span className="text-red-700">Delete Account</span>
                   </div>
                   <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
