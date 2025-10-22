@@ -53,6 +53,8 @@ const MarketTrends = React.lazy(() => import('./pages/MarketTrends'));
 const LandlordProperties = React.lazy(() => import('./pages/LandlordProperties'));
 const HomeInspectionChecklist = React.lazy(() => import('./pages/HomeInspectionChecklist'));
 
+const Settings = React.lazy(() => import('./pages/Settings'));
+
 
 // Main App Layout Component
 const AppLayout = () => {
