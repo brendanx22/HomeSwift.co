@@ -1,7 +1,6 @@
 // src/components/ProtectedRoute.jsx
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Loading from './Loading';
 
 /**
  * Protected Route component for role-based access control
@@ -21,7 +20,18 @@ export default function ProtectedRoute({
 
   // Show loading spinner while auth state is being determined
   if (loading) {
-    return <Loading />;
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary mx-auto mb-4"></div>
+            <div className="absolute inset-0 rounded-full h-16 w-16 border-2 border-primary/10 animate-pulse"></div>
+          </div>
+          <h2 className="text-xl font-semibold text-secondary mb-2">Checking Access</h2>
+          <p className="text-gray-600">Verifying your permissions...</p>
+        </div>
+      </div>
+    );
   }
 
   // Redirect to login if not authenticated

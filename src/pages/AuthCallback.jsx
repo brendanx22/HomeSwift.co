@@ -1,4 +1,6 @@
-import Loading from '../components/Loading';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient';
 import { toast } from 'react-hot-toast';
 
 const AuthCallback = () => {
@@ -155,7 +157,14 @@ const AuthCallback = () => {
   }, [navigate]);
 
   if (loading) {
-    return <Loading />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Processing authentication...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
@@ -168,6 +177,7 @@ const AuthCallback = () => {
             </svg>
           </div>
           <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-gray-500">Redirecting to login page...</p>
         </div>
       </div>
     );
@@ -182,6 +192,7 @@ const AuthCallback = () => {
           </svg>
         </div>
         <p className="text-green-600 mb-2">Authentication successful!</p>
+        <p className="text-gray-500">Redirecting...</p>
       </div>
     </div>
   );

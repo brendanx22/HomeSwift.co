@@ -1,4 +1,23 @@
-import Loading from '../components/Loading';
+// src/pages/PropertyBrowse.jsx
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Search,
+  Filter,
+  MapPin,
+  Bed,
+  Bath,
+  Square,
+  Heart,
+  Bookmark,
+  BookmarkCheck,
+  MessageSquare,
+  SlidersHorizontal,
+  X,
+  ChevronUp,
+  ChevronDown,
+  GitCompare
+} from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { PropertyAPI } from '../lib/propertyAPI';
@@ -195,7 +214,19 @@ export default function PropertyBrowse() {
   const currentProperty = filteredProperties[currentIndex];
 
   if (loading) {
-    return <Loading />;
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col items-center justify-center min-h-screen bg-gray-50"
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full"
+        />
+      </motion.div>
+    );
   }
 
   if (error) {

@@ -350,7 +350,8 @@ const LandlordLoginPage = () => {
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  <span>Signing in...</span>
                 </div>
               ) : (
                 'Sign In'

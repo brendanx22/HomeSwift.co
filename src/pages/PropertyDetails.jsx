@@ -1,4 +1,8 @@
-import Loading from '../components/Loading';
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { PropertyAPI } from '../lib/propertyAPI';
+import { useAuth } from '../contexts/AuthContext';
 import {
   ChevronLeft,
   ChevronRight,
@@ -368,7 +372,19 @@ export default function PropertyDetails() {
   };
 
   if (loading) {
-    return <Loading />;
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col items-center justify-center min-h-screen bg-gray-50"
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full"
+        />
+      </motion.div>
+    );
   }
 
   if (error || !property) {

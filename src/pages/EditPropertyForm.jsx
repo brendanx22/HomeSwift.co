@@ -1,4 +1,6 @@
-import Loading from '../components/Loading';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { ArrowLeft } from 'lucide-react';
 import PropertyImageUpload from './PropertyImageUpload';
 import PropertyFeatures from './PropertyFeatures';
@@ -116,7 +118,11 @@ const EditPropertyForm = () => {
   };
 
   if (loading) {
-    return <Loading />;
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return (
@@ -267,13 +273,7 @@ const EditPropertyForm = () => {
               className="inline-flex items-center justify-center px-6 py-3 rounded-lg text-white font-semibold transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#FF6B35' }}
             >
-              {submitting ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                </>
-              ) : (
-                'Save Changes'
-              )}
+              {submitting ? 'Saving...' : 'Save Changes'}
             </button>
             <button
               type="button"

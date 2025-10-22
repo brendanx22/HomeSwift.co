@@ -1,3 +1,4 @@
+// src/pages/RenterDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -28,7 +29,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { PropertyAPI } from '../lib/propertyAPI';
 import NotificationCenter from '../components/NotificationCenter';
-import Loading from '../components/Loading';
 
 export default function RenterDashboard() {
   const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
@@ -84,7 +84,47 @@ export default function RenterDashboard() {
 
   // Show loading state
   if (authLoading || loading) {
-    return <Loading />;
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-4"
+      >
+        <div className="relative">
+          {/* Animated logo */}
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0]
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="mb-8"
+          >
+            <img
+              src="/images/logo.png"
+              alt="HomeSwift"
+              className="w-20 h-20 object-cover rounded-2xl shadow-lg"
+            />
+          </motion.div>
+
+          {/* Animated spinner */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{
+              duration: 1,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full mx-auto"
+          />
+        </div>
+      </motion.div>
+    );
   }
 
   // Filter properties based on search criteria
