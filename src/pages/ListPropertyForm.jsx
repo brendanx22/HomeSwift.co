@@ -114,7 +114,7 @@ const ListPropertyForm = ({ onSubmit, submitting = false, errorMessage, successM
       console.log('🏠 Landlord ID being set:', payload.landlord_id);
       console.log('📷 Images being saved:', payload.images);
 
-      const result = await PropertyAPI.createProperty(payload);
+      const result = await PropertyAPI.createProperty(payload, user);
 
       if (result.success) {
         toast.success('Property listed successfully!');

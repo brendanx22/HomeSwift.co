@@ -92,17 +92,41 @@ const PropertyAnalytics = () => {
       let viewsData = [];
       if (propertyIds.length > 0) {
         try {
-          const { data, error: viewsError } = await supabase
+          // Check what columns are available in property_views table
+          const { data: columnCheck, error: columnError } = await supabase
             .from('property_views')
-            .select('property_id, created_at')
-            .in('property_id', propertyIds)
-            .gte('created_at', startDate.toISOString());
+            .select('*')
+            .limit(0);
 
-          if (!viewsError && data) {
-            viewsData = data;
-            console.log('✅ Loaded real property views data:', viewsData.length, 'views');
+          if (!columnError && columnCheck) {
+            const availableColumns = Object.keys(columnCheck);
+            const hasCreatedAt = availableColumns.includes('created_at');
+
+            // Build query based on available columns
+            let selectClause = 'property_id';
+            if (hasCreatedAt) {
+              selectClause += ', created_at';
+            }
+
+            let query = supabase
+              .from('property_views')
+              .select(selectClause)
+              .in('property_id', propertyIds);
+
+            if (hasCreatedAt) {
+              query = query.gte('created_at', startDate.toISOString());
+            }
+
+            const { data, error: viewsError } = await query;
+
+            if (!viewsError && data) {
+              viewsData = data;
+              console.log('✅ Loaded real property views data:', viewsData.length, 'views');
+            } else {
+              console.warn('Property views query failed, using estimated data');
+            }
           } else {
-            console.warn('Property views table not available, using estimated data');
+            console.warn('Could not check property_views table structure, using estimated data');
           }
         } catch (viewsErr) {
           console.warn('Property views query failed, using estimated data:', viewsErr.message);
@@ -152,29 +176,31 @@ const PropertyAnalytics = () => {
         id: property.id,
         title: property.title || 'Untitled Property',
         location: property.location || 'Location not specified',
-        views: viewsData?.filter(v => v.created_at && v.property_id === property.id).length || 0,
-        inquiries: inquiriesData?.filter(i => i.created_at && i.property_id === property.id).length || 0,
-        bookings: Math.floor((viewsData?.filter(v => v.created_at && v.property_id === property.id).length || 0) * 0.15), // Estimate bookings as 15% of views
+        views: viewsByProperty[property.id] || 0,
+        inquiries: inquiriesByProperty[property.id] || 0,
+        bookings: Math.floor((viewsByProperty[property.id] || 0) * 0.15), // Estimate bookings as 15% of views
         rating: property.rating || (4.0 + (Math.random() * 1)), // Use real rating if available, otherwise mock
-        revenue: Math.floor((viewsData?.filter(v => v.created_at && v.property_id === property.id).length || 0) * 15000), // Estimate revenue based on views
+        revenue: Math.floor((viewsByProperty[property.id] || 0) * 15000), // Estimate revenue based on views
         occupancy: property.occupancy_rate || Math.floor(70 + (Math.random() * 30)) // Use real occupancy if available
       })) || [];
 
       // Generate trend data using real data where available
-      const trendData = generateTrendData(startDate, now, viewsData, inquiriesData);
+      const trendData = generateTrendData(startDate, now, viewsData, inquiriesData, hasCreatedAt);
 
       // Calculate overview metrics using real data
       const previousPeriodDays = days;
       const previousStartDate = new Date(now.getTime() - (previousPeriodDays * 2 * 24 * 60 * 60 * 1000));
       const previousEndDate = new Date(now.getTime() - (previousPeriodDays * 24 * 60 * 60 * 1000));
 
-      const currentPeriodViews = viewsData?.filter(v =>
-        v.created_at ? new Date(v.created_at) >= startDate : false
-      ).length || 0;
+      const currentPeriodViews = hasCreatedAt ?
+        viewsData?.filter(v =>
+          v.created_at ? new Date(v.created_at) >= startDate : false
+        ).length || 0 : viewsData?.length || 0;
 
-      const previousPeriodViews = viewsData?.filter(v =>
-        v.created_at ? (new Date(v.created_at) >= previousStartDate && new Date(v.created_at) < previousEndDate) : false
-      ).length || 0;
+      const previousPeriodViews = hasCreatedAt ?
+        viewsData?.filter(v =>
+          v.created_at ? (new Date(v.created_at) >= previousStartDate && new Date(v.created_at) < previousEndDate) : false
+        ).length || 0 : 0;
 
       const currentPeriodInquiries = inquiriesData?.filter(i =>
         i.created_at ? new Date(i.created_at) >= startDate : false
@@ -194,19 +220,50 @@ const PropertyAnalytics = () => {
       let estimatedMonthlyRevenue = 0;
       try {
         if (propertyIds.length > 0) {
-          const { data: bookings, error: bookingsError } = await supabase
+          // Check what columns are available in bookings table
+          const { data: bookingsColumnCheck, error: bookingsColumnError } = await supabase
             .from('bookings')
-            .select('total_amount, property_id, created_at')
-            .in('property_id', propertyIds)
-            .gte('created_at', startDate.toISOString());
+            .select('*')
+            .limit(0);
 
-          if (!bookingsError && bookings) {
-            // Only count bookings that have created_at data
-            const validBookings = bookings.filter(b => b.created_at);
-            estimatedMonthlyRevenue = validBookings.reduce((sum, booking) => sum + (booking.total_amount || 0), 0);
-            console.log('✅ Loaded real bookings data:', validBookings.length, 'bookings, revenue:', estimatedMonthlyRevenue);
-          } else if (bookingsError) {
-            console.warn('Bookings table not available, using estimated revenue:', bookingsError.message);
+          if (!bookingsColumnError && bookingsColumnCheck) {
+            const bookingsAvailableColumns = Object.keys(bookingsColumnCheck);
+            const hasBookingsCreatedAt = bookingsAvailableColumns.includes('created_at');
+            const hasTotalAmount = bookingsAvailableColumns.includes('total_amount');
+
+            // Build query based on available columns
+            let bookingsSelectClause = 'property_id';
+            if (hasTotalAmount) {
+              bookingsSelectClause += ', total_amount';
+            }
+            if (hasBookingsCreatedAt) {
+              bookingsSelectClause += ', created_at';
+            }
+
+            let bookingsQuery = supabase
+              .from('bookings')
+              .select(bookingsSelectClause)
+              .in('property_id', propertyIds);
+
+            if (hasBookingsCreatedAt) {
+              bookingsQuery = bookingsQuery.gte('created_at', startDate.toISOString());
+            }
+
+            const { data: bookings, error: bookingsError } = await bookingsQuery;
+
+            if (!bookingsError && bookings) {
+              // Only count bookings that have created_at data (if available)
+              const validBookings = hasBookingsCreatedAt ?
+                bookings.filter(b => b.created_at) :
+                bookings;
+
+              estimatedMonthlyRevenue = validBookings.reduce((sum, booking) => sum + (booking.total_amount || 0), 0);
+              console.log('✅ Loaded real bookings data:', validBookings.length, 'bookings, revenue:', estimatedMonthlyRevenue);
+            } else if (bookingsError) {
+              console.warn('Bookings table not available, using estimated revenue:', bookingsError.message);
+            }
+          } else {
+            console.warn('Could not check bookings table structure, using estimated revenue');
           }
         }
       } catch (bookingsErr) {
@@ -315,7 +372,7 @@ const PropertyAnalytics = () => {
     }
   };
 
-  const generateTrendData = (startDate, endDate, viewsData, inquiriesData) => {
+  const generateTrendData = (startDate, endDate, viewsData, inquiriesData, hasCreatedAt = true) => {
     const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
     const interval = Math.max(1, Math.floor(daysDiff / 7)); // Show ~7 data points
 
@@ -327,13 +384,15 @@ const PropertyAnalytics = () => {
       const nextDate = new Date(currentDate.getTime() + (interval * 24 * 60 * 60 * 1000));
 
       // Handle views data - use real data if available, otherwise estimate
-      const dayViews = viewsData?.filter(v => {
-        if (v.created_at) {
-          const viewDate = new Date(v.created_at);
-          return viewDate >= currentDate && viewDate < nextDate;
-        }
-        return false; // Skip if no created_at column
-      }).length || 0;
+      const dayViews = hasCreatedAt ?
+        viewsData?.filter(v => {
+          if (v.created_at) {
+            const viewDate = new Date(v.created_at);
+            return viewDate >= currentDate && viewDate < nextDate;
+          }
+          return false; // Skip if no created_at column
+        }).length || 0 :
+        Math.floor((viewsData?.length || 0) / daysDiff * interval); // Estimate based on total views
 
       // Handle inquiries data - use real data if available, otherwise estimate
       const dayInquiries = inquiriesData?.filter(i => {

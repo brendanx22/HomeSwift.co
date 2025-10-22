@@ -108,8 +108,7 @@ export default function PropertyDetails() {
         .from('property_views')
         .insert([{
           property_id: propertyId,
-          user_id: user.id,
-          created_at: new Date().toISOString()
+          user_id: user.id
         }]);
 
       if (error) {

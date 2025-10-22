@@ -52,12 +52,23 @@ export class PropertyAPI {
 
       if (error) throw error;
 
-      // Add default landlord fields for frontend compatibility
-      const properties = (data || []).map(property => ({
-        ...property,
-        landlord_name: 'Landlord',
-        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-      }));
+      // Add landlord fields - prioritize stored info or use defaults
+      const properties = (data || []).map(property => {
+        if (property.landlord_name) {
+          // Property already has landlord info stored
+          return {
+            ...property,
+            landlord_profile_image: property.landlord_profile_image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+          };
+        } else {
+          // Add default landlord fields for frontend compatibility
+          return {
+            ...property,
+            landlord_name: 'Landlord',
+            landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+          };
+        }
+      });
 
       console.log('✅ getProperties query successful, found:', properties.length, 'properties');
       return { success: true, properties };
@@ -80,12 +91,23 @@ export class PropertyAPI {
 
       if (error) throw error;
 
-      // Add default landlord fields for frontend compatibility
-      const properties = (data || []).map(property => ({
-        ...property,
-        landlord_name: 'Landlord',
-        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-      }));
+      // Add landlord fields - prioritize stored info or use defaults
+      const properties = (data || []).map(property => {
+        if (property.landlord_name) {
+          // Property already has landlord info stored
+          return {
+            ...property,
+            landlord_profile_image: property.landlord_profile_image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+          };
+        } else {
+          // Add default landlord fields for frontend compatibility
+          return {
+            ...property,
+            landlord_name: 'Landlord',
+            landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+          };
+        }
+      });
 
       return { success: true, properties };
     } catch (error) {
@@ -125,12 +147,23 @@ export class PropertyAPI {
         throw error;
       }
 
-      // Add default landlord fields for frontend compatibility
-      const properties = (data || []).map(property => ({
-        ...property,
-        landlord_name: 'Landlord',
-        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-      }));
+      // Add landlord fields - prioritize stored info or use defaults
+      const properties = (data || []).map(property => {
+        if (property.landlord_name) {
+          // Property already has landlord info stored
+          return {
+            ...property,
+            landlord_profile_image: property.landlord_profile_image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+          };
+        } else {
+          // Add default landlord fields for frontend compatibility
+          return {
+            ...property,
+            landlord_name: 'Landlord',
+            landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+          };
+        }
+      });
 
       console.log('✅ getAllProperties query successful, found:', properties.length, 'properties');
       return { success: true, properties };
@@ -171,7 +204,14 @@ export class PropertyAPI {
         landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
       };
 
-      if (propertyData.landlord_id) {
+      // If property already has landlord info stored, use it
+      if (propertyData.landlord_name) {
+        landlordInfo = {
+          landlord_name: propertyData.landlord_name,
+          landlord_profile_image: propertyData.landlord_profile_image || landlordInfo.landlord_profile_image
+        };
+        console.log('✅ Using stored landlord info:', landlordInfo.landlord_name);
+      } else if (propertyData.landlord_id) {
         console.log('🔍 Fetching landlord info for ID:', propertyData.landlord_id);
 
         try {
@@ -281,13 +321,79 @@ export class PropertyAPI {
   /**
    * Create a new property
    */
-  static async createProperty(propertyData) {
+  static async createProperty(propertyData, currentUser = null) {
     try {
       console.log('🔄 Creating property with data:', propertyData);
 
+      // Get landlord information for storage
+      let landlordInfo = {
+        landlord_name: 'Landlord',
+        landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+      };
+
+      // If currentUser is provided, use their info
+      if (currentUser) {
+        landlordInfo = {
+          landlord_name: currentUser.user_metadata?.full_name ||
+                       currentUser.user_metadata?.name ||
+                       currentUser.email?.split('@')[0] ||
+                       'Landlord',
+          landlord_profile_image: currentUser.user_metadata?.avatar_url ||
+                                  "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+        };
+      }
+
+      // If landlord_id is provided but no currentUser, try to fetch the landlord info
+      if (propertyData.landlord_id && !currentUser) {
+        try {
+          // Check if user_profiles table exists first
+          const { data: tableCheck, error: tableError } = await supabase
+            .from('user_profiles')
+            .select('id')
+            .limit(1);
+
+          if (tableError && tableError.code === '42P01') {
+            // Table doesn't exist - use default
+            console.log('ℹ️ user_profiles table does not exist, using default landlord info');
+          } else if (!tableError) {
+            // Table exists, try to fetch landlord profile
+            const { data: profileData, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('full_name, avatar_url, first_name, last_name')
+              .eq('id', propertyData.landlord_id)
+              .single();
+
+            if (!profileError && profileData) {
+              landlordInfo = {
+                landlord_name: profileData.full_name ||
+                             `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() ||
+                             'Landlord',
+                landlord_profile_image: profileData.avatar_url ||
+                                      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+              };
+              console.log('✅ Landlord profile fetched for property creation:', landlordInfo.landlord_name);
+            }
+          }
+        } catch (landlordErr) {
+          console.warn('⚠️ Error fetching landlord info for property creation:', landlordErr.message);
+        }
+      }
+
+      // Add landlord info to property data
+      const propertyWithLandlord = {
+        ...propertyData,
+        ...landlordInfo
+      };
+
+      console.log('🏠 Creating property with landlord info:', {
+        title: propertyWithLandlord.title,
+        landlord_name: propertyWithLandlord.landlord_name,
+        landlord_id: propertyWithLandlord.landlord_id
+      });
+
       const { data, error } = await supabase
         .from('properties')
-        .insert([propertyData])
+        .insert([propertyWithLandlord])
         .select()
         .single();
 
@@ -296,7 +402,7 @@ export class PropertyAPI {
         throw error;
       }
 
-      console.log('✅ Property created successfully:', data);
+      console.log('✅ Property created successfully with landlord info:', data);
       return { success: true, property: data };
     } catch (error) {
       console.error('❌ Error creating property:', error);
@@ -408,7 +514,14 @@ export class PropertyAPI {
             landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
           };
 
-          if (property.landlord_id) {
+          // If property already has landlord info stored, use it
+          if (property.landlord_name) {
+            landlordInfo = {
+              landlord_name: property.landlord_name,
+              landlord_profile_image: property.landlord_profile_image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+            };
+            console.log('✅ Using stored landlord info for saved property:', landlordInfo.landlord_name);
+          } else if (property.landlord_id) {
             try {
               // Check if user_profiles table exists first
               const { data: tableCheck, error: tableError } = await supabase
@@ -610,7 +723,14 @@ export class PropertyAPI {
             landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
           };
 
-          if (property.landlord_id) {
+          // If property already has landlord info stored, use it
+          if (property.landlord_name) {
+            landlordInfo = {
+              landlord_name: property.landlord_name,
+              landlord_profile_image: property.landlord_profile_image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+            };
+            console.log('✅ Using stored landlord info for search result:', landlordInfo.landlord_name);
+          } else if (property.landlord_id) {
             try {
               // Check if user_profiles table exists first
               const { data: tableCheck, error: tableError } = await supabase
