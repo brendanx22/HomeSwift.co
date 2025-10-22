@@ -633,11 +633,19 @@ export default function PropertyDetails() {
                 </div>
               </div>
               <div className="flex items-center gap-2.5">
-                <img
-                  src={property.landlord_profile_image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"}
-                  alt={property.landlord_name || "Landlord"}
-                  className="w-9 h-9 rounded-full object-cover"
-                />
+                {property.landlord_profile_image ? (
+                  <img
+                    src={property.landlord_profile_image}
+                    alt={property.landlord_name || "Landlord"}
+                    className="w-9 h-9 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-sm font-medium text-gray-600">
+                      {(property.landlord_name || 'L').charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
                 <span className="text-sm font-medium">{property.landlord_name || 'Property Owner'}</span>
                 <CheckCircle2 className="w-[18px] h-[18px] text-[#FF6B35] fill-[#FF6B35]" />
               </div>
