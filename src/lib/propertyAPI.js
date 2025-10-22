@@ -256,13 +256,10 @@ export class PropertyAPI {
                 .limit(0);
 
               if (columnError) {
-                console.warn('⚠️ Could not check user_profiles table structure:', columnError.message);
+                console.warn('⚠️ Could not check user_profiles table structure for property retrieval');
               } else {
-                // Check if the columns we need exist
                 const availableColumns = Object.keys(columnCheck || {});
-                const neededColumns = ['full_name', 'avatar_url', 'first_name', 'last_name'];
-
-                // Build query with only available columns
+                const neededColumns = ['full_name']; // Only check for columns that actually exist
                 const availableNeededColumns = neededColumns.filter(col => availableColumns.includes(col));
                 const selectClause = availableNeededColumns.length > 0 ? availableNeededColumns.join(',') : 'id';
 
@@ -274,21 +271,13 @@ export class PropertyAPI {
 
                 if (!profileError && profileData) {
                   // Check if profile data actually contains meaningful information
-                  const hasMeaningfulData = profileData.full_name ||
-                                          (profileData.first_name && profileData.last_name) ||
-                                          profileData.first_name ||
-                                          profileData.last_name;
+                  const hasMeaningfulData = profileData.full_name;
 
                   if (hasMeaningfulData) {
                     // Use profile data if it contains meaningful information
                     landlordInfo = {
-                      landlord_name: profileData.full_name ||
-                                   (profileData.first_name && profileData.last_name ?
-                                     `${profileData.first_name} ${profileData.last_name}` :
-                                     profileData.first_name || profileData.last_name) ||
-                                   'Property Owner',
-                      landlord_profile_image: profileData.avatar_url ||
-                                            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                      landlord_name: profileData.full_name || 'Property Owner',
+                      landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
                     };
                     console.log('✅ Landlord profile fetched:', landlordInfo.landlord_name);
                   } else {
@@ -396,17 +385,14 @@ export class PropertyAPI {
             // Table exists, try to fetch landlord profile
             const { data: profileData, error: profileError } = await supabase
               .from('user_profiles')
-              .select('full_name, avatar_url, first_name, last_name')
+              .select('full_name')
               .eq('id', propertyData.landlord_id)
               .single();
 
             if (!profileError && profileData) {
               landlordInfo = {
-                landlord_name: profileData.full_name ||
-                             `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() ||
-                             'Landlord',
-                landlord_profile_image: profileData.avatar_url ||
-                                      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                landlord_name: profileData.full_name || 'Property Owner',
+                landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
               };
               console.log('✅ Landlord profile fetched for property creation:', landlordInfo.landlord_name);
             }
@@ -581,7 +567,7 @@ export class PropertyAPI {
                     console.warn('⚠️ Could not check user_profiles table structure for saved properties');
                   } else {
                     const availableColumns = Object.keys(columnCheck || {});
-                    const neededColumns = ['full_name', 'avatar_url', 'first_name', 'last_name'];
+                    const neededColumns = ['full_name']; // Only check for columns that actually exist
                     const availableNeededColumns = neededColumns.filter(col => availableColumns.includes(col));
                     const selectClause = availableNeededColumns.length > 0 ? availableNeededColumns.join(',') : 'id';
 
@@ -593,20 +579,12 @@ export class PropertyAPI {
 
                     if (!profileError && profileData) {
                       // Check if profile data actually contains meaningful information
-                      const hasMeaningfulData = profileData.full_name ||
-                                              (profileData.first_name && profileData.last_name) ||
-                                              profileData.first_name ||
-                                              profileData.last_name;
+                      const hasMeaningfulData = profileData.full_name;
 
                       if (hasMeaningfulData) {
                         landlordInfo = {
-                          landlord_name: profileData.full_name ||
-                                       (profileData.first_name && profileData.last_name ?
-                                         `${profileData.first_name} ${profileData.last_name}` :
-                                         profileData.first_name || profileData.last_name) ||
-                                       'Property Owner',
-                          landlord_profile_image: profileData.avatar_url ||
-                                                "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                          landlord_name: profileData.full_name || 'Property Owner',
+                          landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
                         };
                       } else {
                         // Profile data exists but is empty, use ID-based fallback
@@ -814,7 +792,7 @@ export class PropertyAPI {
                     console.warn('⚠️ Could not check user_profiles table structure for search results');
                   } else {
                     const availableColumns = Object.keys(columnCheck || {});
-                    const neededColumns = ['full_name', 'avatar_url', 'first_name', 'last_name'];
+                    const neededColumns = ['full_name']; // Only check for columns that actually exist
                     const availableNeededColumns = neededColumns.filter(col => availableColumns.includes(col));
                     const selectClause = availableNeededColumns.length > 0 ? availableNeededColumns.join(',') : 'id';
 
@@ -826,20 +804,12 @@ export class PropertyAPI {
 
                     if (!profileError && profileData) {
                       // Check if profile data actually contains meaningful information
-                      const hasMeaningfulData = profileData.full_name ||
-                                              (profileData.first_name && profileData.last_name) ||
-                                              profileData.first_name ||
-                                              profileData.last_name;
+                      const hasMeaningfulData = profileData.full_name;
 
                       if (hasMeaningfulData) {
                         landlordInfo = {
-                          landlord_name: profileData.full_name ||
-                                       (profileData.first_name && profileData.last_name ?
-                                         `${profileData.first_name} ${profileData.last_name}` :
-                                         profileData.first_name || profileData.last_name) ||
-                                       'Property Owner',
-                          landlord_profile_image: profileData.avatar_url ||
-                                                "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                          landlord_name: profileData.full_name || 'Property Owner',
+                          landlord_profile_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
                         };
                       } else {
                         // Profile data exists but is empty, use ID-based fallback

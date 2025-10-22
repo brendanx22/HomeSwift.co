@@ -116,7 +116,7 @@ export default function PropertyDetails() {
 
       const availableColumns = Object.keys(columnCheck || {});
       const hasPropertyId = availableColumns.includes('property_id');
-      const hasUserId = availableColumns.includes('user_id');
+      const hasUserId = availableColumns.includes('viewer_id');
 
       if (!hasPropertyId || !hasUserId) {
         console.log('ℹ️ property_views table missing required columns, skipping view tracking');
@@ -128,12 +128,12 @@ export default function PropertyDetails() {
         .from('property_views')
         .insert([{
           property_id: propertyId,
-          user_id: user.id
+          viewer_id: user.id
         }]);
 
       if (error) {
-        if (error.message.includes("column 'user_id' does not exist")) {
-          console.log('ℹ️ property_views table exists but user_id column missing, skipping view tracking');
+        if (error.message.includes("column 'viewer_id' does not exist") || error.message.includes("column 'user_id' does not exist")) {
+          console.log('ℹ️ property_views table exists but required column missing, skipping view tracking');
           return; // Column doesn't exist, skip tracking
         } else {
           console.warn('Property view tracking failed:', error.message);
