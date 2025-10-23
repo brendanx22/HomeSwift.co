@@ -10,11 +10,20 @@ A modern property management platform built with React, Vite, Tailwind CSS, and 
   - Email/password and social authentication
   - Protected routes based on user type
 
-- **Property Management**
+- **Real-Time Messaging**
 
-  - List and manage properties (landlords)
-  - Browse and filter properties (renters)
-  - Property details and image galleries
+  - WebRTC-powered direct communication between landlords and renters
+  - Socket.IO for instant message delivery and presence
+  - Video calling and audio communication
+  - Message history and conversation management
+  - Typing indicators and read receipts
+
+- **Advanced Analytics**
+
+  - Property performance tracking
+  - Inquiry analytics and conversion rates
+  - Market trends and insights
+  - Revenue tracking for landlords
 
 - **Responsive Design**
   - Mobile-first approach
@@ -27,7 +36,9 @@ A modern property management platform built with React, Vite, Tailwind CSS, and 
 - **Styling**: Tailwind CSS with custom components
 - **Authentication**: Supabase Auth
 - **Database**: Supabase PostgreSQL
-- **Deployment**: Vercel (frontend), Supabase (backend)
+- **Real-Time Communication**: Socket.IO, WebRTC
+- **State Management**: React Context API
+- **Deployment**: Vercel (frontend), Custom backend (API)
 
 ## Prerequisites
 
@@ -58,6 +69,7 @@ A modern property management platform built with React, Vite, Tailwind CSS, and 
    ```env
    VITE_SUPABASE_URL=your-supabase-url
    VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+   VITE_API_URL=http://localhost:5000
    ```
 
 4. **Set up Supabase**
@@ -66,7 +78,7 @@ A modern property management platform built with React, Vite, Tailwind CSS, and 
    - Set up the following tables:
 
      ```sql
-     -- Create a table for properties
+     -- Properties table (existing)
      create table properties (
        id uuid default uuid_generate_v4() primary key,
        title text not null,
@@ -81,20 +93,45 @@ A modern property management platform built with React, Vite, Tailwind CSS, and 
        updated_at timestamp with time zone default timezone('utc'::text, now()) not null
      );
 
-     -- Set up Row Level Security (RLS) policies
+     -- Enable RLS for properties
      alter table properties enable row level security;
+     create policy "Public properties are viewable by everyone." on properties for select using (true);
+     create policy "Users can insert their own properties." on properties for insert with check (auth.uid() = landlord_id);
+     create policy "Users can update their own properties." on properties for update using (auth.uid() = landlord_id);
 
-     -- Allow public read access
-     create policy "Public properties are viewable by everyone."
-     on properties for select using (true);
+     -- Messaging tables (new)
+     create table conversations (
+       id uuid default uuid_generate_v4() primary key,
+       sender_id uuid references auth.users(id) not null,
+       receiver_id uuid references auth.users(id) not null,
+       participants uuid[] not null,
+       last_message text,
+       last_message_at timestamp with time zone,
+       created_at timestamp with time zone default now(),
+       updated_at timestamp with time zone default now()
+     );
 
-     -- Allow authenticated users to insert their own properties
-     create policy "Users can insert their own properties."
-     on properties for insert with check (auth.uid() = landlord_id);
+     create table messages (
+       id uuid default uuid_generate_v4() primary key,
+       conversation_id uuid references conversations(id) not null,
+       sender_id uuid references auth.users(id) not null,
+       receiver_id uuid references auth.users(id) not null,
+       content text not null,
+       message_type text default 'text',
+       is_read boolean default false,
+       created_at timestamp with time zone default now(),
+       updated_at timestamp with time zone default now()
+     );
 
-     -- Allow users to update their own properties
-     create policy "Users can update their own properties."
-     on properties for update using (auth.uid() = landlord_id);
+     -- Enable RLS for messaging tables
+     alter table conversations enable row level security;
+     alter table messages enable row level security;
+
+     -- Messaging RLS policies
+     create policy "Users can view conversations they participate in" on conversations for select using (auth.uid() = any(participants));
+     create policy "Users can create conversations" on conversations for insert with check (auth.uid() = sender_id);
+     create policy "Users can view messages in their conversations" on messages for select using (auth.uid() in (select unnest(participants) from conversations where id = conversation_id));
+     create policy "Users can send messages in their conversations" on messages for insert with check (auth.uid() = sender_id);
      ```
 
 5. **Start the development server**
@@ -137,9 +174,24 @@ src/
 3. Add your environment variables in the Vercel project settings
 4. Deploy!
 
-### Backend (Supabase)
+### Backend (Custom Server)
 
-The backend is already set up with Supabase. Just make sure to update the CORS settings in your Supabase dashboard to include your frontend domain.
+The backend runs on a custom Node.js server with Socket.IO for real-time messaging:
+
+1. Deploy to a VPS or cloud service (DigitalOcean, AWS, Heroku, etc.)
+2. Set up environment variables for production
+3. Install PM2 for process management: `npm install -g pm2`
+4. Start the server: `pm2 start backend/index.js --name "homeswift-backend"`
+5. Set up reverse proxy (nginx) for production
+
+### Database (Supabase)
+
+The database is hosted on Supabase for easy scaling and real-time features.
+
+1. Set up your Supabase project
+2. Run the database migrations
+3. Configure Row Level Security policies
+4. Update environment variables with production URLs
 
 ## Environment Variables
 
@@ -147,6 +199,9 @@ The backend is already set up with Supabase. Just make sure to update the CORS s
 | ------------------------ | ----------------------------- | -------- |
 | `VITE_SUPABASE_URL`      | Your Supabase project URL     | Yes      |
 | `VITE_SUPABASE_ANON_KEY` | Your Supabase anon/public key | Yes      |
+| `VITE_API_URL`           | Backend API URL for messaging | Yes      |
+| `JWT_SECRET`             | JWT signing secret (backend)  | Yes      |
+| `SUPABASE_JWT_SECRET`    | Supabase JWT secret (backend) | Yes      |
 
 ## Contributing
 
@@ -160,10 +215,44 @@ The backend is already set up with Supabase. Just make sure to update the CORS s
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## WebRTC Messaging System
 
-For support, please open an issue in the GitHub repository.
+HomeSwift includes a complete real-time messaging system with WebRTC support for direct peer-to-peer communication between landlords and renters.
 
-# HomeSwift.co
+### ✨ Key Features
 
-HomeSwift is a modern web app for property seekers and landlords, offering seamless property browsing, real-time communication, and AI-powered tools to simplify renting, buying, and managing properties.
+- **Real-Time Messaging**: Socket.IO-powered instant message delivery
+- **WebRTC Communication**: Direct peer-to-peer connections for enhanced performance
+- **Video Calling**: High-quality video conferencing between users
+- **Typing Indicators**: See when others are typing in real-time
+- **Online Status**: Real-time user presence and availability
+- **Message History**: Persistent chat history with search capabilities
+- **Mobile Responsive**: Optimized messaging interface for all devices
+
+### 🔧 Technical Implementation
+
+- **Backend**: Express.js with Socket.IO for real-time communication
+- **Frontend**: React Context API for state management
+- **Database**: PostgreSQL with Row Level Security
+- **WebRTC**: Peer connection management with STUN/TURN servers
+- **Security**: JWT authentication and encrypted communications
+
+### 📱 User Experience
+
+- **Unified Interface**: Seamless messaging across all platform views
+- **Quick Access**: Messages available from navigation in both dashboards
+- **Smart Matching**: Automatic conversation creation between interested parties
+- **Rich Media**: Support for text, images, and file sharing (planned)
+- **Call Integration**: Easy transition from messaging to video calls
+
+### 🚀 Getting Started with Messaging
+
+1. **Access Messages**: Click the Messages tab in your dashboard
+2. **Start Conversations**: Search for online users or continue existing chats
+3. **Real-Time Chat**: Send and receive messages instantly
+4. **Video Calls**: Click the video icon to start a video call
+5. **Stay Connected**: Receive notifications for new messages and calls
+
+---
+
+**🎉 The complete WebRTC messaging system is now fully integrated into HomeSwift!**

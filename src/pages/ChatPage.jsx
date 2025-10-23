@@ -1,6 +1,7 @@
 import { useNavigate, useLocation, Link, Outlet } from "react-router-dom";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { MessagingProvider } from "../contexts/MessagingContext";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import ProfilePopup from '../components/ProfilePopup';
 import NotificationCenter from '../components/NotificationCenter';
@@ -461,16 +462,17 @@ export default function ChatPage() {
   const navItems = [
     { id: 'ai-assistant', label: 'AI Assistant', icon: <MessageSquare className="w-5 h-5" /> },
     { id: 'messages', label: 'Messages', icon: <Home className="w-5 h-5" /> },
-    { id: 'market-analysis', label: 'Market Analysis', icon: <TrendingUp className="w-5 h-5" /> },
-    { id: 'neighborhood-info', label: 'Neighborhood Info', icon: <MapPin className="w-5 h-5" /> },
-    { id: 'price-calculator', label: 'Price Calculator', icon: <Calculator className="w-5 h-5" /> },
-    { id: 'insurance-calculator', label: 'Insurance Calculator', icon: <Shield className="w-5 h-5" /> },
-    { id: 'tax-calculator', label: 'Tax Calculator', icon: <DollarSign className="w-5 h-5" /> },
-    { id: 'inspection-checklist', label: 'Inspection Checklist', icon: <ClipboardList className="w-5 h-5" /> },
+    // { id: 'market-analysis', label: 'Market Analysis', icon: <TrendingUp className="w-5 h-5" /> },
+    // { id: 'neighborhood-info', label: 'Neighborhood Info', icon: <MapPin className="w-5 h-5" /> },
+    // { id: 'price-calculator', label: 'Price Calculator', icon: <Calculator className="w-5 h-5" /> },
+    // { id: 'insurance-calculator', label: 'Insurance Calculator', icon: <Shield className="w-5 h-5" /> },
+    // { id: 'tax-calculator', label: 'Tax Calculator', icon: <DollarSign className="w-5 h-5" /> },
+    // { id: 'inspection-checklist', label: 'Inspection Checklist', icon: <ClipboardList className="w-5 h-5" /> },
     { id: 'virtual-tours', label: 'Virtual Tours', icon: <Camera className="w-5 h-5" /> },
     { id: 'favorites', label: 'Favorites', icon: <Heart className="w-5 h-5" /> },
     { id: 'search-history', label: 'Search History', icon: <Clock className="w-5 h-5" /> },
     { id: 'settings', label: 'Settings', icon: <SettingsIcon className="w-5 h-5" /> },
+    { id: 'renter-dashboard', label: 'Browse Properties', icon: <SearchIcon className="w-5 h-5" /> },
   ];
 
   // Handle sidebar navigation
@@ -480,20 +482,20 @@ export default function ChatPage() {
         // Stay on current page (chat)
         break;
       case 'Messages':
-        navigate('/messages');
+        navigate('/message-center');
         break;
-      case 'Market Analysis':
-        navigate('/market-analysis');
-        break;
-      case 'Neighborhood Info':
-        navigate('/neighborhoods');
-        break;
-      case 'Price Calculator':
-        navigate('/calculator');
-        break;
-      case 'Inspection Checklist':
-        navigate('/inspection-checklist');
-        break;
+      // case 'Market Analysis':
+      //   navigate('/market-analysis');
+      //   break;
+      // case 'Neighborhood Info':
+      //   navigate('/neighborhoods');
+      //   break;
+      // case 'Price Calculator':
+      //   navigate('/calculator');
+      //   break;
+      // case 'Inspection Checklist':
+      //   navigate('/inspection-checklist');
+      //   break;
       case 'Virtual Tours':
         navigate('/virtual-tours');
         break;
@@ -506,6 +508,9 @@ export default function ChatPage() {
         break;
       case 'Settings':
         navigate('/settings');
+        break;
+      case 'Browse Properties':
+        navigate('/');
         break;
       default:
         console.log('Unknown sidebar navigation:', label);
@@ -1581,6 +1586,17 @@ export default function ChatPage() {
                       </>
                     )}
                   </div>
+                  
+                  {/* Settings Button */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => navigate('/settings')}
+                      className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-[#2C3E50] transition-all duration-200"
+                      title="Settings"
+                    >
+                      <SettingsIcon className="w-5 h-5" />
+                    </button>
+                  </div>
 
                   {!compactMode && (
                     <div className="flex items-center gap-1">
@@ -1623,12 +1639,11 @@ export default function ChatPage() {
                   {[
                     { icon: MessageSquare, label: 'AI Assistant', active: location.pathname === '/chat' },
                     { icon: MessageSquare, label: 'Messages', active: false },
-                    { icon: TrendingUp, label: 'Market Analysis', active: location.pathname === '/market-analysis' },
-                    { icon: MapPin, label: 'Neighborhood Info', active: location.pathname === '/neighborhoods' },
-                    { icon: Calculator, label: 'Price Calculator', active: location.pathname === '/calculator' },
-                    { icon: ClipboardList, label: 'Inspection Checklist', active: location.pathname === '/inspection-checklist' },
+                    // { icon: TrendingUp, label: 'Market Analysis', active: location.pathname === '/market-analysis' },
+                    // { icon: MapPin, label: 'Neighborhood Info', active: location.pathname === '/neighborhoods' },
                     { icon: Heart, label: 'Favorites', active: location.pathname === '/saved' },
-                    { icon: Clock, label: 'Search History', active: false }
+                    { icon: Clock, label: 'Search History', active: false },
+                    { icon: SearchIcon, label: 'Browse Properties', active: false }
                   ].map((item, idx) => (
                     <motion.div
                       key={idx}
@@ -1703,11 +1718,16 @@ export default function ChatPage() {
                     <div className="flex items-center gap-3">
                       {user ? (
                         <>
-                          <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#FF6B35] to-[#e85e2f] flex items-center justify-center shrink-0 shadow-sm">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setShowProfilePopup(true)}
+                            className="w-10 h-10 rounded-xl bg-linear-to-br from-[#FF6B35] to-[#e85e2f] flex items-center justify-center shrink-0 shadow-sm"
+                          >
                             <span className="text-white text-sm font-bold">
                               {getUserDisplayName().charAt(0).toUpperCase()}
                             </span>
-                          </div>
+                          </motion.button>
                           <div className="flex flex-col min-w-0">
                             <span className="text-[#2C3E50] text-sm font-semibold truncate">
                               {getUserDisplayName()}

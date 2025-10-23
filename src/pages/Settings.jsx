@@ -370,8 +370,8 @@ export default function Settings() {
               </button>
               <div className="h-6 w-px bg-gray-300"></div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-                <p className="text-gray-600">Manage your account and preferences</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Settings</h1>
+                <p className="text-sm sm:text-base text-gray-600">Manage your account and preferences</p>
               </div>
             </div>
           </div>

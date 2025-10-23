@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { PropertyAPI } from '../lib/propertyAPI';
 import { useAuth } from '../contexts/AuthContext';
+import { useMessaging } from '../contexts/MessagingContext';
 import {
   ChevronLeft,
   ChevronRight,
@@ -34,7 +35,8 @@ import {
   Wifi,
   MoveUp,
   Camera,
-  Grid3X3
+  Grid3X3,
+  MessageSquare
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { createNewInquiryNotification } from '../services/notificationService';
@@ -44,6 +46,7 @@ export default function PropertyDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const { createConversation } = useMessaging();
   const [currentImage, setCurrentImage] = useState(0);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -199,14 +202,34 @@ export default function PropertyDetails() {
     setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  const handleContact = async () => {
+  const handleContact = () => {
+    setShowBookingModal(true);
+  };
+
+  const handleMessageLandlord = async () => {
     if (!isAuthenticated) {
-      toast.error('Please sign in to book this space');
+      toast.error('Please sign in to message the landlord');
       return;
     }
 
-    // Show booking modal
-    setShowBookingModal(true);
+    if (!property?.landlord_id) {
+      toast.error('Landlord information not available');
+      return;
+    }
+
+    try {
+      // Create conversation with landlord
+      const conversation = await createConversation(property.landlord_id);
+
+      if (conversation) {
+        toast.success('Conversation started with landlord!');
+        // Navigate to message center with the conversation
+        navigate('/message-center');
+      }
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      toast.error('Failed to start conversation. Please try again.');
+    }
   };
 
   const handleConfirmBooking = async () => {
@@ -511,7 +534,7 @@ export default function PropertyDetails() {
                   const isCenter = offset === 0;
                   return (
                     <div
-                      key={index}
+                      key={`carousel-${offset}`}
                       className={`transition-all duration-500 rounded-2xl overflow-hidden ${
                         isCenter
                           ? "w-[420px] h-[260px] shadow-2xl scale-105 z-10"
@@ -579,7 +602,7 @@ export default function PropertyDetails() {
               <div className="flex justify-center gap-2 mt-4">
                 {images.map((_, index) => (
                   <div
-                    key={index}
+                    key={`mobile-${index}`}
                     className={`h-1 rounded-full transition-all duration-300 ${
                       index === currentImage ? "w-6 bg-[#FF6B35]" : "w-2 bg-gray-400"
                     }`}
@@ -594,7 +617,7 @@ export default function PropertyDetails() {
             <div className="hidden lg:flex justify-center gap-2 mt-8">
               {images.map((_, index) => (
                 <div
-                  key={index}
+                  key={`desktop-${index}`}
                   className={`h-1 rounded-full transition-all duration-300 ${
                     index === currentImage ? "w-9 bg-[#FF6B35]" : "w-2 bg-gray-400"
                   }`}
@@ -648,6 +671,17 @@ export default function PropertyDetails() {
                 )}
                 <span className="text-sm font-medium">{property.landlord_name || 'Property Owner'}</span>
                 <CheckCircle2 className="w-[18px] h-[18px] text-[#FF6B35] fill-[#FF6B35]" />
+
+                {/* Message Landlord Button */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleMessageLandlord}
+                  className="ml-2 p-2 rounded-full bg-[#FF6B35] text-white hover:bg-orange-600 transition-colors"
+                  title="Message Landlord"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </motion.button>
               </div>
             </div>
 
@@ -668,7 +702,7 @@ export default function PropertyDetails() {
                     const Icon = feature.Icon;
                     return (
                       <div
-                        key={index}
+                        key={`feature-${index}`}
                         className="px-4 py-2.5 rounded-full border border-gray-200 bg-transparent text-sm flex items-center gap-2.5"
                       >
                         <Icon className="w-4 h-4" />

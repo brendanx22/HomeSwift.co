@@ -15,11 +15,12 @@ import {
   Calendar, 
   BarChart3, 
   MapPin, 
-  User, 
+  User,
   Settings as SettingsIcon, 
   LogOut, 
   Phone, 
   MessageSquare, 
+  MessageCircle, 
   Eye, 
   Edit, 
   Trash2, 
@@ -697,6 +698,7 @@ const LandlordDashboard = () => {
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'properties', label: 'Properties', icon: Building },
     { id: 'inquiries', label: 'Inquiries', icon: MessageSquare, badge: stats.activeLeads > 0 ? stats.activeLeads.toString() : undefined },
+    { id: 'messages', label: 'Messages', icon: MessageCircle },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   ];
 
@@ -704,6 +706,12 @@ const LandlordDashboard = () => {
     if (id === 'analytics') {
       // Navigate to external analytics page
       navigate('/analytics');
+      return;
+    }
+
+    if (id === 'messages') {
+      // Navigate to MessageCenter
+      navigate('/message-center');
       return;
     }
 
@@ -1032,7 +1040,7 @@ return (
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Settings className="w-4 h-4 shrink-0" />
+                <SettingsIcon className="w-4 h-4 shrink-0" />
                 {!compactMode && <span>Settings</span>}
               </motion.button>
               <motion.button
@@ -1111,7 +1119,7 @@ return (
             </motion.button>
 
             {/* Clean Dropdown Menu - Only show if there are additional items */}
-            {navigationItems.length > 4 && mobileMenuOpen && (
+            {mobileMenuOpen && (
               <motion.div
                 initial={{ opacity: 0, y: -10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1152,9 +1160,9 @@ return (
                       navigate('/landlord/settings');
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full flex items-center space-x-3 px-2 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors rounded-lg"
+                    className="w-full flex items-center space-x-3 px-2 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-lg"
                   >
-                    <Settings className="w-4 h-4 text-gray-600" />
+                    <SettingsIcon className="w-4 h-4 text-gray-600" />
                     <span>Settings</span>
                   </button>
                   <button

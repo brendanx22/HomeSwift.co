@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useMessaging } from '../contexts/MessagingContext';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'react-hot-toast';
 import {
@@ -30,6 +31,7 @@ import {
 
 const InquiryManagement = () => {
   const { user, isAuthenticated } = useAuth();
+  const { createConversation } = useMessaging();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [inquiries, setInquiries] = useState([]);
@@ -548,7 +550,13 @@ const InquiryManagement = () => {
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <button className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                  <button
+                    onClick={() => {
+                      handleMessageTenant(selectedInquiry.tenant_id);
+                      setShowInquiryDetails(false);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B35] rounded-lg hover:bg-orange-600 transition-colors"
+                  >
                     <MessageSquare className="w-4 h-4 inline mr-2" />
                     Message
                   </button>

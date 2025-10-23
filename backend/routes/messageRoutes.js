@@ -1,37 +1,35 @@
 const express = require('express');
 const router = express.Router();
-const { body } = require('express-validator');
 const messageController = require('../controllers/messageController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
-// @route   POST /api/messages
-// @desc    Send a message/inquiry
-// @access  Private
-router.post(
-  '/',
-  [
-    authenticateToken,
-    [
-      body('property_id', 'Property ID is required').not().isEmpty(),
-      body('message', 'Message is required').not().isEmpty()
-    ]
-  ],
-  messageController.sendMessage
-);
+// All routes require authentication
+router.use(authenticateToken);
 
-// @route   GET /api/messages/property/:propertyId
-// @desc    Get all messages for a property (only property owner can access)
-// @access  Private
-router.get('/property/:propertyId', authenticateToken, messageController.getPropertyMessages);
+// Get all conversations for the current user
+router.get('/conversations', messageController.getConversations);
 
-// @route   GET /api/messages/conversation/:userId
-// @desc    Get conversation between current user and another user
-// @access  Private
-router.get('/conversation/:userId', authenticateToken, messageController.getConversation);
+// Get messages for a specific conversation
+router.get('/conversations/:conversationId/messages', messageController.getMessages);
 
-// @route   PUT /api/messages/:messageId/read
-// @desc    Mark a message as read
-// @access  Private
-router.put('/:messageId/read', authenticateToken, messageController.markAsRead);
+// Send a message
+router.post('/conversations/:conversationId/messages', messageController.sendMessage);
+
+// Create or get existing conversation with a user
+router.post('/conversations', messageController.createConversation);
+
+// Mark messages as read
+router.put('/conversations/:conversationId/messages/read', messageController.markAsRead);
+
+// Delete a message
+router.delete('/messages/:messageId', messageController.deleteMessage);
+
+// WebRTC signaling endpoints
+router.post('/webrtc/offer', messageController.handleWebRTCOffer);
+router.post('/webrtc/answer', messageController.handleWebRTCAnswer);
+router.post('/webrtc/ice-candidate', messageController.handleWebRTCIceCandidate);
+
+// Get online users for WebRTC connections
+router.get('/online-users', messageController.getOnlineUsers);
 
 module.exports = router;

@@ -20,12 +20,14 @@ import {
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useMessaging } from '../contexts/MessagingContext';
 import { PropertyAPI } from '../lib/propertyAPI';
 import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
 
 export default function PropertyBrowse() {
   const { user, isAuthenticated } = useAuth();
+  const { createConversation } = useMessaging();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -670,24 +672,17 @@ export default function PropertyBrowse() {
                               }
 
                               try {
-                                const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/chat/start`, {
-                                  method: 'POST',
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${user.access_token || localStorage.getItem('supabase.auth.token')}`
-                                  },
-                                  body: JSON.stringify({
-                                    userA: user.id,
-                                    userB: property.landlord_id,
-                                    property_id: property.id
-                                  })
-                                });
+                                // Create conversation with landlord using messaging system
+                                const conversation = await createConversation(property.landlord_id);
 
-                                if (!response.ok) throw new Error('Failed to start chat');
-                                const { chat_id } = await response.json();
-                                navigate(`/chat?chatId=${chat_id}`);
+                                if (conversation) {
+                                  toast.success('Conversation started with landlord!');
+                                  // Navigate to message center with the conversation
+                                  navigate('/message-center');
+                                }
                               } catch (error) {
-                                toast.error('Failed to start chat with landlord');
+                                console.error('Error starting conversation:', error);
+                                toast.error('Failed to start conversation with landlord');
                               }
                             }}
                             className="p-2.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"

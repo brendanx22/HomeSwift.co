@@ -175,10 +175,15 @@ export default function RenterDashboard() {
     { id: 'browse', label: 'Browse Properties', icon: Home },
     { id: 'saved', label: 'Saved Properties', icon: Heart },
     { id: 'search', label: 'Advanced Search', icon: Search },
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'history', label: 'Search History', icon: Clock }
   ];
 
   const handleNavigation = (id) => {
+    if (id === 'messages') {
+      navigate('/message-center');
+      return;
+    }
     setActiveTab(id);
   };
 
@@ -503,6 +508,27 @@ export default function RenterDashboard() {
               </motion.div>
             )}
           </div>
+
+          {/* Messages View */}
+          {activeTab === 'messages' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-lg p-8 text-center"
+            >
+              <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Messages</h3>
+              <p className="text-gray-600 mb-6">
+                Connect with landlords and property owners directly
+              </p>
+              <button
+                onClick={() => navigate('/message-center')}
+                className="bg-[#FF6B35] text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+              >
+                Open Message Center
+              </button>
+            </motion.div>
+          )}
         </main>
       </div>
     </div>

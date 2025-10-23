@@ -1,413 +1,718 @@
-// src/pages/MessageCenter.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
+  MessageSquare,
   Send,
+  Search,
+  MoreVertical,
   Phone,
   Video,
-  MoreVertical,
-  Search,
+  Users,
+  Smile,
   Paperclip,
   Image,
-  Smile,
+  X,
   ArrowLeft,
-  User,
-  Clock,
-  Check,
-  CheckCheck,
-  MessageSquare
+  Plus
 } from 'lucide-react';
+import { useMessaging } from '../contexts/MessagingContext';
 import { useAuth } from '../contexts/AuthContext';
-import { MessagingAPI } from '../lib/messagingAPI';
-import { useNavigate } from 'react-router-dom';
+import VideoCallModal from '../components/VideoCallModal';
+import VoiceCallModal from '../components/VoiceCallModal';
 
-export default function Messages() {
-  const { user, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+const MessageCenter = () => {
+  const { user } = useAuth();
+  const {
+    conversations,
+    activeConversation,
+    messages,
+    onlineUsers,
+    isTyping,
+    selectedUser,
+    loadMessages,
+    sendMessage,
+    createConversation,
+    startTyping,
+    stopTyping,
+    initiateWebRTCConnection,
+    setActiveConversation,
+    setSelectedUser
+  } = useMessaging();
 
-  const [conversations, setConversations] = useState([]);
-  const [activeConversation, setActiveConversation] = useState(null);
-  const [showSidebar, setShowSidebar] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showUserSearch, setShowUserSearch] = useState(false);
+  const [showVideoCall, setShowVideoCall] = useState(false);
+  const [showVoiceCall, setShowVoiceCall] = useState(false);
+  const [showMobileNav, setShowMobileNav] = useState(false);
   const messagesEndRef = useRef(null);
-
-  // Detect mobile screen size
-  useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      setShowSidebar(!mobile); // Show sidebar by default on desktop, hide on mobile
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Load conversations for the current user
-  const loadConversations = async () => {
-    try {
-      setLoading(true);
-
-      const { success, conversations: conversationsData } = await MessagingAPI.getConversations(user.id);
-
-      if (success) {
-        setConversations(conversationsData);
-
-        // Auto-select first conversation if none selected
-        if (conversationsData.length > 0 && !activeConversation) {
-          setActiveConversation(conversationsData[0]);
-          loadMessages(conversationsData[0].id);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading conversations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Load messages for a conversation
-  const loadMessages = async (conversationId) => {
-    try {
-      const { success, messages: messagesData } = await MessagingAPI.getMessages(conversationId, user.id);
-
-      if (success) {
-        setMessages(messagesData);
-      }
-    } catch (error) {
-      console.error('Error loading messages:', error);
-    }
-  };
-
-  // Send a new message
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !activeConversation) return;
-
-    try {
-      setSending(true);
-
-      // Send inquiry through API
-      const { success, inquiry } = await MessagingAPI.sendInquiry(
-        activeConversation.id,
-        user.id,
-        newMessage.trim(),
-        { email: user.email }
-      );
-
-      if (success) {
-        // Add message to local state
-        const messageData = {
-          id: inquiry.id,
-          content: newMessage.trim(),
-          timestamp: new Date(),
-          sender: 'current_user',
-          status: 'sent'
-        };
-
-        setMessages(prev => [...prev, messageData]);
-        setNewMessage('');
-
-        // Refresh conversations to show the new message
-        loadConversations();
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  // Handle Enter key to send message
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading messages...</p>
-        </div>
-      </div>
+  // Handle sending message
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !activeConversation) return;
+
+    // Clear the input immediately for better UX
+    const messageContent = newMessage.trim();
+    setNewMessage('');
+
+    // Send message via context (which uses HTTP API)
+    await sendMessage(activeConversation, messageContent);
+
+    // Stop typing indicator
+    stopTyping(activeConversation);
+  };
+
+  // Handle starting a conversation
+  const handleStartConversation = async (otherUser) => {
+    const existingConversation = conversations.find(conv =>
+      conv.otherParticipant?.id === otherUser.id
     );
-  }
+
+    if (existingConversation) {
+      setActiveConversation(existingConversation.id);
+      setSelectedUser(otherUser);
+      await loadMessages(existingConversation.id);
+    } else {
+      const newConv = await createConversation(otherUser.id);
+      if (newConv) {
+        setActiveConversation(newConv.id);
+        setSelectedUser(otherUser);
+        await loadMessages(newConv.id);
+      }
+    }
+    setShowUserSearch(false);
+  };
+
+  // Handle WebRTC call
+  const handleWebRTCCall = async (targetUserId) => {
+    setShowVideoCall(true);
+  };
+
+  // Handle voice call
+  const handleVoiceCall = async (targetUserId) => {
+    setShowVoiceCall(true);
+  };
+
+  // Filter conversations based on search
+  const filteredConversations = conversations.filter(conv => {
+    if (!searchTerm) return true;
+    const otherUser = conv.otherParticipant;
+    return otherUser?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           otherUser?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
-      {isMobile && (
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between md:hidden">
-          <button
-            onClick={() => setShowSidebar(!showSidebar)}
-            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-lg font-semibold text-gray-900">Messages</h1>
-          <div className="w-10" /> {/* Spacer for centering */}
-        </div>
-      )}
-
-      <div className="flex h-screen md:h-auto">
-        {/* Conversations Sidebar */}
-        <div className={`${
-          isMobile
-            ? `fixed inset-y-0 left-0 z-50 w-80 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
-                showSidebar ? 'translate-x-0' : '-translate-x-full'
-              }`
-            : 'w-80 bg-white border-r border-gray-200 flex flex-col'
-        } ${!isMobile ? 'hidden md:flex' : ''}`}>
-
-          {/* Sidebar Header */}
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {isMobile ? 'Conversations' : 'Messages'}
-              </h2>
-              {isMobile && (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Mobile Header - Only on mobile */}
+      <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            {!activeConversation ? (
+              <>
+                <h2 className="text-lg font-bold text-gray-900">Messages</h2>
+                <span className="bg-[#FF6B35] text-white text-xs px-2 py-1 rounded-full">
+                  {conversations.length}
+                </span>
+              </>
+            ) : (
+              <>
                 <button
-                  onClick={() => setShowSidebar(false)}
-                  className="p-1 text-gray-600 hover:text-gray-800"
+                  onClick={() => {
+                    setActiveConversation(null);
+                    setSelectedUser(null);
+                  }}
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <ArrowLeft className="w-5 h-5" />
                 </button>
-              )}
-              {!isMobile && (
                 <div className="flex items-center space-x-2">
-                  <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg">
-                    <Search className="w-5 h-5" />
-                  </button>
-                  <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg">
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
+                  <div className="relative">
+                    <img
+                      src={selectedUser?.avatar_url || '/images/default-avatar.png'}
+                      alt={selectedUser?.full_name}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                    {onlineUsers.has(selectedUser?.id) && (
+                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 text-sm">
+                      {selectedUser?.full_name || selectedUser?.email}
+                    </h3>
+                    {onlineUsers.has(selectedUser?.id) && (
+                      <span className="text-xs text-green-600">● Online</span>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
 
+          <div className="flex items-center space-x-2">
+            {activeConversation && (
+              <>
+                <button
+                  onClick={() => handleWebRTCCall(selectedUser.id)}
+                  className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <Video className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleVoiceCall(selectedUser.id)}
+                  className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <Phone className="w-4 h-4" />
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => setShowMobileNav(!showMobileNav)}
+              className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Search Bar */}
+        <AnimatePresence>
+          {showMobileNav && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-3 overflow-hidden"
+            >
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search conversations..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent bg-gray-50"
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Desktop Header - Only on desktop */}
+      <div className="hidden md:block bg-white border-b border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Messages</h2>
+          <button
+            onClick={() => setShowUserSearch(!showUserSearch)}
+            className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <MessageSquare className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Desktop Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search conversations..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
+          />
+        </div>
+      </div>
+
+      <div className="flex h-[calc(100vh-64px)] md:h-[calc(100vh-140px)]">
+        {/* Conversations Sidebar - Hidden on mobile when chat is active */}
+        <div className={`w-full md:w-1/3 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ${
+          activeConversation ? 'hidden md:flex' : 'flex'
+        }`}>
           {/* Conversations List */}
           <div className="flex-1 overflow-y-auto">
-            {conversations.length > 0 ? (
-              conversations.map((conversation) => (
-                <motion.div
-                  key={conversation.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  onClick={() => {
-                    setActiveConversation(conversation);
-                    loadMessages(conversation.id);
-                    // Mark as read
-                    MessagingAPI.markConversationAsRead(conversation.id, user.id);
-                    if (isMobile) setShowSidebar(false);
-                  }}
-                  className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
-                    activeConversation?.id === conversation.id ? 'bg-blue-50 border-blue-200' : ''
-                  }`}
-                >
-                  <div className="flex items-start space-x-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${
-                      conversation.participant.role === 'landlord' ? 'bg-blue-500' : 'bg-green-500'
-                    }`}>
-                      {conversation.participant.avatar || conversation.participant.name[0]?.toUpperCase()}
-                    </div>
+            <AnimatePresence>
+              {filteredConversations.length > 0 ? (
+                filteredConversations.map((conversation) => {
+                  const otherUser = conversation.otherParticipant;
+                  const isOnline = onlineUsers.has(otherUser?.id);
+                  const isUserTyping = isTyping.has(otherUser?.id);
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-medium text-gray-900 truncate">
-                          {conversation.property?.title || 'Property Inquiry'}
-                        </h3>
-                        <span className="text-xs text-gray-500">
-                          {new Date(conversation.lastMessage.timestamp).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
+                  return (
+                    <motion.div
+                      key={conversation.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      onClick={() => {
+                        setActiveConversation(conversation.id);
+                        setSelectedUser(otherUser);
+                        loadMessages(conversation.id);
+                        setShowMobileNav(false);
+                      }}
+                      className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gradient-to-r hover:from-[#FF6B35]/5 hover:to-transparent transition-all duration-200 ${
+                        activeConversation === conversation.id
+                          ? 'bg-gradient-to-r from-[#FF6B35]/10 to-[#FF6B35]/5 border-r-2 border-r-[#FF6B35]'
+                          : ''
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="relative">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden">
+                            {otherUser?.avatar_url ? (
+                              <img
+                                src={otherUser.avatar_url}
+                                alt={otherUser?.full_name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-lg font-semibold text-gray-600">
+                                {(otherUser?.full_name || otherUser?.email || 'U').charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          {isOnline && (
+                            <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-gray-900 truncate text-sm">
+                              {otherUser?.full_name || otherUser?.email}
+                            </h3>
+                            <span className="text-xs text-gray-500">
+                              {conversation.last_message_at ?
+                                new Date(conversation.last_message_at).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                }) : ''
+                              }
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="text-sm text-gray-600 truncate">
+                              {isUserTyping ? (
+                                <span className="text-[#FF6B35] italic flex items-center">
+                                  <span className="animate-pulse">●</span>
+                                  <span className="animate-pulse delay-100">●</span>
+                                  <span className="animate-pulse delay-200">●</span>
+                                  <span className="ml-1">typing...</span>
+                                </span>
+                              ) : (
+                                conversation.last_message || 'No messages yet'
+                              )}
+                            </p>
+                            {conversation.unreadCount > 0 && (
+                              <span className="bg-gradient-to-r from-[#FF6B35] to-orange-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center shadow-sm">
+                                {conversation.unreadCount}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center space-x-2 mt-2">
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                              otherUser?.user_type === 'landlord'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-green-100 text-green-800'
+                            }`}>
+                              {otherUser?.user_type}
+                            </span>
+                            {isOnline && (
+                              <span className="text-xs text-green-600 font-medium">● Online</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
+                    </motion.div>
+                  );
+                })
+              ) : (
+                <div className="p-8 text-center">
+                  <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-500">No conversations yet</p>
+                  <p className="text-sm text-gray-400 mt-1">Start a conversation with someone!</p>
+                </div>
+              )}
+            </AnimatePresence>
+          </div>
 
-                      <div className="flex items-center justify-between">
-                        <p className={`text-sm truncate ${
-                          conversation.lastMessage.unread ? 'font-medium text-gray-900' : 'text-gray-600'
-                        }`}>
-                          {conversation.lastMessage.content}
-                        </p>
-                        {conversation.unreadCount > 0 && (
-                          <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
-                            {conversation.unreadCount}
+          {/* Floating Action Button for Mobile */}
+          <div className="md:hidden p-4 border-t border-gray-200">
+            <button
+              onClick={() => setShowUserSearch(true)}
+              className="w-full bg-gradient-to-r from-[#FF6B35] to-orange-500 text-white py-3 px-4 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Start New Chat</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Chat Area */}
+        <div className={`flex-1 flex flex-col transition-all duration-300 ${
+          activeConversation ? 'flex' : 'hidden md:flex'
+        }`}>
+          {activeConversation && selectedUser ? (
+            <>
+              {/* Chat Header - Only on desktop */}
+              <div className="hidden md:block bg-white border-b border-gray-200 p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="relative">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden">
+                        {selectedUser?.avatar_url ? (
+                          <img
+                            src={selectedUser.avatar_url}
+                            alt={selectedUser?.full_name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-sm font-semibold text-gray-600">
+                            {(selectedUser?.full_name || selectedUser?.email || 'U').charAt(0).toUpperCase()}
                           </span>
                         )}
                       </div>
+                      {onlineUsers.has(selectedUser?.id) && (
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                      )}
                     </div>
-                  </div>
-                </motion.div>
-              ))
-            ) : (
-              <div className="flex items-center justify-center h-64 text-gray-500">
-                <div className="text-center">
-                  <MessageSquare className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                  <p>No conversations yet</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* Mobile Overlay */}
-        {isMobile && showSidebar && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-            onClick={() => setShowSidebar(false)}
-          />
-        )}
-
-        {/* Chat Area */}
-        <div className={`flex-1 flex flex-col ${isMobile && !showSidebar ? 'w-full' : ''}`}>
-          {activeConversation ? (
-            <>
-              {/* Chat Header */}
-              <div className="bg-white border-b border-gray-200 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    {isMobile && (
-                      <button
-                        onClick={() => setShowSidebar(true)}
-                        className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg md:hidden"
-                      >
-                        <ArrowLeft className="w-5 h-5" />
-                      </button>
-                    )}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${
-                      activeConversation.participant.role === 'landlord' ? 'bg-blue-500' : 'bg-green-500'
-                    }`}>
-                      {activeConversation.participant.avatar}
-                    </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">
-                        {activeConversation.participant.name}
+                      <h3 className="font-semibold text-gray-900 text-sm">
+                        {selectedUser?.full_name || selectedUser?.email}
                       </h3>
-                      <p className="text-sm text-gray-500">
-                        {activeConversation.participant.lastSeen}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg">
-                      <Phone className="w-5 h-5" />
-                    </button>
-                    <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg">
-                      <Video className="w-5 h-5" />
-                    </button>
-                    <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg">
-                      <MoreVertical className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map((message) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex ${message.sender === 'current_user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                      message.sender === 'current_user'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-200 text-gray-800'
-                    }`}>
-                      <p className="text-sm">{message.content}</p>
-                      <div className={`flex items-center justify-end mt-1 space-x-1 ${
-                        message.sender === 'current_user' ? 'text-blue-100' : 'text-gray-500'
-                      }`}>
-                        <span className="text-xs">
-                          {message.timestamp.toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                      <div className="flex items-center space-x-2">
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          selectedUser?.user_type === 'landlord'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {selectedUser?.user_type}
                         </span>
-                        {message.sender === 'current_user' && (
-                          <div className="flex items-center">
-                            {message.status === 'sending' && <Clock className="w-3 h-3" />}
-                            {message.status === 'sent' && <Check className="w-3 h-3" />}
-                            {message.status === 'delivered' && <CheckCheck className="w-3 h-3" />}
-                            {message.status === 'read' && <CheckCheck className="w-3 h-3 text-blue-200" />}
-                          </div>
+                        {onlineUsers.has(selectedUser?.id) && (
+                          <span className="text-xs text-green-600 font-medium">● Online</span>
                         )}
                       </div>
                     </div>
-                  </motion.div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Message Input */}
-              <div className="bg-white border-t border-gray-200 p-4">
-                <div className="flex items-end space-x-3">
-                  <div className="flex-1">
-                    <textarea
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Type your message..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                      rows={1}
-                    />
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg">
-                      <Paperclip className="w-5 h-5" />
-                    </button>
-                    <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg">
-                      <Image className="w-5 h-5" />
-                    </button>
-                    <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg">
-                      <Smile className="w-5 h-5" />
+                    <button
+                      onClick={() => handleWebRTCCall(selectedUser.id)}
+                      className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Start video call"
+                    >
+                      <Video className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={sendMessage}
-                      disabled={!newMessage.trim() || sending}
-                      className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => handleVoiceCall(selectedUser.id)}
+                      className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Start voice call"
                     >
-                      {sending ? (
-                        <div className="w-5 h-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      ) : (
-                        <Send className="w-5 h-5" />
-                      )}
+                      <Phone className="w-4 h-4" />
+                    </button>
+                    <button className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-lg transition-colors">
+                      <MoreVertical className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
               </div>
+
+              {/* Messages - Modern mobile design */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-gray-50 to-white">
+                <AnimatePresence>
+                  {messages.map((message, index) => {
+                    const isOwn = message.sender_id === user?.id;
+                    const showAvatar = !isOwn && (index === 0 || messages[index - 1].sender_id !== message.sender_id);
+
+                    return (
+                      <motion.div
+                        key={message.id}
+                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`flex items-end space-x-2 max-w-[85%] ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                          {showAvatar && !isOwn && (
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {selectedUser?.avatar_url ? (
+                                <img
+                                  src={selectedUser.avatar_url}
+                                  alt={selectedUser?.full_name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-xs font-semibold text-gray-600">
+                                  {(selectedUser?.full_name || selectedUser?.email || 'U').charAt(0).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          <div className={`relative group ${isOwn ? 'mr-2' : 'ml-2'}`}>
+                            <div className={`rounded-2xl px-4 py-3 shadow-sm ${
+                              isOwn
+                                ? 'bg-gradient-to-r from-[#FF6B35] to-orange-500 text-white'
+                                : 'bg-white border border-gray-200 text-gray-900'
+                            }`}>
+                              <p className="text-sm leading-relaxed">{message.content}</p>
+                              <p className={`text-xs mt-1.5 ${
+                                isOwn ? 'text-orange-100' : 'text-gray-500'
+                              }`}>
+                                {new Date(message.created_at).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+
+                            {/* Message tail */}
+                            <div className={`absolute bottom-0 ${
+                              isOwn
+                                ? 'right-0 translate-x-1/2'
+                                : 'left-0 -translate-x-1/2'
+                            }`}>
+                              <div className={`w-3 h-3 rotate-45 ${
+                                isOwn
+                                  ? 'bg-gradient-to-r from-[#FF6B35] to-orange-500'
+                                  : 'bg-white border-l border-b border-gray-200'
+                              }`}></div>
+                            </div>
+
+                            {/* Hover actions */}
+                            <div className={`absolute top-0 ${
+                              isOwn ? 'left-0 -translate-x-full' : 'right-0 translate-x-full'
+                            } opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
+                              <div className="bg-white rounded-full shadow-lg p-1">
+                                <button className="p-1 text-gray-400 hover:text-gray-600">
+                                  <MoreVertical className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+
+                {/* Typing indicator */}
+                {Array.from(isTyping.values()).some(typing => typing.conversationId === activeConversation) && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex justify-start"
+                  >
+                    <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-sm">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                        <span className="text-sm text-gray-500">typing...</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Modern Mobile Input */}
+              <div className="bg-white border-t border-gray-200 p-4">
+                <form onSubmit={handleSendMessage} className="flex items-end space-x-3">
+                  <button
+                    type="button"
+                    className="p-3 text-gray-500 hover:text-[#FF6B35] hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+
+                  <div className="flex-1 relative">
+                    <div className="relative bg-gray-100 rounded-2xl border border-gray-200 focus-within:border-[#FF6B35] focus-within:ring-2 focus-within:ring-[#FF6B35]/20 transition-all duration-200">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => {
+                          setNewMessage(e.target.value);
+                          if (e.target.value) {
+                            startTyping(activeConversation);
+                          } else {
+                            stopTyping(activeConversation);
+                          }
+                        }}
+                        placeholder="Type a message..."
+                        className="w-full px-4 py-3 bg-transparent border-none focus:outline-none text-sm placeholder-gray-500 pr-12"
+                      />
+
+                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+                        <button
+                          type="button"
+                          className="p-1.5 text-gray-500 hover:text-[#FF6B35] rounded-lg transition-colors"
+                        >
+                          <Smile className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={!newMessage.trim()}
+                    className={`p-3 rounded-full transition-all duration-200 flex-shrink-0 ${
+                      newMessage.trim()
+                        ? 'bg-gradient-to-r from-[#FF6B35] to-orange-500 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                </form>
+              </div>
             </>
           ) : (
-            /* Empty State */
-            <div className="flex-1 flex items-center justify-center bg-gray-50">
-              <div className="text-center">
-                <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {isMobile ? 'Select a conversation' : 'No Conversation Selected'}
+            /* Modern Empty State */
+            <div className="flex-1 flex items-center justify-center p-8">
+              <div className="text-center max-w-sm">
+                <div className="w-20 h-20 bg-gradient-to-br from-[#FF6B35]/20 to-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <MessageSquare className="w-10 h-10 text-[#FF6B35]" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  No conversation selected
                 </h3>
-                <p className="text-gray-600">
-                  {isMobile ? 'Tap the menu to choose a conversation' : 'Choose a conversation from the sidebar to start messaging'}
+                <p className="text-gray-600 mb-6 leading-relaxed">
+                  Choose a conversation from the sidebar or start a new one to begin messaging
                 </p>
+                <button
+                  onClick={() => setShowUserSearch(true)}
+                  className="bg-gradient-to-r from-[#FF6B35] to-orange-500 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  Start New Conversation
+                </button>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Modern User Search Modal */}
+      <AnimatePresence>
+        {showUserSearch && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-3xl w-full max-w-md max-h-[80vh] overflow-hidden shadow-2xl"
+            >
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">Start New Conversation</h3>
+                  <button
+                    onClick={() => setShowUserSearch(false)}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search users..."
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent bg-gray-50"
+                  />
+                </div>
+              </div>
+
+              <div className="max-h-96 overflow-y-auto">
+                {Array.from(onlineUsers.values()).length > 0 ? (
+                  Array.from(onlineUsers.values()).map((onlineUser) => (
+                    <div
+                      key={onlineUser.id}
+                      onClick={() => handleStartConversation(onlineUser)}
+                      className="flex items-center space-x-3 p-4 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden">
+                          {onlineUser.avatar_url ? (
+                            <img
+                              src={onlineUser.avatar_url}
+                              alt={onlineUser.full_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-sm font-semibold text-gray-600">
+                              {(onlineUser.full_name || onlineUser.email || 'U').charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-900 truncate">
+                          {onlineUser.full_name || onlineUser.email}
+                        </h4>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                            onlineUser.user_type === 'landlord'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {onlineUser.user_type}
+                          </span>
+                          <span className="text-xs text-green-600 font-medium">● Online</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center">
+                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-500">No users online</p>
+                    <p className="text-sm text-gray-400 mt-1">Check back later!</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Video Call Modal */}
+      <VideoCallModal
+        isOpen={showVideoCall}
+        onClose={() => setShowVideoCall(false)}
+        targetUser={selectedUser}
+        targetUserId={selectedUser?.id}
+      />
+
+      {/* Voice Call Modal */}
+      <VoiceCallModal
+        isOpen={showVoiceCall}
+        onClose={() => setShowVoiceCall(false)}
+        targetUser={selectedUser}
+        targetUserId={selectedUser?.id}
+      />
     </div>
   );
-}
+};
+
+export default MessageCenter;

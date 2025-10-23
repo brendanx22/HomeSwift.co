@@ -3,9 +3,10 @@ import { motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { OfflineIndicator, PWAInstallPrompt, UpdatePrompt, registerServiceWorker } from './utils/pwa.jsx';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { MessagingProvider } from './contexts/MessagingContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Lazy load pages for better performance
@@ -19,7 +20,7 @@ const LandlordLoginPage = React.lazy(() => import('./pages/LandlordLoginPage'));
 import LandlordSignupPage from './pages/LandlordSignupPage';
 const LandlordDashboard = React.lazy(() => import('./pages/LandlordDashboard'));
 const LandlordSettings = React.lazy(() => import('./pages/LandlordSettings'));
-const ChatPage = React.lazy(() => import('./pages/ChatPage'));
+const ChatPage = React.lazy(() => import('./pages/ChatPageWithMessaging'));
 const Properties = React.lazy(() => import('./pages/Properties'));
 const About = React.lazy(() => import('./pages/About'));
 const Contact = React.lazy(() => import('./pages/Contact'));
@@ -470,10 +471,10 @@ const AppLayout = () => {
             />
             
             <Route
-              path="/settings"
+              path="/landlord/settings"
               element={
-                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
-                  <Settings />
+                <ProtectedRoute requiredRoles={['landlord']}>
+                  <LandlordSettings />
                 </ProtectedRoute>
               }
             />
@@ -704,24 +705,26 @@ const App = () => {
       <AuthProvider>
         <ThemeProvider>
           <LanguageProvider>
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-              <OfflineIndicator />
-              <PWAInstallPrompt />
-              <UpdatePrompt onUpdate={() => window.location.reload()} />
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  duration: 3000,
-                  style: {
-                    background: '#363636',
-                    color: '#fff',
-                    borderRadius: '0.5rem',
-                    padding: '1rem',
-                  },
-                }}
-              />
-              <AppLayout />
-            </div>
+            <MessagingProvider>
+              <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+                <OfflineIndicator />
+                <PWAInstallPrompt />
+                <UpdatePrompt onUpdate={() => window.location.reload()} />
+                <Toaster
+                  position="top-right"
+                  toastOptions={{
+                    duration: 3000,
+                    style: {
+                      background: '#363636',
+                      color: '#fff',
+                      borderRadius: '0.5rem',
+                      padding: '1rem',
+                    },
+                  }}
+                />
+                <AppLayout />
+              </div>
+            </MessagingProvider>
           </LanguageProvider>
         </ThemeProvider>
       </AuthProvider>

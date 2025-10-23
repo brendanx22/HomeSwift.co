@@ -1,203 +1,440 @@
-const { validationResult } = require('express-validator');
 const supabase = require('../utils/supabaseClient');
+const { log, errorLog } = require('../utils/logger');
 
-// @desc    Send a message/inquiry
-// @route   POST /api/messages
-// @access  Private
-exports.sendMessage = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ success: false, errors: errors.array() });
-  }
+// Store active WebRTC connections and online users
+const onlineUsers = new Map();
+const activeConnections = new Map();
 
-  const { property_id, message } = req.body;
-  const sender_id = req.user.userId;
-
+// Get all conversations for the current user
+const getConversations = async (req, res) => {
   try {
-    // Get property to find the owner
-    const { data: property, error: propertyError } = await supabase
-      .from('properties')
-      .select('user_id')
-      .eq('id', property_id)
+    const userId = req.user.id;
+
+    // Get conversations where user is in the participants JSON
+    const { data: conversations, error } = await req.supabase
+      .from('conversations')
+      .select(`
+        id,
+        participants,
+        last_message,
+        last_message_at,
+        created_at
+      `)
+      .like('participants', `%${userId}%`)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      errorLog('Error fetching conversations:', error);
+      return res.status(500).json({ error: 'Failed to fetch conversations' });
+    }
+
+    // Get unread message counts and other participant info for each conversation
+    const conversationsWithCounts = await Promise.all(
+      conversations.map(async (conversation) => {
+        // Parse participants JSON string to find other participant
+        let participants;
+        try {
+          participants = JSON.parse(conversation.participants);
+        } catch (e) {
+          participants = [];
+        }
+        const otherParticipantId = participants.find(id => id !== userId);
+
+        // Get other participant details
+        const { data: otherParticipant, error: participantError } = await req.supabase
+          .from('user_profiles')
+          .select('id, email, full_name, user_type, avatar_url')
+          .eq('id', otherParticipantId)
+          .single();
+
+        if (participantError) {
+          console.warn('Could not fetch participant details:', participantError);
+        }
+
+        const { count } = await req.supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('conversation_id', conversation.id)
+          .neq('sender_id', userId)
+          .eq('is_read', false);
+
+        return {
+          ...conversation,
+          otherParticipant: otherParticipant || { id: otherParticipantId, email: 'Unknown', full_name: 'Unknown User' },
+          unreadCount: count || 0
+        };
+      })
+    );
+
+    res.json(conversationsWithCounts);
+  } catch (error) {
+    errorLog('Error in getConversations:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get messages for a specific conversation
+const getMessages = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user.id;
+
+    // Verify user is part of this conversation using participants JSON
+    const { data: conversation, error: convError } = await req.supabase
+      .from('conversations')
+      .select('id, participants')
+      .eq('id', conversationId)
+      .like('participants', `%${userId}%`)
       .single();
 
-    if (propertyError) {
-      if (propertyError.code === 'PGRST116') {
-        return res.status(404).json({ success: false, error: 'Property not found' });
-      }
-      throw propertyError;
+    if (convError || !conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
     }
 
-    // Prevent sending message to yourself
-    if (property.user_id === sender_id) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Cannot send message to yourself' 
-      });
-    }
-
-    // Create message
-    const { data: newMessage, error: messageError } = await supabase
+    // Get messages
+    const { data: messages, error } = await req.supabase
       .from('messages')
-      .insert([
-        {
-          property_id,
-          sender_id,
-          receiver_id: property.user_id,
-          message,
-          read: false
-        }
-      ])
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      errorLog('Error fetching messages:', error);
+      return res.status(500).json({ error: 'Failed to fetch messages' });
+    }
+
+    // Mark messages as read (messages sent to current user)
+    await req.supabase
+      .from('messages')
+      .update({ is_read: true })
+      .eq('conversation_id', conversationId)
+      .neq('sender_id', userId)
+      .eq('is_read', false);
+
+    res.json(messages);
+  } catch (error) {
+    errorLog('Error in getMessages:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Send a message
+const sendMessage = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { content, message_type = 'text' } = req.body;
+    const userId = req.user.id;
+
+    // Verify user is part of this conversation using participants JSON
+    const { data: conversation, error: convError } = await req.supabase
+      .from('conversations')
+      .select('id, participants')
+      .eq('id', conversationId)
+      .like('participants', `%${userId}%`)
+      .single();
+
+    if (convError || !conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    // Parse participants JSON string to find the receiver
+    let participants;
+    try {
+      participants = JSON.parse(conversation.participants);
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid conversation participants format' });
+    }
+    const receiverId = participants.find(id => id !== userId);
+
+    if (!receiverId) {
+      return res.status(400).json({ error: 'Invalid conversation participants' });
+    }
+
+    // Insert message
+    const { data: message, error } = await req.supabase
+      .from('messages')
+      .insert({
+        conversation_id: conversationId,
+        sender_id: userId,
+        content,
+        message_type,
+        is_read: false
+      })
       .select()
       .single();
 
-    if (messageError) throw messageError;
-
-    // In a real app, you might want to send a notification here
-    // e.g., email notification or push notification
-
-    res.status(201).json({ success: true, data: newMessage });
-  } catch (error) {
-    console.error('Send message error:', error);
-    res.status(500).json({ success: false, error: 'Error sending message' });
-  }
-};
-
-// @desc    Get all messages for a property (only property owner can access)
-// @route   GET /api/messages/property/:propertyId
-// @access  Private
-exports.getPropertyMessages = async (req, res) => {
-  try {
-    const { propertyId } = req.params;
-
-    // Verify the user is the owner of the property
-    const { data: property, error: propertyError } = await supabase
-      .from('properties')
-      .select('user_id')
-      .eq('id', propertyId)
-      .single();
-
-    if (propertyError) {
-      if (propertyError.code === 'PGRST116') {
-        return res.status(404).json({ success: false, error: 'Property not found' });
-      }
-      throw propertyError;
+    if (error) {
+      errorLog('Error sending message:', error);
+      return res.status(500).json({ error: 'Failed to send message' });
     }
 
-    if (property.user_id !== req.user.userId) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'Not authorized to view these messages' 
+    // Update conversation last message
+    await req.supabase
+      .from('conversations')
+      .update({
+        last_message: content,
+        last_message_at: new Date().toISOString()
+      })
+      .eq('id', conversationId);
+
+    // Emit real-time message to receiver via Socket.IO
+    if (req.io) {
+      req.io.to(receiverId).emit('new_message', {
+        message,
+        conversation: conversation
       });
     }
 
-    // Get all messages for this property
-    const { data: messages, error: messagesError } = await supabase
-      .from('messages')
-      .select(`
-        *,
-        sender:user_profiles!messages_sender_id_fkey(id, full_name, email)
-      `)
-      .eq('property_id', propertyId)
-      .order('created_at', { ascending: true });
-
-    if (messagesError) throw messagesError;
-
-    // Mark messages as read
-    await supabase
-      .from('messages')
-      .update({ read: true })
-      .eq('property_id', propertyId)
-      .eq('receiver_id', req.user.userId)
-      .eq('read', false);
-
-    res.json({ success: true, data: messages });
+    res.status(201).json(message);
   } catch (error) {
-    console.error('Get property messages error:', error);
-    res.status(500).json({ success: false, error: 'Error fetching messages' });
+    errorLog('Error in sendMessage:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-// @desc    Get conversation between current user and another user
-// @route   GET /api/messages/conversation/:userId
-// @access  Private
-exports.getConversation = async (req, res) => {
+// Create or get existing conversation
+const createConversation = async (req, res) => {
   try {
-    const otherUserId = req.params.userId;
-    const currentUserId = req.user.userId;
+    const { receiver_id } = req.body;
+    const sender_id = req.user.id;
 
-    // Get messages where:
-    // - current user is the sender and other user is the receiver
-    // OR
-    // - current user is the receiver and other user is the sender
-    const { data: messages, error } = await supabase
-      .from('messages')
+    if (sender_id === receiver_id) {
+      return res.status(400).json({ error: 'Cannot create conversation with yourself' });
+    }
+
+    // Use the database function to get or create conversation
+    const { data: conversationId, error } = await req.supabase
+      .rpc('get_or_create_conversation', {
+        user1_id: sender_id,
+        user2_id: receiver_id
+      });
+
+    if (error) {
+      errorLog('Error with get_or_create_conversation RPC:', error);
+      return res.status(500).json({ error: 'Failed to create or find conversation' });
+    }
+
+    // Get the full conversation data
+    const { data: conversation, error: fetchError } = await req.supabase
+      .from('conversations')
       .select(`
-        *,
-        property:properties(id, title),
-        sender:user_profiles!messages_sender_id_fkey(id, full_name, email)
+        id,
+        participants,
+        created_at
       `)
-      .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${currentUserId})`)
-      .order('created_at', { ascending: true });
-
-    if (error) throw error;
-
-    // Mark received messages as read
-    await supabase
-      .from('messages')
-      .update({ read: true })
-      .eq('receiver_id', currentUserId)
-      .eq('sender_id', otherUserId)
-      .eq('read', false);
-
-    res.json({ success: true, data: messages });
-  } catch (error) {
-    console.error('Get conversation error:', error);
-    res.status(500).json({ success: false, error: 'Error fetching conversation' });
-  }
-};
-
-// @desc    Mark a message as read
-// @route   PUT /api/messages/:messageId/read
-// @access  Private
-exports.markAsRead = async (req, res) => {
-  try {
-    const { messageId } = req.params;
-
-    // Verify the message exists and is for the current user
-    const { data: message, error: fetchError } = await supabase
-      .from('messages')
-      .select('receiver_id')
-      .eq('id', messageId)
+      .eq('id', conversationId)
       .single();
 
     if (fetchError) {
-      if (fetchError.code === 'PGRST116') {
-        return res.status(404).json({ success: false, error: 'Message not found' });
-      }
-      throw fetchError;
+      errorLog('Error fetching conversation data:', fetchError);
+      return res.status(500).json({ error: 'Failed to fetch conversation data' });
     }
 
-    if (message.receiver_id !== req.user.userId) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'Not authorized to update this message' 
+    // Parse participants JSON to get other participant details
+    let participants;
+    try {
+      participants = JSON.parse(conversation.participants);
+    } catch (e) {
+      return res.status(500).json({ error: 'Invalid conversation participants format' });
+    }
+    const otherParticipantId = participants.find(id => id !== sender_id);
+    const { data: otherParticipant, error: participantError } = await req.supabase
+      .from('user_profiles')
+      .select('id, email, full_name, user_type, avatar_url')
+      .eq('id', otherParticipantId)
+      .single();
+
+    if (participantError) {
+      console.warn('Could not fetch participant details:', participantError);
+    }
+
+    const conversationResponse = {
+      ...conversation,
+      otherParticipant: otherParticipant || { id: otherParticipantId, email: 'Unknown', full_name: 'Unknown User' },
+      unreadCount: 0
+    };
+
+    res.status(201).json(conversationResponse);
+  } catch (error) {
+    errorLog('Error in createConversation:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Mark messages as read
+const markAsRead = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user.id;
+
+    // Verify user is part of this conversation using participants JSON
+    const { data: conversation, error: convError } = await req.supabase
+      .from('conversations')
+      .select('id, participants')
+      .eq('id', conversationId)
+      .like('participants', `%${userId}%`)
+      .single();
+
+    if (convError || !conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    // Mark all messages in this conversation as read (except those sent by the current user)
+    const { error } = await req.supabase
+      .from('messages')
+      .update({ is_read: true })
+      .eq('conversation_id', conversationId)
+      .neq('sender_id', userId)
+      .eq('is_read', false);
+
+    if (error) {
+      errorLog('Error marking messages as read:', error);
+      return res.status(500).json({ error: 'Failed to mark messages as read' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    errorLog('Error in markAsRead:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Delete a message
+const deleteMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user.id;
+
+    // Verify user owns the message
+    const { data: message, error: fetchError } = await req.supabase
+      .from('messages')
+      .select('id')
+      .eq('id', messageId)
+      .eq('sender_id', userId)
+      .single();
+
+    if (fetchError || !message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    const { error } = await req.supabase
+      .from('messages')
+      .delete()
+      .eq('id', messageId);
+
+    if (error) {
+      errorLog('Error deleting message:', error);
+      return res.status(500).json({ error: 'Failed to delete message' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    errorLog('Error in deleteMessage:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// WebRTC Signaling Handlers
+const handleWebRTCOffer = async (req, res) => {
+  try {
+    const { targetUserId, offer } = req.body;
+    const senderId = req.user.id;
+
+    // Store the offer for the target user
+    if (!activeConnections.has(targetUserId)) {
+      activeConnections.set(targetUserId, new Map());
+    }
+
+    const targetConnections = activeConnections.get(targetUserId);
+    targetConnections.set(senderId, { offer, type: 'offer' });
+
+    // Notify target user via Socket.IO
+    if (req.io) {
+      req.io.to(targetUserId).emit('webrtc_offer', {
+        from: senderId,
+        offer
       });
     }
 
-    // Mark as read
-    const { data: updatedMessage, error: updateError } = await supabase
-      .from('messages')
-      .update({ read: true })
-      .eq('id', messageId)
-      .select()
-      .single();
-
-    if (updateError) throw updateError;
-
-    res.json({ success: true, data: updatedMessage });
+    res.json({ success: true });
   } catch (error) {
-    console.error('Mark as read error:', error);
-    res.status(500).json({ success: false, error: 'Error updating message status' });
+    errorLog('Error handling WebRTC offer:', error);
+    res.status(500).json({ error: 'Failed to handle WebRTC offer' });
   }
+};
+
+const handleWebRTCAnswer = async (req, res) => {
+  try {
+    const { targetUserId, answer } = req.body;
+    const senderId = req.user.id;
+
+    // Send answer to target user via Socket.IO
+    if (req.io) {
+      req.io.to(targetUserId).emit('webrtc_answer', {
+        from: senderId,
+        answer
+      });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    errorLog('Error handling WebRTC answer:', error);
+    res.status(500).json({ error: 'Failed to handle WebRTC answer' });
+  }
+};
+
+const handleWebRTCIceCandidate = async (req, res) => {
+  try {
+    const { targetUserId, candidate } = req.body;
+    const senderId = req.user.id;
+
+    // Forward ICE candidate to target user via Socket.IO
+    if (req.io) {
+      req.io.to(targetUserId).emit('webrtc_ice_candidate', {
+        from: senderId,
+        candidate
+      });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    errorLog('Error handling WebRTC ICE candidate:', error);
+    res.status(500).json({ error: 'Failed to handle WebRTC ICE candidate' });
+  }
+};
+
+// Get online users for WebRTC connections
+const getOnlineUsers = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get all online users except current user
+    const onlineUsersList = Array.from(onlineUsers.entries())
+      .filter(([id]) => id !== userId)
+      .map(([id, user]) => ({
+        id,
+        email: user.email,
+        full_name: user.full_name,
+        user_type: user.user_type,
+        avatar_url: user.avatar_url
+      }));
+
+    res.json(onlineUsersList);
+  } catch (error) {
+    errorLog('Error in getOnlineUsers:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+module.exports = {
+  getConversations,
+  getMessages,
+  sendMessage,
+  createConversation,
+  markAsRead,
+  deleteMessage,
+  handleWebRTCOffer,
+  handleWebRTCAnswer,
+  handleWebRTCIceCandidate,
+  getOnlineUsers
 };
