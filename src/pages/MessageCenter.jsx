@@ -318,9 +318,20 @@ const MessageCenter = () => {
         }`}>
           {/* Mobile Chat Header - Adjusts height for mobile */}
           {activeConversation && selectedUser && (
-            <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 h-[60px] flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="relative">
+            <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 h-[60px] flex items-center">
+              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                <button
+                  onClick={() => {
+                    setActiveConversation(null);
+                    setSelectedUser(null);
+                    setShowMobileNav(false);
+                  }}
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+
+                <div className="relative flex-shrink-0">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden">
                     {selectedUser?.avatar_url ? (
                       <img
@@ -339,8 +350,8 @@ const MessageCenter = () => {
                   )}
                 </div>
 
-                <div>
-                  <h3 className="font-semibold text-gray-900 text-sm">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-gray-900 text-sm truncate">
                     {selectedUser?.full_name || selectedUser?.email}
                   </h3>
                   {onlineUsers.has(selectedUser?.id) && (
@@ -349,7 +360,7 @@ const MessageCenter = () => {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 flex-shrink-0">
                 <button
                   onClick={() => handleWebRTCCall(selectedUser.id)}
                   className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-lg transition-colors"
