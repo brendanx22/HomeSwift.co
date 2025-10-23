@@ -109,69 +109,17 @@ const MessageCenter = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Mobile Header - Only on mobile */}
+      {/* Mobile Header - Static */}
       <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            {!activeConversation ? (
-              <>
-                <h2 className="text-lg font-bold text-gray-900">Messages</h2>
-                <span className="bg-[#FF6B35] text-white text-xs px-2 py-1 rounded-full">
-                  {conversations.length}
-                </span>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => {
-                    setActiveConversation(null);
-                    setSelectedUser(null);
-                  }}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div className="flex items-center space-x-2">
-                  <div className="relative">
-                    <img
-                      src={selectedUser?.avatar_url || '/images/default-avatar.png'}
-                      alt={selectedUser?.full_name}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                    {onlineUsers.has(selectedUser?.id) && (
-                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 text-sm">
-                      {selectedUser?.full_name || selectedUser?.email}
-                    </h3>
-                    {onlineUsers.has(selectedUser?.id) && (
-                      <span className="text-xs text-green-600">● Online</span>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
+            <h2 className="text-lg font-bold text-gray-900">Messages</h2>
+            <span className="bg-[#FF6B35] text-white text-xs px-2 py-1 rounded-full">
+              {conversations.length}
+            </span>
           </div>
 
           <div className="flex items-center space-x-2">
-            {activeConversation && (
-              <>
-                <button
-                  onClick={() => handleWebRTCCall(selectedUser.id)}
-                  className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <Video className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleVoiceCall(selectedUser.id)}
-                  className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <Phone className="w-4 h-4" />
-                </button>
-              </>
-            )}
             <button
               onClick={() => setShowMobileNav(!showMobileNav)}
               className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-full transition-colors"
@@ -230,8 +178,8 @@ const MessageCenter = () => {
         </div>
       </div>
 
-      <div className="flex h-[calc(100vh-64px)] md:h-[calc(100vh-140px)]">
-        {/* Conversations Sidebar - Hidden on mobile when chat is active */}
+      <div className="flex h-[calc(100vh-64px)] md:h-[calc(100vh-76px)]">
+        {/* Conversations Sidebar - Always visible on mobile */}
         <div className={`w-full md:w-1/3 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ${
           activeConversation ? 'hidden md:flex' : 'flex'
         }`}>
@@ -356,10 +304,62 @@ const MessageCenter = () => {
           </div>
         </div>
 
-        {/* Chat Area */}
+        {/* Chat Area - Always visible */}
         <div className={`flex-1 flex flex-col transition-all duration-300 ${
           activeConversation ? 'flex' : 'hidden md:flex'
         }`}>
+          {/* Mobile Chat Header - Adjusts height for mobile */}
+          {activeConversation && selectedUser && (
+            <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 h-[60px] flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden">
+                    {selectedUser?.avatar_url ? (
+                      <img
+                        src={selectedUser.avatar_url}
+                        alt={selectedUser?.full_name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xs font-semibold text-gray-600">
+                        {(selectedUser?.full_name || selectedUser?.email || 'U').charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  {onlineUsers.has(selectedUser?.id) && (
+                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-gray-900 text-sm">
+                    {selectedUser?.full_name || selectedUser?.email}
+                  </h3>
+                  {onlineUsers.has(selectedUser?.id) && (
+                    <span className="text-xs text-green-600">● Online</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handleWebRTCCall(selectedUser.id)}
+                  className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Start video call"
+                >
+                  <Video className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleVoiceCall(selectedUser.id)}
+                  className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Start voice call"
+                >
+                  <Phone className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {activeConversation && selectedUser ? (
             <>
               {/* Chat Header - Only on desktop */}
@@ -427,7 +427,7 @@ const MessageCenter = () => {
               </div>
 
               {/* Messages - Modern mobile design */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-gray-50 to-white">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-gray-50 to-white h-[calc(100%-60px)] md:h-[calc(100%-76px)]">
                 <AnimatePresence>
                   {messages.map((message, index) => {
                     const isOwn = message.sender_id === user?.id;
