@@ -6,10 +6,48 @@ export const useWebRTC = (targetUserId) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState(null);
-  const [callType, setCallType] = useState('video'); // 'video' or 'voice'
+  const [callType, setCallType] = useState('video');
+  const [isCallInitiated, setIsCallInitiated] = useState(false);
+  const [incomingCall, setIncomingCall] = useState(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const localStream = useRef(null);
+  const peerConnectionRef = useRef(null);
+
+  // Listen for incoming calls
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleIncomingCall = (data) => {
+      console.log('Incoming call:', data);
+      setIncomingCall(data);
+    };
+
+    const handleCallInitiated = (data) => {
+      console.log('Call initiated:', data);
+      setIsCallInitiated(true);
+    };
+
+    const handleCallResponse = (data) => {
+      console.log('Call response:', data);
+      if (data.accepted) {
+        setIsConnected(true);
+      } else {
+        setError('Call was rejected');
+        setIsConnecting(false);
+      }
+    };
+
+    socket.on('incoming_call', handleIncomingCall);
+    socket.on('call_initiated', handleCallInitiated);
+    socket.on('call_response', handleCallResponse);
+
+    return () => {
+      socket.off('incoming_call', handleIncomingCall);
+      socket.off('call_initiated', handleCallInitiated);
+      socket.off('call_response', handleCallResponse);
+    };
+  }, [socket]);
 
   // Initialize WebRTC connection
   const startConnection = async (type = 'video') => {
@@ -17,17 +55,80 @@ export const useWebRTC = (targetUserId) => {
 
     setCallType(type);
     setIsConnecting(true);
+    setIsConnected(false);
+    setError(null);
+    setIsCallInitiated(false);
+    setIncomingCall(null);
+
+    try {
+      // Notify the target user about the incoming call
+      socket.emit('initiate_call', {
+        targetUserId,
+        callType: type
+      });
+
+      // Wait for call initiation confirmation or timeout
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Call initiation timeout'));
+        }, 10000); // 10 second timeout
+
+        const handleInitiated = () => {
+          clearTimeout(timeout);
+          socket.off('call_initiated', handleInitiated);
+          resolve();
+        };
+
+        socket.on('call_initiated', handleInitiated);
+      });
+
+      console.log(`Call initiated successfully for ${type}`);
+    } catch (err) {
+      setError('Failed to initiate call');
+      console.error('Call initiation error:', err);
+      setIsConnecting(false);
+    }
+  };
+
+  // Accept incoming call
+  const acceptCall = async () => {
+    if (!incomingCall) return;
+
+    setIsConnecting(true);
     setError(null);
 
     try {
-      await initiateWebRTCConnection(targetUserId, type);
+      await initiateWebRTCConnection(targetUserId, incomingCall.callType);
+
+      // Notify caller that call was accepted
+      socket.emit('call_response', {
+        targetUserId: incomingCall.from,
+        accepted: true,
+        callType: incomingCall.callType
+      });
+
+      setIncomingCall(null);
       setIsConnected(true);
     } catch (err) {
-      setError('Failed to establish WebRTC connection');
-      console.error('WebRTC connection error:', err);
+      setError('Failed to accept call');
+      console.error('Call acceptance error:', err);
     } finally {
       setIsConnecting(false);
     }
+  };
+
+  // Reject incoming call
+  const rejectCall = () => {
+    if (!incomingCall) return;
+
+    socket.emit('call_response', {
+      targetUserId: incomingCall.from,
+      accepted: false,
+      callType: incomingCall.callType
+    });
+
+    setIncomingCall(null);
+    setError('Call rejected');
   };
 
   // Get user media based on call type
@@ -66,6 +167,7 @@ export const useWebRTC = (targetUserId) => {
 
         // Set up remote stream handling
         peerConnection.ontrack = (event) => {
+          console.log('Received remote stream:', event.streams[0]);
           if (remoteVideoRef.current && event.streams[0]) {
             remoteVideoRef.current.srcObject = event.streams[0];
           }
@@ -94,6 +196,7 @@ export const useWebRTC = (targetUserId) => {
 
         // Set up remote stream handling (audio only)
         peerConnection.ontrack = (event) => {
+          console.log('Received remote stream:', event.streams[0]);
           if (remoteVideoRef.current && event.streams[0]) {
             remoteVideoRef.current.srcObject = event.streams[0];
           }
@@ -150,6 +253,9 @@ export const useWebRTC = (targetUserId) => {
     }
 
     setIsConnected(false);
+    setIsConnecting(false);
+    setIsCallInitiated(false);
+    setIncomingCall(null);
     setCallType('video');
   };
 
@@ -171,6 +277,8 @@ export const useWebRTC = (targetUserId) => {
     isConnecting,
     error,
     callType,
+    isCallInitiated,
+    incomingCall,
 
     // Media refs
     localVideoRef,
@@ -178,6 +286,8 @@ export const useWebRTC = (targetUserId) => {
 
     // Actions
     startConnection,
+    acceptCall,
+    rejectCall,
     startVideoCall,
     startVoiceCall,
     endCall,

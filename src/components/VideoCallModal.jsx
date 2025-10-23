@@ -19,9 +19,13 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
     isConnecting,
     error,
     callType,
+    isCallInitiated,
+    incomingCall,
     localVideoRef,
     remoteVideoRef,
     startConnection,
+    acceptCall,
+    rejectCall,
     startVideoCall,
     endCall,
     toggleVideo,
@@ -46,10 +50,11 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
       interval = setInterval(() => {
         setDuration(prev => prev + 1);
       }, 1000);
+    } else {
+      setDuration(0);
     }
     return () => {
       if (interval) clearInterval(interval);
-      setDuration(0);
     };
   }, [isConnected]);
 
@@ -81,6 +86,65 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Handle incoming call
+  if (incomingCall && incomingCall.callType === 'video') {
+    return (
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+        >
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            className="bg-gray-900 rounded-2xl overflow-hidden w-full max-w-md p-6"
+          >
+            {/* Incoming Call Header */}
+            <div className="text-center mb-6">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden mx-auto mb-4">
+                {incomingCall.callerData?.avatar_url ? (
+                  <img
+                    src={incomingCall.callerData.avatar_url}
+                    alt={incomingCall.callerData?.full_name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl font-semibold text-gray-600">
+                    {(incomingCall.callerData?.full_name || incomingCall.callerData?.email || 'U').charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <h3 className="text-white text-xl font-semibold mb-2">
+                {incomingCall.callerData?.full_name || incomingCall.callerData?.email}
+              </h3>
+              <p className="text-gray-400">Incoming video call...</p>
+            </div>
+
+            {/* Call Controls */}
+            <div className="flex items-center justify-center space-x-4">
+              <button
+                onClick={rejectCall}
+                className="p-4 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200"
+              >
+                <PhoneOff className="w-6 h-6" />
+              </button>
+
+              <button
+                onClick={acceptCall}
+                className="p-4 rounded-full bg-green-500 hover:bg-green-600 text-white transition-all duration-200"
+              >
+                <Video className="w-6 h-6" />
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
 
   if (!isOpen) return null;
 
@@ -190,7 +254,7 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
             )}
 
             {/* Start Call Button */}
-            {!isConnected && !isConnecting && (
+            {!isConnected && !isConnecting && isCallInitiated && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <button
                   onClick={handleStartVideoCall}

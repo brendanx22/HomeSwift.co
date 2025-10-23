@@ -43,7 +43,7 @@ export const MessagingProvider = ({ children }) => {
     }
   };
 
-  // Load conversations
+      // Load conversations
   const loadConversations = async () => {
     try {
       const token = await getAuthToken();
@@ -52,7 +52,7 @@ export const MessagingProvider = ({ children }) => {
         return;
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
       const response = await fetch(`${apiUrl}/api/messages/conversations`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -97,8 +97,8 @@ export const MessagingProvider = ({ children }) => {
           return;
         }
 
-        // Use environment variable or fallback to localhost
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        // Use environment variable or fallback to HTTPS production
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
 
         const newSocket = io(apiUrl, {
           auth: {
@@ -170,19 +170,20 @@ export const MessagingProvider = ({ children }) => {
           await handleWebRTCIceCandidate(data);
         });
 
-        // User status events
-        newSocket.on('user_online', (data) => {
-          console.log('User online:', data);
-          setOnlineUsers(prev => new Map(prev.set(data.userId, data.userData)));
+        // Call events
+        newSocket.on('incoming_call', (data) => {
+          console.log('Incoming call:', data);
+          // This will be handled by the useWebRTC hook
         });
 
-        newSocket.on('user_offline', (data) => {
-          console.log('User offline:', data);
-          setOnlineUsers(prev => {
-            const newMap = new Map(prev);
-            newMap.delete(data.userId);
-            return newMap;
-          });
+        newSocket.on('call_initiated', (data) => {
+          console.log('Call initiated:', data);
+          // This will be handled by the useWebRTC hook
+        });
+
+        newSocket.on('call_response', (data) => {
+          console.log('Call response:', data);
+          // This will be handled by the useWebRTC hook
         });
 
         // Typing indicators
@@ -396,7 +397,7 @@ export const MessagingProvider = ({ children }) => {
         return;
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
       const response = await fetch(`${apiUrl}/api/messages/conversations/${conversationId}/messages`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -428,7 +429,7 @@ export const MessagingProvider = ({ children }) => {
         return;
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
       const response = await fetch(`${apiUrl}/api/messages/conversations/${conversationId}/messages`, {
         method: 'POST',
         headers: {
@@ -458,7 +459,7 @@ export const MessagingProvider = ({ children }) => {
         return;
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
       const response = await fetch(`${apiUrl}/api/messages/conversations`, {
         method: 'POST',
         headers: {

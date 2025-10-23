@@ -730,7 +730,7 @@ const signup = async (userData) => {
         // Get backend JWT token for API calls
         try {
           console.log('🔐 Getting backend JWT token...');
-          const backendResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/signin`, {
+          const backendResponse = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.homeswift.co'}/api/auth/signin`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

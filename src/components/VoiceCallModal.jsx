@@ -18,7 +18,11 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
     isConnecting,
     error,
     callType,
+    isCallInitiated,
+    incomingCall,
     startConnection,
+    acceptCall,
+    rejectCall,
     startVoiceCall,
     endCall,
     toggleAudio,
@@ -41,10 +45,11 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
       interval = setInterval(() => {
         setDuration(prev => prev + 1);
       }, 1000);
+    } else {
+      setDuration(0);
     }
     return () => {
       if (interval) clearInterval(interval);
-      setDuration(0);
     };
   }, [isConnected]);
 
@@ -71,6 +76,63 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Handle incoming call
+  if (incomingCall && incomingCall.callType === 'voice') {
+    return (
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+        >
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            className="bg-gray-900 rounded-2xl overflow-hidden w-full max-w-md p-6"
+          >
+            {/* Incoming Call Header */}
+            <div className="text-center mb-6">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden mx-auto mb-4">
+                {incomingCall.callerData?.avatar_url ? (
+                  <img
+                    src={incomingCall.callerData.avatar_url}
+                    alt={incomingCall.callerData?.full_name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-10 h-10 text-gray-600" />
+                )}
+              </div>
+              <h3 className="text-white text-xl font-semibold mb-2">
+                {incomingCall.callerData?.full_name || incomingCall.callerData?.email}
+              </h3>
+              <p className="text-gray-400">Incoming voice call...</p>
+            </div>
+
+            {/* Call Controls */}
+            <div className="flex items-center justify-center space-x-4">
+              <button
+                onClick={rejectCall}
+                className="p-4 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200"
+              >
+                <PhoneOff className="w-6 h-6" />
+              </button>
+
+              <button
+                onClick={acceptCall}
+                className="p-4 rounded-full bg-green-500 hover:bg-green-600 text-white transition-all duration-200"
+              >
+                <Mic className="w-6 h-6" />
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
 
   if (!isOpen) return null;
 
@@ -168,7 +230,7 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
               </p>
 
               {/* Connection Status */}
-              {!isConnected && !isConnecting && (
+              {!isConnected && !isConnecting && isCallInitiated && (
                 <div className="mb-8">
                   <button
                     onClick={handleStartVoiceCall}
@@ -176,6 +238,14 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
                   >
                     Start Voice Call
                   </button>
+                </div>
+              )}
+
+              {/* Connecting Animation */}
+              {!isConnected && isConnecting && (
+                <div className="flex items-center justify-center space-x-2 mb-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-600 border-t-[#FF6B35]"></div>
+                  <span className="text-white">Connecting...</span>
                 </div>
               )}
 
@@ -189,14 +259,6 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
                   >
                     Dismiss
                   </button>
-                </div>
-              )}
-
-              {/* Connecting Animation */}
-              {!isConnected && isConnecting && (
-                <div className="flex items-center justify-center space-x-2 mb-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-600 border-t-[#FF6B35]"></div>
-                  <span className="text-white">Connecting...</span>
                 </div>
               )}
             </div>

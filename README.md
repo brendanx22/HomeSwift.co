@@ -63,13 +63,30 @@ A modern property management platform built with React, Vite, Tailwind CSS, and 
 
 3. **Set up environment variables**
 
-   - Create a `.env` file in the root directory
-   - Copy the contents from `.env.example` and update with your Supabase credentials
+   The project includes two environment configurations:
+
+   **For Production (default)**:
+   - The `.env` file is configured for production with HTTPS URLs
+   - Uses `https://api.homeswift.co` for backend API calls
+
+   **For Development (localhost)**:
+   - Copy `.env.development` to `.env` for local development
+   - Uses `http://localhost:5000` for backend API calls
+   - Make sure your backend server is running locally
+
+   **Required Environment Variables**:
 
    ```env
-   VITE_SUPABASE_URL=your-supabase-url
-   VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
-   VITE_API_URL=http://localhost:5000
+   # Frontend (Vite) - used by client
+   VITE_BACKEND_URL=https://api.homeswift.co  # Production backend URL
+   VITE_API_URL=https://api.homeswift.co      # API URL for messaging
+   VITE_SUPABASE_URL=your-supabase-url        # Your Supabase project URL
+   VITE_SUPABASE_ANON_KEY=your-supabase-key   # Your Supabase anon key
+
+   # Backend Configuration
+   PORT=5000
+   SUPABASE_URL=your-supabase-url
+   SUPABASE_ANON_KEY=your-supabase-anon-key
    ```
 
 4. **Set up Supabase**
@@ -195,13 +212,40 @@ The database is hosted on Supabase for easy scaling and real-time features.
 
 ## Environment Variables
 
-| Variable                 | Description                   | Required |
-| ------------------------ | ----------------------------- | -------- |
-| `VITE_SUPABASE_URL`      | Your Supabase project URL     | Yes      |
-| `VITE_SUPABASE_ANON_KEY` | Your Supabase anon/public key | Yes      |
-| `VITE_API_URL`           | Backend API URL for messaging | Yes      |
-| `JWT_SECRET`             | JWT signing secret (backend)  | Yes      |
-| `SUPABASE_JWT_SECRET`    | Supabase JWT secret (backend) | Yes      |
+The project supports both development and production environments:
+
+### Production Environment (.env)
+```env
+# Frontend (Vite) - used by client
+VITE_BACKEND_URL=https://api.homeswift.co
+VITE_API_URL=https://api.homeswift.co
+VITE_SUPABASE_URL=your-supabase-project-url
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+VITE_APP_URL=https://homeswift.co
+```
+
+### Development Environment (.env.development)
+```env
+# Frontend (Vite) - used by client
+VITE_BACKEND_URL=http://localhost:5000
+VITE_API_URL=http://localhost:5000
+VITE_SUPABASE_URL=your-supabase-project-url
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+VITE_APP_URL=http://localhost:3000
+```
+
+### Backend Environment Variables
+```env
+PORT=5000
+NODE_ENV=production|development
+SUPABASE_URL=your-supabase-url
+SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-key
+DATABASE_URL=your-database-connection-string
+JWT_SECRET=your-jwt-secret
+```
+
+**Important**: Never commit sensitive environment variables to version control. Use `.env.local` for local overrides.
 
 ## Contributing
 

@@ -236,26 +236,60 @@ try {
 
       // Handle WebRTC signaling
       socket.on('webrtc_offer', (data) => {
-        log(`WebRTC offer from ${userId} to ${data.targetUserId}`);
+        log(`WebRTC offer from ${userId} to ${data.targetUserId} (${data.callType || 'video'})`);
         socket.to(data.targetUserId).emit('webrtc_offer', {
           from: userId,
-          offer: data.offer
+          offer: data.offer,
+          callType: data.callType || 'video'
         });
       });
 
       socket.on('webrtc_answer', (data) => {
-        log(`WebRTC answer from ${userId} to ${data.targetUserId}`);
+        log(`WebRTC answer from ${userId} to ${data.targetUserId} (${data.callType || 'video'})`);
         socket.to(data.targetUserId).emit('webrtc_answer', {
           from: userId,
-          answer: data.answer
+          answer: data.answer,
+          callType: data.callType || 'video'
         });
       });
 
       socket.on('webrtc_ice_candidate', (data) => {
-        log(`WebRTC ICE candidate from ${userId} to ${data.targetUserId}`);
+        log(`WebRTC ICE candidate from ${userId} to ${data.targetUserId} (${data.callType || 'video'})`);
         socket.to(data.targetUserId).emit('webrtc_ice_candidate', {
           from: userId,
-          candidate: data.candidate
+          candidate: data.candidate,
+          callType: data.callType || 'video'
+        });
+      });
+
+      // Handle call initiation (notify target user)
+      socket.on('initiate_call', (data) => {
+        const { targetUserId, callType } = data;
+        log(`Call initiation from ${userId} to ${targetUserId} (${callType})`);
+
+        // Notify target user about incoming call
+        socket.to(targetUserId).emit('incoming_call', {
+          from: userId,
+          callType,
+          callerData: socket.user
+        });
+
+        // Confirm to caller that notification was sent
+        socket.emit('call_initiated', {
+          targetUserId,
+          callType
+        });
+      });
+
+      // Handle call response (accept/reject)
+      socket.on('call_response', (data) => {
+        const { targetUserId, accepted, callType } = data;
+        log(`Call response from ${userId} to ${targetUserId}: ${accepted ? 'accepted' : 'rejected'}`);
+
+        socket.to(targetUserId).emit('call_response', {
+          from: userId,
+          accepted,
+          callType
         });
       });
 
