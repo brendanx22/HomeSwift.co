@@ -85,17 +85,17 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
         >
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.8, opacity: 0 }}
-            className="bg-gray-900 rounded-2xl overflow-hidden w-full max-w-md p-6"
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            className="bg-white rounded-3xl overflow-hidden w-full max-w-md shadow-2xl"
           >
             {/* Incoming Call Header */}
-            <div className="text-center mb-6">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden mx-auto mb-4">
+            <div className="bg-gradient-to-r from-[#FF6B35] to-orange-500 p-6 text-center">
+              <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center overflow-hidden mx-auto mb-4 backdrop-blur-sm">
                 {incomingCall.callerData?.avatar_url ? (
                   <img
                     src={incomingCall.callerData.avatar_url}
@@ -103,29 +103,35 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User className="w-10 h-10 text-gray-600" />
+                  <User className="w-10 h-10 text-white" />
                 )}
               </div>
-              <h3 className="text-white text-xl font-semibold mb-2">
+              <h3 className="text-white text-xl font-bold mb-2">
                 {incomingCall.callerData?.full_name || incomingCall.callerData?.email}
               </h3>
-              <p className="text-gray-400">Incoming voice call...</p>
+              <p className="text-white/90 text-sm">Incoming voice call</p>
             </div>
 
             {/* Call Controls */}
-            <div className="flex items-center justify-center space-x-4">
+            <div className="p-6 flex items-center justify-center space-x-6">
               <button
                 onClick={rejectCall}
-                className="p-4 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200"
+                className="flex flex-col items-center space-y-2 p-4 rounded-full bg-red-50 hover:bg-red-100 text-red-600 transition-all duration-200"
               >
-                <PhoneOff className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center">
+                  <PhoneOff className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-sm font-medium">Decline</span>
               </button>
 
               <button
                 onClick={acceptCall}
-                className="p-4 rounded-full bg-green-500 hover:bg-green-600 text-white transition-all duration-200"
+                className="flex flex-col items-center space-y-2 p-4 rounded-full bg-green-50 hover:bg-green-100 text-green-600 transition-all duration-200"
               >
-                <Mic className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
+                  <Mic className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-sm font-medium">Accept</span>
               </button>
             </div>
           </motion.div>
@@ -142,20 +148,20 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       >
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.8, opacity: 0 }}
-          className={`bg-gray-900 rounded-2xl overflow-hidden ${
-            isFullscreen ? 'w-full h-full' : 'w-full max-w-md h-[500px]'
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          className={`bg-white rounded-3xl overflow-hidden shadow-2xl ${
+            isFullscreen ? 'w-full h-full' : 'w-full max-w-md h-[600px]'
           }`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 bg-gray-800">
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[#FF6B35] to-orange-500 text-white">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden">
+              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center overflow-hidden backdrop-blur-sm">
                 {targetUser?.avatar_url ? (
                   <img
                     src={targetUser.avatar_url}
@@ -163,21 +169,21 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User className="w-6 h-6 text-gray-600" />
+                  <User className="w-6 h-6 text-white" />
                 )}
               </div>
               <div>
-                <h3 className="text-white font-semibold">
+                <h3 className="font-bold text-lg">
                   {targetUser?.full_name || targetUser?.email}
                 </h3>
                 <div className="flex items-center space-x-2">
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-white/90 text-sm">
                     {isConnected ? formatDuration(duration) : isConnecting ? 'Connecting...' : 'Voice Call'}
                   </p>
                   {isConnected && (
                     <div className="flex items-center space-x-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className="text-green-400 text-xs">Connected</span>
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <span className="text-green-200 text-xs font-medium">Connected</span>
                     </div>
                   )}
                 </div>
@@ -187,13 +193,13 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all duration-200"
               >
                 {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
               </button>
               <button
                 onClick={onClose}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all duration-200"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -201,10 +207,10 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
           </div>
 
           {/* Call Area */}
-          <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900 p-8">
+          <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-8">
             <div className="text-center">
               {/* Large Avatar */}
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden mx-auto mb-8 shadow-2xl">
+              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-white to-gray-100 flex items-center justify-center overflow-hidden mx-auto mb-8 shadow-2xl border-4 border-white">
                 {targetUser?.avatar_url ? (
                   <img
                     src={targetUser.avatar_url}
@@ -212,29 +218,31 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User className="w-16 h-16 text-gray-600" />
+                  <User className="w-16 h-16 text-gray-400" />
                 )}
               </div>
 
               {/* User Info */}
-              <h2 className="text-2xl font-bold text-white mb-2">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
                 {targetUser?.full_name || targetUser?.email}
               </h2>
-              <p className="text-gray-400 mb-8">
+              <div className="flex items-center justify-center space-x-2 mb-8">
                 {targetUser?.user_type && (
-                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-2">
+                  <span className="bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">
                     {targetUser.user_type}
                   </span>
                 )}
-                {isConnected ? 'Connected' : isConnecting ? 'Connecting...' : 'Voice Call'}
-              </p>
+                <span className="text-gray-500 text-sm">
+                  {isConnected ? 'Connected' : isConnecting ? 'Connecting...' : 'Voice Call'}
+                </span>
+              </div>
 
               {/* Connection Status */}
               {!isConnected && !isConnecting && isCallInitiated && (
                 <div className="mb-8">
                   <button
                     onClick={handleStartVoiceCall}
-                    className="px-8 py-3 bg-[#FF6B35] text-white rounded-full font-semibold hover:bg-[#e85e2f] transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+                    className="px-8 py-3 bg-[#FF6B35] text-white rounded-full font-semibold hover:bg-[#e85e2f] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                   >
                     Start Voice Call
                   </button>
@@ -243,9 +251,9 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
 
               {/* Connecting Animation */}
               {!isConnected && isConnecting && (
-                <div className="flex items-center justify-center space-x-2 mb-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-600 border-t-[#FF6B35]"></div>
-                  <span className="text-white">Connecting...</span>
+                <div className="flex items-center justify-center space-x-3 mb-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-[#FF6B35]"></div>
+                  <span className="text-gray-700 font-medium">Connecting...</span>
                 </div>
               )}
 
@@ -265,7 +273,7 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
           </div>
 
           {/* Controls */}
-          <div className="flex items-center justify-center space-x-6 p-6 bg-gray-800">
+          <div className="flex items-center justify-center space-x-6 p-6 bg-gray-50">
             {/* Audio Toggle */}
             <button
               onClick={handleToggleAudio}

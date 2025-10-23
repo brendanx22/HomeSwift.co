@@ -95,17 +95,17 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
         >
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.8, opacity: 0 }}
-            className="bg-gray-900 rounded-2xl overflow-hidden w-full max-w-md p-6"
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            className="bg-white rounded-3xl overflow-hidden w-full max-w-md shadow-2xl"
           >
             {/* Incoming Call Header */}
-            <div className="text-center mb-6">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden mx-auto mb-4">
+            <div className="bg-gradient-to-r from-[#FF6B35] to-orange-500 p-6 text-center">
+              <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center overflow-hidden mx-auto mb-4 backdrop-blur-sm">
                 {incomingCall.callerData?.avatar_url ? (
                   <img
                     src={incomingCall.callerData.avatar_url}
@@ -113,31 +113,37 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-2xl font-semibold text-gray-600">
+                  <span className="text-2xl font-semibold text-white">
                     {(incomingCall.callerData?.full_name || incomingCall.callerData?.email || 'U').charAt(0).toUpperCase()}
                   </span>
                 )}
               </div>
-              <h3 className="text-white text-xl font-semibold mb-2">
+              <h3 className="text-white text-xl font-bold mb-2">
                 {incomingCall.callerData?.full_name || incomingCall.callerData?.email}
               </h3>
-              <p className="text-gray-400">Incoming video call...</p>
+              <p className="text-white/90 text-sm">Incoming video call</p>
             </div>
 
             {/* Call Controls */}
-            <div className="flex items-center justify-center space-x-4">
+            <div className="p-6 flex items-center justify-center space-x-6">
               <button
                 onClick={rejectCall}
-                className="p-4 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200"
+                className="flex flex-col items-center space-y-2 p-4 rounded-full bg-red-50 hover:bg-red-100 text-red-600 transition-all duration-200"
               >
-                <PhoneOff className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center">
+                  <PhoneOff className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-sm font-medium">Decline</span>
               </button>
 
               <button
                 onClick={acceptCall}
-                className="p-4 rounded-full bg-green-500 hover:bg-green-600 text-white transition-all duration-200"
+                className="flex flex-col items-center space-y-2 p-4 rounded-full bg-green-50 hover:bg-green-100 text-green-600 transition-all duration-200"
               >
-                <Video className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
+                  <Video className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-sm font-medium">Accept</span>
               </button>
             </div>
           </motion.div>
@@ -154,20 +160,20 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       >
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.8, opacity: 0 }}
-          className={`bg-gray-900 rounded-2xl overflow-hidden ${
-            isFullscreen ? 'w-full h-full' : 'w-full max-w-4xl h-[600px]'
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          className={`bg-white rounded-3xl overflow-hidden shadow-2xl ${
+            isFullscreen ? 'w-full h-full' : 'w-full max-w-4xl h-[700px]'
           }`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 bg-gray-800">
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[#FF6B35] to-orange-500 text-white">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden">
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden backdrop-blur-sm">
                 {targetUser?.avatar_url ? (
                   <img
                     src={targetUser.avatar_url}
@@ -175,23 +181,23 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-sm font-semibold text-gray-600">
+                  <span className="text-sm font-semibold text-white">
                     {(targetUser?.full_name || targetUser?.email || 'U').charAt(0).toUpperCase()}
                   </span>
                 )}
               </div>
               <div>
-                <h3 className="text-white font-semibold">
+                <h3 className="font-bold text-lg">
                   {targetUser?.full_name || targetUser?.email}
                 </h3>
                 <div className="flex items-center space-x-2">
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-white/90 text-sm">
                     {isConnected ? formatDuration(duration) : isConnecting ? 'Connecting...' : 'Video Call'}
                   </p>
                   {isConnected && (
                     <div className="flex items-center space-x-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className="text-green-400 text-xs">Connected</span>
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <span className="text-green-200 text-xs font-medium">Connected</span>
                     </div>
                   )}
                 </div>
@@ -201,13 +207,13 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all duration-200"
               >
                 {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
               </button>
               <button
                 onClick={onClose}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all duration-200"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -215,7 +221,7 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
           </div>
 
           {/* Video Area */}
-          <div className="relative flex-1 bg-black">
+          <div className="relative flex-1 bg-gray-900">
             {/* Remote Video (Main) */}
             <video
               ref={remoteVideoRef}
@@ -225,7 +231,7 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
             />
 
             {/* Local Video (Small overlay) */}
-            <div className="absolute top-4 right-4 w-32 h-24 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-600">
+            <div className="absolute top-4 right-4 w-32 h-24 bg-gray-800 rounded-xl overflow-hidden border-2 border-white shadow-lg">
               <video
                 ref={localVideoRef}
                 autoPlay
@@ -242,13 +248,13 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
 
             {/* Connection Status */}
             {!isConnected && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
+              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 rounded-2xl">
                 <div className="text-center text-white">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-[#FF6B35] mx-auto mb-4"></div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/30 border-t-[#FF6B35] mx-auto mb-4"></div>
                   <p className="text-lg font-semibold">
                     {isConnecting ? 'Connecting...' : 'Starting video call...'}
                   </p>
-                  <p className="text-gray-400 mt-2">Please wait</p>
+                  <p className="text-white/70 mt-2">Please wait</p>
                 </div>
               </div>
             )}
@@ -258,7 +264,7 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
               <div className="absolute inset-0 flex items-center justify-center">
                 <button
                   onClick={handleStartVideoCall}
-                  className="px-8 py-3 bg-[#FF6B35] text-white rounded-full font-semibold hover:bg-[#e85e2f] transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+                  className="px-8 py-3 bg-[#FF6B35] text-white rounded-full font-semibold hover:bg-[#e85e2f] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
                   Start Video Call
                 </button>
@@ -280,7 +286,7 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
           </div>
 
           {/* Controls */}
-          <div className="flex items-center justify-center space-x-6 p-6 bg-gray-800">
+          <div className="flex items-center justify-center space-x-6 p-6 bg-gray-50">
             {/* Video Toggle */}
             <button
               onClick={handleToggleVideo}

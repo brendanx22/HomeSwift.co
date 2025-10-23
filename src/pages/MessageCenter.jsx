@@ -15,8 +15,7 @@ import {
   ArrowLeft,
   Plus
 } from 'lucide-react';
-import { useMessaging } from '../contexts/MessagingContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useWebRTC } from '../hooks/useWebRTC';
 import VideoCallModal from '../components/VideoCallModal';
 import VoiceCallModal from '../components/VoiceCallModal';
 
@@ -39,6 +38,9 @@ const MessageCenter = () => {
     setSelectedUser
   } = useMessaging();
 
+  // WebRTC hook for handling incoming calls
+  const { incomingCall } = useWebRTC(null);
+
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showUserSearch, setShowUserSearch] = useState(false);
@@ -47,10 +49,16 @@ const MessageCenter = () => {
   const [showMobileNav, setShowMobileNav] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Scroll to bottom when new messages arrive
+  // Auto-open modal when incoming call is received
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (incomingCall) {
+      if (incomingCall.callType === 'video') {
+        setShowVideoCall(true);
+      } else if (incomingCall.callType === 'voice') {
+        setShowVoiceCall(true);
+      }
+    }
+  }, [incomingCall]);
 
   // Handle sending message
   const handleSendMessage = async (e) => {
