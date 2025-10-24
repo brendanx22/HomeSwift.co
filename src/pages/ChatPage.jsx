@@ -1823,7 +1823,7 @@ export default function ChatPage() {
                 >
                   <motion.div
                     animate={{
-                      background: showMenu
+                      background: showProfilePopup
                         ? "linear-gradient(45deg, #FF6B35, #e85e2f)"
                         : "linear-gradient(135deg, #FF6B35, #e85e2f)"
                     }}
@@ -1839,7 +1839,7 @@ export default function ChatPage() {
                     />
                   ) : (
                     <motion.span
-                      animate={{ rotate: showMenu ? 180 : 0 }}
+                      animate={{ rotate: showProfilePopup ? 180 : 0 }}
                       transition={{ duration: 0.2 }}
                       className="relative z-10"
                     >
