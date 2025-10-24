@@ -83,12 +83,15 @@ const MessageCenter = () => {
     );
 
     if (existingConversation) {
+      console.log('Opening existing conversation:', existingConversation.id, 'with user:', otherUser);
       setActiveConversation(existingConversation.id);
       setSelectedUser(otherUser);
       await loadMessages(existingConversation.id);
     } else {
+      console.log('Creating new conversation with user:', otherUser);
       const newConv = await createConversation(otherUser.id);
       if (newConv) {
+        console.log('New conversation created:', newConv.id);
         setActiveConversation(newConv.id);
         setSelectedUser(otherUser);
         await loadMessages(newConv.id);
@@ -317,76 +320,25 @@ const MessageCenter = () => {
           activeConversation ? 'flex' : 'hidden md:flex'
         }`}>
           {/* Mobile Chat Header - Adjusts height for mobile */}
-          {activeConversation && selectedUser && (
+          {activeConversation && (
             <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 h-[60px] flex items-center">
               <div className="flex items-center space-x-3 flex-1 min-w-0">
                 <button
                   onClick={() => {
+                    console.log('Back button clicked - clearing states');
                     setActiveConversation(null);
                     setSelectedUser(null);
                     setShowMobileNav(false);
                   }}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
+                  className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all duration-200 flex-shrink-0"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
 
-                <div className="relative flex-shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden">
-                    {selectedUser?.avatar_url ? (
-                      <img
-                        src={selectedUser.avatar_url}
-                        alt={selectedUser?.full_name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-xs font-semibold text-gray-600">
-                        {(selectedUser?.full_name || selectedUser?.email || 'U').charAt(0).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  {onlineUsers.has(selectedUser?.id) && (
-                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
-                  )}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-gray-900 text-sm truncate">
-                    {selectedUser?.full_name || selectedUser?.email}
-                  </h3>
-                  {onlineUsers.has(selectedUser?.id) && (
-                    <span className="text-xs text-green-600">● Online</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2 flex-shrink-0">
-                <button
-                  onClick={() => handleWebRTCCall(selectedUser.id)}
-                  className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Start video call"
-                >
-                  <Video className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleVoiceCall(selectedUser.id)}
-                  className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Start voice call"
-                >
-                  <Phone className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {activeConversation && selectedUser ? (
-            <>
-              {/* Chat Header - Only on desktop */}
-              <div className="hidden md:block bg-white border-b border-gray-200 p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="relative">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden">
+                {selectedUser && (
+                  <>
+                    <div className="relative flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden">
                         {selectedUser?.avatar_url ? (
                           <img
                             src={selectedUser.avatar_url}
@@ -394,36 +346,39 @@ const MessageCenter = () => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <span className="text-sm font-semibold text-gray-600">
+                          <span className="text-xs font-semibold text-gray-600">
                             {(selectedUser?.full_name || selectedUser?.email || 'U').charAt(0).toUpperCase()}
                           </span>
                         )}
                       </div>
                       {onlineUsers.has(selectedUser?.id) && (
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
                       )}
                     </div>
 
-                    <div>
-                      <h3 className="font-semibold text-gray-900 text-sm">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-gray-900 text-sm truncate">
                         {selectedUser?.full_name || selectedUser?.email}
                       </h3>
-                      <div className="flex items-center space-x-2">
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                          selectedUser?.user_type === 'landlord'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {selectedUser?.user_type}
-                        </span>
-                        {onlineUsers.has(selectedUser?.id) && (
-                          <span className="text-xs text-green-600 font-medium">● Online</span>
-                        )}
-                      </div>
+                      {onlineUsers.has(selectedUser?.id) && (
+                        <span className="text-xs text-green-600">● Online</span>
+                      )}
                     </div>
-                  </div>
+                  </>
+                )}
 
-                  <div className="flex items-center space-x-2">
+                {!selectedUser && (
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold text-gray-900 text-sm">
+                      Loading conversation...
+                    </h3>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center space-x-2 flex-shrink-0">
+                {selectedUser && (
+                  <>
                     <button
                       onClick={() => handleWebRTCCall(selectedUser.id)}
                       className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-lg transition-colors"
@@ -438,9 +393,90 @@ const MessageCenter = () => {
                     >
                       <Phone className="w-4 h-4" />
                     </button>
-                    <button className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-lg transition-colors">
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeConversation ? (
+            <>
+              {/* Chat Header - Only on desktop */}
+              <div className="hidden md:block bg-white border-b border-gray-200 p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    {selectedUser && (
+                      <>
+                        <div className="relative">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden">
+                            {selectedUser?.avatar_url ? (
+                              <img
+                                src={selectedUser.avatar_url}
+                                alt={selectedUser?.full_name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-sm font-semibold text-gray-600">
+                                {(selectedUser?.full_name || selectedUser?.email || 'U').charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          {onlineUsers.has(selectedUser?.id) && (
+                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                          )}
+                        </div>
+
+                        <div>
+                          <h3 className="font-semibold text-gray-900 text-sm">
+                            {selectedUser?.full_name || selectedUser?.email}
+                          </h3>
+                          <div className="flex items-center space-x-2">
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                              selectedUser?.user_type === 'landlord'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-green-100 text-green-800'
+                            }`}>
+                              {selectedUser?.user_type}
+                            </span>
+                            {onlineUsers.has(selectedUser?.id) && (
+                              <span className="text-xs text-green-600 font-medium">● Online</span>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {!selectedUser && (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-sm">
+                          Loading conversation...
+                        </h3>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    {selectedUser && (
+                      <>
+                        <button
+                          onClick={() => handleWebRTCCall(selectedUser.id)}
+                          className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-lg transition-colors"
+                          title="Start video call"
+                        >
+                          <Video className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleVoiceCall(selectedUser.id)}
+                          className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-lg transition-colors"
+                          title="Start voice call"
+                        >
+                          <Phone className="w-4 h-4" />
+                        </button>
+                        <button className="p-2 text-gray-600 hover:text-[#FF6B35] hover:bg-gray-100 rounded-lg transition-colors">
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
