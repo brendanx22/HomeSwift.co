@@ -18,6 +18,8 @@ import {
 import { useWebRTC } from '../hooks/useWebRTC';
 import VideoCallModal from '../components/VideoCallModal';
 import VoiceCallModal from '../components/VoiceCallModal';
+import { useAuth } from '../contexts/AuthContext';
+import { useMessaging } from '../contexts/MessagingContext';
 
 const MessageCenter = () => {
   const { user } = useAuth();
