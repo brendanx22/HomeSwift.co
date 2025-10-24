@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.homeswift.co/api';
+// Force HTTPS to avoid mixed content errors in production
+const API_URL = 'https://api.homeswift.co/api';
 
 // Create axios instance
 const api = axios.create({

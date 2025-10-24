@@ -20,7 +20,7 @@ const LandlordLoginPage = React.lazy(() => import('./pages/LandlordLoginPage'));
 import LandlordSignupPage from './pages/LandlordSignupPage';
 const LandlordDashboard = React.lazy(() => import('./pages/LandlordDashboard'));
 const LandlordSettings = React.lazy(() => import('./pages/LandlordSettings'));
-const ChatPage = React.lazy(() => import('./pages/ChatPageWithMessaging'));
+const ChatPage = React.lazy(() => import('./pages/ChatPage'));
 const Properties = React.lazy(() => import('./pages/Properties'));
 const About = React.lazy(() => import('./pages/About'));
 const Contact = React.lazy(() => import('./pages/Contact'));

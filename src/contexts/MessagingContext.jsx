@@ -52,7 +52,8 @@ export const MessagingProvider = ({ children }) => {
         return;
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
+      // Force HTTPS to avoid mixed content errors
+      const apiUrl = 'https://api.homeswift.co';
       const response = await fetch(`${apiUrl}/api/messages/conversations`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -97,8 +98,8 @@ export const MessagingProvider = ({ children }) => {
           return;
         }
 
-        // Use environment variable or fallback to HTTPS production
-        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
+        // Force HTTPS to avoid mixed content errors
+        const apiUrl = 'https://api.homeswift.co';
 
         const newSocket = io(apiUrl, {
           auth: {
@@ -397,7 +398,8 @@ export const MessagingProvider = ({ children }) => {
         return;
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
+      // Force HTTPS to avoid mixed content errors
+      const apiUrl = 'https://api.homeswift.co';
       const response = await fetch(`${apiUrl}/api/messages/conversations/${conversationId}/messages`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -429,7 +431,8 @@ export const MessagingProvider = ({ children }) => {
         return;
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
+      // Force HTTPS to avoid mixed content errors
+      const apiUrl = 'https://api.homeswift.co';
       const response = await fetch(`${apiUrl}/api/messages/conversations/${conversationId}/messages`, {
         method: 'POST',
         headers: {
@@ -459,7 +462,8 @@ export const MessagingProvider = ({ children }) => {
         return;
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
+      // Force HTTPS to avoid mixed content errors
+      const apiUrl = 'https://api.homeswift.co';
       const response = await fetch(`${apiUrl}/api/messages/conversations`, {
         method: 'POST',
         headers: {
