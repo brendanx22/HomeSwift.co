@@ -369,20 +369,30 @@ const signup = async (userData) => {
         setIsAuthenticated(false);
         return;
       }
+
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        const sUser = session?.user;
-        if (sUser?.id) {
-          setUser(sUser);
+        const hasData = await loadUserData();
+
+        if (!hasData && session?.user?.id) {
+          setUser(session.user);
           setIsAuthenticated(true);
-          localStorage.setItem('user', JSON.stringify({ id: sUser.id, email: sUser.email, ...sUser.user_metadata }));
-          await fetchUserRoles(sUser.id);
+          await fetchUserRoles(session.user.id);
+        }
+
+        if (session?.user?.id) {
+          await fetchUserRoles(session.user.id);
+        }
+
+        if (hasData) {
+          setIsAuthenticated(true);
         }
       }
     });
+
     return () => {
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [loadUserData]);
 
   useEffect(() => {
     if (!user?.id) return;
