@@ -9,10 +9,13 @@ const AuthCallback = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Get userType from URL parameters (for Google OAuth)
+  const userType = searchParams.get('userType');
+
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        console.log('Auth callback triggered');
+        console.log('Auth callback triggered with userType:', userType);
 
         // Give Supabase a moment to process the OAuth callback
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -34,17 +37,48 @@ const AuthCallback = () => {
           // Get user data
           const user = data.session.user;
 
+          // Calculate final user type first
+          const finalUserType = userType || user.user_metadata?.user_type || 'renter';
+
+          // Update user metadata with user_type if provided
+          if (userType && !user.user_metadata?.user_type) {
+            try {
+              const { error: updateError } = await supabase.auth.updateUser({
+                data: {
+                  ...user.user_metadata,
+                  user_type: userType
+                }
+              });
+
+              if (updateError) {
+                console.warn('Failed to update user metadata with user_type:', updateError);
+              } else {
+                console.log('Updated user metadata with user_type:', userType);
+                // Update local user object
+                user.user_metadata = {
+                  ...user.user_metadata,
+                  user_type: userType
+                };
+              }
+            } catch (updateError) {
+              console.warn('Error updating user metadata:', updateError);
+            }
+          }
+
           // Store user in localStorage for consistency
           const userData = {
             id: user.id,
             email: user.email,
-            ...user.user_metadata
+            user_metadata: {
+              ...user.user_metadata,
+              user_type: finalUserType // Ensure user_type is in metadata
+            }
           };
           localStorage.setItem('user', JSON.stringify(userData));
 
           // Try to get backend token for the authenticated user
           try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/auth/token`, {
+            const response = await fetch('https://api.homeswift.co/api/auth/token', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -75,12 +109,104 @@ const AuthCallback = () => {
             console.error('Error fetching user profile:', profileError);
           }
 
-          const userType = userProfile?.user_type || user.user_metadata?.user_type || 'renter';
+          // Handle role assignment based on user type
+          try {
+            // Check if user already has roles
+            const { data: existingRoles, error: rolesError } = await supabase
+              .from('user_roles')
+              .select('*')
+              .eq('user_id', user.id);
+
+            if (rolesError) {
+              console.error('Error fetching user roles:', rolesError);
+            }
+
+            console.log('Role assignment - finalUserType:', finalUserType);
+            console.log('Role assignment - userType parameter:', userType);
+            console.log('Role assignment - existingRoles:', existingRoles);
+
+            if (!existingRoles || existingRoles.length === 0) {
+              // Assign default role based on userType
+              console.log(`No roles found, assigning default ${finalUserType} role`);
+              try {
+                const { error: roleError } = await supabase.rpc('add_user_role', {
+                  p_user_id: user.id,
+                  p_role: finalUserType,
+                  p_is_primary: true
+                });
+
+                if (roleError) {
+                  console.error('RPC error assigning role:', roleError);
+                } else {
+                  console.log('✅ Successfully assigned role via RPC');
+                }
+              } catch (rpcError) {
+                console.error('Error in RPC role assignment:', rpcError);
+              }
+            } else {
+              console.log('User already has roles:', existingRoles);
+
+              // Check if the current primary role matches the expected role
+              const primaryRole = existingRoles.find(r => r.is_primary)?.role || existingRoles[0]?.role;
+
+              if (primaryRole !== finalUserType) {
+                console.log(`Primary role '${primaryRole}' doesn't match expected role '${finalUserType}'`);
+
+                // Update roles to make the expected role primary
+                if (existingRoles.some(r => r.role === finalUserType)) {
+                  // User has the role but it's not primary - use RPC function
+                  console.log(`🔄 Using RPC to set ${finalUserType} as primary role`);
+                  try {
+                    const { error: rpcError } = await supabase.rpc('set_primary_role', {
+                      user_id_param: user.id,
+                      role_name: finalUserType
+                    });
+
+                    if (rpcError) {
+                      console.error('RPC error setting primary role:', rpcError);
+                    } else {
+                      console.log('✅ Successfully set primary role via RPC');
+                    }
+                  } catch (rpcError) {
+                    console.error('Error in RPC role update:', rpcError);
+                  }
+                } else {
+                  // User doesn't have the expected role, add it
+                  console.log(`🔄 Adding new role ${finalUserType}`);
+                  try {
+                    const { error: rpcError } = await supabase.rpc('add_user_role', {
+                      p_user_id: user.id,
+                      p_role: finalUserType,
+                      p_is_primary: true
+                    });
+
+                    if (rpcError) {
+                      console.error('RPC error adding role:', rpcError);
+                    } else {
+                      console.log('✅ Successfully added role via RPC');
+                    }
+                  } catch (rpcError) {
+                    console.error('Error in RPC role add:', rpcError);
+                  }
+                }
+              } else {
+                console.log(`Primary role '${primaryRole}' already matches expected role '${finalUserType}'`);
+              }
+            }
+          } catch (roleError) {
+            console.error('Error handling user roles:', roleError);
+          }
 
           toast.success('Successfully authenticated!');
 
           // Redirect based on user type
-          const redirectPath = userType === 'landlord' ? '/landlord/dashboard' : '/chat';
+          const redirectPath = finalUserType === 'landlord' ? '/landlord/dashboard' : '/chat';
+
+          // Trigger AuthContext to re-check authentication state
+          window.dispatchEvent(new CustomEvent('auth-callback-complete', {
+            detail: { userType: finalUserType }
+          }));
+
           setTimeout(() => navigate(redirectPath), 2000);
         } else {
           console.log('No active session in callback');
@@ -110,13 +236,16 @@ const AuthCallback = () => {
               const userData = {
                 id: user.id,
                 email: user.email,
-                ...user.user_metadata
+                user_metadata: {
+                  ...user.user_metadata,
+                  user_type: userType || user.user_metadata?.user_type || 'renter' // Include user_type from parameter
+                }
               };
               localStorage.setItem('user', JSON.stringify(userData));
 
               // Try backend token
               try {
-                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/auth/token`, {
+                const response = await fetch('https://api.homeswift.co/api/auth/token', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ user_id: user.id }),
@@ -134,8 +263,14 @@ const AuthCallback = () => {
               }
 
               toast.success('Successfully authenticated!');
-              const userType = user.user_metadata?.user_type || 'renter';
-              const redirectPath = userType === 'landlord' ? '/landlord/dashboard' : '/chat';
+              const finalUserType = userType || user.user_metadata?.user_type || 'renter';
+              const redirectPath = finalUserType === 'landlord' ? '/landlord/dashboard' : '/chat';
+
+              // Trigger AuthContext to re-check authentication state
+              window.dispatchEvent(new CustomEvent('auth-callback-complete', {
+                detail: { userType: finalUserType }
+              }));
+
               setTimeout(() => navigate(redirectPath), 2000);
               return;
             }
@@ -154,7 +289,7 @@ const AuthCallback = () => {
     };
 
     handleAuthCallback();
-  }, [navigate]);
+  }, [navigate, userType]);
 
   if (loading) {
     return (

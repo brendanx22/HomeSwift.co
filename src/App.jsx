@@ -406,7 +406,7 @@ const AppLayout = () => {
               element={
                 !isAuthenticated || new URLSearchParams(location.search).get('from') === 'logout' ? (
                   <LoginPage />
-                ) : user?.user_type === 'landlord' ? (
+                ) : currentRole === 'landlord' ? (
                   <Navigate to="/landlord/dashboard" replace />
                 ) : (
                   <Navigate to="/chat" replace />
@@ -419,7 +419,7 @@ const AppLayout = () => {
               element={
                 !isAuthenticated ? (
                   <SignupPage />
-                ) : user?.user_type === 'landlord' ? (
+                ) : currentRole === 'landlord' ? (
                   <Navigate to="/landlord/dashboard" replace />
                 ) : (
                   <Navigate to="/chat" replace />

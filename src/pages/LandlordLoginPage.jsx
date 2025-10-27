@@ -18,8 +18,8 @@ const LandlordLoginPage = () => {
   const [showResendVerification, setShowResendVerification] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [searchParams] = useSearchParams();
-  
-  const { login, isAuthenticated } = useAuth();
+
+  const { login, googleLogin, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/landlord/dashboard';
@@ -55,7 +55,7 @@ const LandlordLoginPage = () => {
   useEffect(() => {
     const { state } = location;
     if (state?.verified) {
-      setIsVerified(true);
+      toast.success('Email verified successfully! You can now log in.');
       // Clear the state to prevent showing the message again
       navigate(location.pathname, { replace: true, state: {} });
     }
@@ -66,8 +66,16 @@ const LandlordLoginPage = () => {
     setErrors({});
 
     try {
-      // Show toast notification that Google OAuth is not available
-      toast.error('Google sign-in is currently not available. Please use email and password to sign in.');
+      console.log('Starting Google OAuth for landlord');
+
+      const result = await googleLogin('landlord');
+
+      if (result.success) {
+        toast.success('Redirecting to Google...');
+        // The redirect will be handled by Supabase OAuth
+      } else {
+        toast.error(result.error || 'Google sign-in failed');
+      }
 
       setGoogleLoading(false);
     } catch (error) {
@@ -119,7 +127,7 @@ const LandlordLoginPage = () => {
     if (resendCooldown > 0) return;
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/resend-verification', {
+      const response = await fetch('https://api.homeswift.co/api/auth/resend-verification', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

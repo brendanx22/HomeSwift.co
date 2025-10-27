@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 export default function SignupPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signup: signUp, isAuthenticated, loading: authLoading, checkEmailExists } = useAuth();
+  const { signup: signUp, googleLogin, isAuthenticated, loading: authLoading, checkEmailExists } = useAuth();
   
   // Determine user type from localStorage first, then URL
   const [userType, setUserType] = useState('renter');
@@ -355,8 +355,16 @@ export default function SignupPage() {
       setGoogleLoading(true);
       setError('');
 
-      // Show toast notification that Google OAuth is not available
-      toast.error('Google sign-up is currently not available. Please use email and password to create your account.');
+      console.log('Starting Google OAuth signup with userType:', userType);
+
+      const result = await googleLogin(userType);
+
+      if (result.success) {
+        toast.success('Redirecting to Google...');
+        // The redirect will be handled by Supabase OAuth
+      } else {
+        toast.error(result.error || 'Google sign-up failed');
+      }
 
       setGoogleLoading(false);
     } catch (err) {
@@ -569,7 +577,7 @@ export default function SignupPage() {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="w-full bg-white border border-gray-400/50 rounded-[2rem] pl-12 pr-4 py-4 text-[#2C3E50] placeholder-[#2C3E50]/60 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
+                    className="w-full bg-transparent border border-gray-400/50 rounded-[2rem] pl-12 pr-4 py-4 text-white placeholder-gray-400 focus:outline-none focus:border-gray-300 focus:bg-white/5 transition-all"
                     placeholder="First name"
                     autoComplete="given-name"
                     required
@@ -587,7 +595,7 @@ export default function SignupPage() {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="w-full bg-white border border-gray-400/50 rounded-[2rem] pl-12 pr-4 py-4 text-[#2C3E50] placeholder-[#2C3E50]/60 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
+                    className="w-full bg-transparent border border-gray-400/50 rounded-[2rem] pl-12 pr-4 py-4 text-white placeholder-gray-400 focus:outline-none focus:border-gray-300 focus:bg-white/5 transition-all"
                     placeholder="Last name"
                     autoComplete="family-name"
                     required
