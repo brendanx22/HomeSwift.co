@@ -320,24 +320,128 @@ const signup = async (userData) => {
     }
   };
 
-  // Check if user is logged in on initial load
+  // Set up real-time subscriptions for user data updates
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('🔄 Setting up real-time subscriptions for user:', user.id);
+
+    // Subscribe to user profile changes
+    const profileSubscription = supabase
+      .channel(`user_profile_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_profiles',
+          filter: `id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('🔄 User profile updated:', payload);
+          if (payload.new) {
+            setUser(prev => ({
+              ...prev,
+              ...payload.new,
+              user_metadata: {
+                ...prev?.user_metadata,
+                user_type: payload.new.user_type
+              }
+            }));
+            localStorage.setItem('user', JSON.stringify({
+              ...user,
+              ...payload.new,
+              user_metadata: {
+                ...user?.user_metadata,
+                user_type: payload.new.user_type
+              }
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to user roles changes
+    const rolesSubscription = supabase
+      .channel(`user_roles_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_roles',
+          filter: `user_id=eq.${user.id}`
+        },
+        async (payload) => {
+          console.log('🔄 User roles updated:', payload);
+          // Refetch all roles when any role changes
+          await fetchUserRoles(user.id);
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      console.log('🧹 Cleaning up real-time subscriptions');
+      supabase.removeChannel(profileSubscription);
+      supabase.removeChannel(rolesSubscription);
+    };
+  }, [user?.id]);
+
+  // Listen to Supabase auth state changes to prevent hard refreshes
+  useEffect(() => {
+    console.log('🔄 Setting up Supabase auth state listener...');
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state changed:', event, session ? 'Session exists' : 'No session');
+
+      if (event === 'SIGNED_IN' && session) {
+        console.log('✅ User signed in, updating auth state');
+        const user = session.user;
+        
+        // Update user state
+        setUser(user);
+        setIsAuthenticated(true);
+        localStorage.setItem('user', JSON.stringify(user));
+
+        // Fetch and set roles
+        await fetchUserRoles(user.id);
+      } else if (event === 'SIGNED_OUT') {
+        console.log('👋 User signed out, clearing auth state');
+        setUser(null);
+        setIsAuthenticated(false);
+        setRoles([]);
+        setCurrentRole(null);
+        localStorage.removeItem('user');
+        localStorage.removeItem('userRoles');
+        localStorage.removeItem('currentRole');
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        console.log('🔄 Token refreshed, updating session');
+        setUser(session.user);
+        localStorage.setItem('user', JSON.stringify(session.user));
+      } else if (event === 'USER_UPDATED' && session) {
+        console.log('🔄 User updated, refreshing data');
+        setUser(session.user);
+        localStorage.setItem('user', JSON.stringify(session.user));
+        await fetchUserRoles(session.user.id);
+      }
+    });
+
+    return () => {
+      console.log('🧹 Cleaning up auth state listener');
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Check authentication on mount
   useEffect(() => {
     const checkAuth = async () => {
-      console.log('🔍 checkAuth - Starting authentication check...');
-
       try {
-        const hasUserData = await loadUserData();
-
-        if (hasUserData) {
-          console.log('✅ User authenticated, setting auth state');
-          setIsAuthenticated(true);
-        } else {
+        console.log('🔍 checkAuth - Starting authentication check...');
+        const hasValidAuth = await loadUserData();
+        
+        if (!hasValidAuth) {
           console.log('❌ No valid authentication found, clearing state');
-          // Clear any stale data
-          localStorage.removeItem('user');
-          localStorage.removeItem('userRoles');
-          localStorage.removeItem('currentRole');
-          localStorage.removeItem('backendToken');
           setUser(null);
           setRoles([]);
           setCurrentRole(null);
@@ -354,58 +458,6 @@ const signup = async (userData) => {
 
     checkAuth();
   }, [loadUserData]);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('userRoles');
-        localStorage.removeItem('currentRole');
-        localStorage.removeItem('backendToken');
-        setUser(null);
-        setRoles([]);
-        setCurrentRole(null);
-        setIsAuthenticated(false);
-        return;
-      }
-
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        const hasData = await loadUserData();
-
-        if (!hasData && session?.user?.id) {
-          setUser(session.user);
-          setIsAuthenticated(true);
-          await fetchUserRoles(session.user.id);
-        }
-
-        if (session?.user?.id) {
-          await fetchUserRoles(session.user.id);
-        }
-
-        if (hasData) {
-          setIsAuthenticated(true);
-        }
-      }
-    });
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, [loadUserData]);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    const channel = supabase
-      .channel(`user_roles_changes_${user.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_roles', filter: `user_id=eq.${user.id}` }, () => {
-        fetchUserRoles(user.id);
-      });
-    channel.subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id]);
 
   // Add a new role to the current user
   const addRole = async (role, userId = null) => {
@@ -851,6 +903,53 @@ const signup = async (userData) => {
     return false;
   };
 
+  // Google OAuth login
+  const loginWithGoogle = async (userType) => {
+    try {
+      console.log('🔍 Google OAuth - Starting Google authentication with userType:', userType);
+
+      // Store the user type in localStorage before redirect
+      if (userType) {
+        localStorage.setItem('pendingUserType', userType);
+      }
+
+      // Use Supabase's Google OAuth
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
+      });
+
+      if (error) {
+        console.error('❌ Google OAuth error:', error);
+        localStorage.removeItem('pendingUserType');
+        return {
+          success: false,
+          error: 'Failed to initiate Google sign-in. Please try again.'
+        };
+      }
+
+      console.log('✅ Google OAuth initiated successfully');
+      return {
+        success: true,
+        message: 'Redirecting to Google...'
+      };
+
+    } catch (error) {
+      console.error('❌ Google OAuth error:', error);
+      localStorage.removeItem('pendingUserType');
+      return {
+        success: false,
+        error: 'An unexpected error occurred during Google sign-in.'
+      };
+    }
+  };
+
   return (
     <AuthContext.Provider 
       value={{ 
@@ -860,7 +959,8 @@ const signup = async (userData) => {
         currentRole,
         roles,
         signup, 
-        login, 
+        login,
+        loginWithGoogle,
         logout,
         updateCurrentRole,
         hasRole,

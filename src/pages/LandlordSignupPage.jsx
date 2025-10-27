@@ -18,7 +18,7 @@ const LandlordSignupPage = () => {
   }, []);
 
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const { signup, loginWithGoogle } = useAuth();
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -152,28 +152,6 @@ const LandlordSignupPage = () => {
     }
   };
 
-  const handleGoogleSignup = async () => {
-    setGoogleLoading(true);
-    setErrors({});
-
-    try {
-      localStorage.setItem('userType', 'landlord');
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: { access_type: 'offline', prompt: 'consent' }
-        }
-      });
-      if (error) throw error;
-    } catch (error) {
-      setErrors({ general: error.message || 'Google sign-up failed. Please try again.' });
-      toast.error('Google sign-up failed. Please try again.');
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
   // Check email availability function
   const checkEmailAvailability = async (emailToCheck) => {
     console.log(`📧 Checking email availability: ${emailToCheck}`);
@@ -242,6 +220,30 @@ const LandlordSignupPage = () => {
       setEmailStatus('');
     }
   }, [formData.email]);
+
+  const handleGoogleSignup = async () => {
+    try {
+      setGoogleLoading(true);
+      setErrors({});
+
+      // Use the loginWithGoogle function from AuthContext with landlord type
+      const result = await loginWithGoogle('landlord');
+
+      if (!result.success) {
+        setErrors({
+          general: result.error || 'Google sign-up failed. Please try again.'
+        });
+        setGoogleLoading(false);
+      }
+      // If successful, user will be redirected by Google OAuth flow
+    } catch (error) {
+      console.error('Google signup error:', error);
+      setErrors({
+        general: error.message || 'Google sign-up failed. Please try again.'
+      });
+      setGoogleLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;

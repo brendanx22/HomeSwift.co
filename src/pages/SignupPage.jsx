@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 export default function SignupPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signup: signUp, isAuthenticated, loading: authLoading, checkEmailExists } = useAuth();
+  const { signup: signUp, loginWithGoogle, isAuthenticated, loading: authLoading, checkEmailExists } = useAuth();
   
   // Determine user type from localStorage first, then URL
   const [userType, setUserType] = useState('renter');
@@ -355,23 +355,17 @@ export default function SignupPage() {
       setGoogleLoading(true);
       setError('');
 
-      // Persist selected user type for role assignment after OAuth
-      const storedUserType = localStorage.getItem('userType') || userType || 'renter';
-      localStorage.setItem('userType', storedUserType);
+      // Use the loginWithGoogle function from AuthContext
+      const result = await loginWithGoogle(userType);
 
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: { access_type: 'offline', prompt: 'consent' }
-        }
-      });
-      if (error) throw error;
+      if (!result.success) {
+        setError(result.error || 'Failed to sign up with Google');
+        setGoogleLoading(false);
+      }
+      // If successful, user will be redirected by Google OAuth flow
     } catch (err) {
       console.error('Google signup error:', err);
       setError('Failed to sign up with Google. Please try again.');
-      toast.error('Failed to sign up with Google. Please try again.');
-    } finally {
       setGoogleLoading(false);
     }
   };

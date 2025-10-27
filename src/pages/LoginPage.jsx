@@ -21,7 +21,7 @@ export default function LoginPage() {
   const [hasRequestedResend, setHasRequestedResend] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated } = useAuth();
   const from = location.state?.from?.pathname || '/';
   const [searchParams] = useSearchParams();
   const isVerified = searchParams.get('verified') === 'true';
@@ -76,7 +76,7 @@ export default function LoginPage() {
       if (loginResult?.success) {
         // After successful Supabase login, get the backend token
         try {
-          const response = await fetch(`https://api.homeswift.co/api/auth/signin`, {
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/auth/signin`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -125,7 +125,7 @@ export default function LoginPage() {
       setLoading(true);
       setError('');
       
-      const response = await fetch(`https://api.homeswift.co/api/auth/resend-verification`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: unverifiedEmail })
@@ -164,22 +164,18 @@ export default function LoginPage() {
     try {
       setGoogleLoading(true);
       setError('');
-      const storedType = localStorage.getItem('userType');
-      const selectedType = isLandlord ? 'landlord' : (storedType || 'renter');
-      localStorage.setItem('userType', selectedType);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: { access_type: 'offline', prompt: 'consent' }
-        }
-      });
-      if (error) throw error;
+
+      // Use the loginWithGoogle function from AuthContext
+      const result = await loginWithGoogle(isLandlord ? 'landlord' : 'renter');
+
+      if (!result.success) {
+        setError(result.error || 'Failed to sign in with Google');
+        setGoogleLoading(false);
+      }
+      // If successful, user will be redirected by Google OAuth flow
     } catch (err) {
       console.error('Google login error:', err);
       setError('Failed to sign in with Google. Please try again.');
-      toast.error('Failed to sign in with Google. Please try again.');
-    } finally {
       setGoogleLoading(false);
     }
   };
