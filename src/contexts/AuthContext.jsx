@@ -938,12 +938,19 @@ const signup = async (userData) => {
   // Google OAuth login
   const loginWithGoogle = async (userType) => {
     try {
-      console.log('🔍 Google OAuth - Starting Google authentication with userType:', userType);
+      console.log('🔐 Google OAuth - Starting with userType:', userType);
 
       // Store the user type in localStorage before redirect
       if (userType) {
         localStorage.setItem('pendingUserType', userType);
+        console.log('✅ Stored pendingUserType in localStorage:', userType);
+      } else {
+        console.warn('⚠️ No userType provided to loginWithGoogle!');
       }
+
+      // Verify it was stored
+      const storedType = localStorage.getItem('pendingUserType');
+      console.log('🔍 Verified pendingUserType in localStorage:', storedType);
 
       // Use Supabase's Google OAuth
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -966,7 +973,7 @@ const signup = async (userData) => {
         };
       }
 
-      console.log('✅ Google OAuth initiated successfully');
+      console.log('✅ Google OAuth initiated successfully, redirecting to Google...');
       return {
         success: true,
         message: 'Redirecting to Google...'

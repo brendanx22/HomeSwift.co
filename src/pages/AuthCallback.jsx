@@ -36,7 +36,7 @@ const AuthCallback = () => {
 
           // Check for pending user type from Google OAuth flow
           const pendingUserType = localStorage.getItem('pendingUserType');
-          console.log('Pending user type from OAuth:', pendingUserType);
+          console.log('🔍 Pending user type from OAuth:', pendingUserType);
 
           // Check if user profile exists
           const { data: userProfile, error: profileError } = await supabase
@@ -45,11 +45,29 @@ const AuthCallback = () => {
             .eq('id', user.id)
             .single();
 
+          console.log('🔍 Existing user profile:', userProfile);
+
           // Determine the user type for this login attempt
-          let userType = pendingUserType || userProfile?.user_type || user.user_metadata?.user_type || 'renter';
+          // IMPORTANT: If pendingUserType exists, ALWAYS use it (user is trying to add/switch role)
+          // Otherwise, use existing profile type
+          let userType;
+          if (pendingUserType) {
+            userType = pendingUserType;
+            console.log('✅ Using pending user type from OAuth:', userType);
+          } else if (userProfile?.user_type) {
+            userType = userProfile.user_type;
+            console.log('✅ Using existing profile user type:', userType);
+          } else if (user.user_metadata?.user_type) {
+            userType = user.user_metadata.user_type;
+            console.log('✅ Using user metadata user type:', userType);
+          } else {
+            userType = 'renter';
+            console.log('✅ Using default user type: renter');
+          }
+          
           let isNewUser = !userProfile;
 
-          console.log('User type for this login:', userType, '| Is new user:', isNewUser);
+          console.log('📋 Summary - User type:', userType, '| Is new user:', isNewUser, '| Has pending type:', !!pendingUserType);
 
           // Always create/update user profile
           const { error: upsertError } = await supabase
@@ -98,31 +116,36 @@ const AuthCallback = () => {
             .select('*')
             .eq('user_id', user.id);
 
-          console.log('Existing user roles:', userRoles);
+          console.log('🔍 Existing user roles:', userRoles);
+          console.log('🔍 Checking if user has role:', userType);
 
           // Check if user already has the current role
           const hasCurrentRole = userRoles?.some(r => r.role === userType);
+          console.log('🔍 Has current role?', hasCurrentRole);
           
           if (!hasCurrentRole) {
-            console.log(`Adding new role '${userType}' for user`);
+            console.log(`🆕 Adding new role '${userType}' for user`);
             
             // Determine if this should be primary (first role or no primary exists)
             const hasPrimaryRole = userRoles?.some(r => r.is_primary);
             const shouldBePrimary = !hasPrimaryRole || isNewUser;
+            
+            console.log('🔍 Has primary role?', hasPrimaryRole, '| Should be primary?', shouldBePrimary);
 
             // Add the new role
-            const { error: roleError } = await supabase
+            const { data: insertedRole, error: roleError } = await supabase
               .from('user_roles')
               .insert({
                 user_id: user.id,
                 role: userType,
                 is_primary: shouldBePrimary
-              });
+              })
+              .select();
 
             if (roleError) {
-              console.error('Error adding role:', roleError);
+              console.error('❌ Error adding role:', roleError);
             } else {
-              console.log(`✅ Successfully added '${userType}' role`);
+              console.log(`✅ Successfully added '${userType}' role:`, insertedRole);
             }
 
             // Refetch roles after adding new one
@@ -131,18 +154,22 @@ const AuthCallback = () => {
               .select('*')
               .eq('user_id', user.id);
 
+            console.log('🔍 Updated roles after insert:', updatedRoles);
+
             if (updatedRoles) {
               localStorage.setItem('userRoles', JSON.stringify(updatedRoles));
               localStorage.setItem('currentRole', userType);
+              console.log('✅ Stored updated roles in localStorage');
             }
           } else {
-            console.log(`User already has '${userType}' role`);
+            console.log(`ℹ️ User already has '${userType}' role, no need to add`);
             
             if (userRoles) {
               localStorage.setItem('userRoles', JSON.stringify(userRoles));
               
               // Set current role to the one they're logging in as
               localStorage.setItem('currentRole', userType);
+              console.log('✅ Updated currentRole to:', userType);
             }
           }
 
