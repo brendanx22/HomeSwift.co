@@ -94,8 +94,10 @@ const AuthCallback = () => {
             console.error('Error updating user metadata:', updateError);
           }
 
-          // Clear pending user type
-          localStorage.removeItem('pendingUserType');
+          // Clear pending user type only after successful role assignment
+          if (hasCurrentRole || !pendingUserType) {
+            localStorage.removeItem('pendingUserType');
+          }
 
           // Store user in localStorage for consistency
           const userData = {
@@ -105,7 +107,12 @@ const AuthCallback = () => {
             avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
             user_metadata: {
               ...user.user_metadata,
-              user_type: userType
+              user_type: userType,
+              // Store all roles in user metadata for quick access
+              roles: [...new Set([
+                ...(userRoles?.map(r => r.role) || []),
+                ...(hasCurrentRole ? [] : [userType])
+              ])]
             }
           };
           localStorage.setItem('user', JSON.stringify(userData));
@@ -126,26 +133,44 @@ const AuthCallback = () => {
           if (!hasCurrentRole) {
             console.log(`🆕 Adding new role '${userType}' for user`);
             
-            // Determine if this should be primary (first role or no primary exists)
+            // For multi-role support, we only set as primary if no primary exists
+            // or if this is a new user
             const hasPrimaryRole = userRoles?.some(r => r.is_primary);
             const shouldBePrimary = !hasPrimaryRole || isNewUser;
             
             console.log('🔍 Has primary role?', hasPrimaryRole, '| Should be primary?', shouldBePrimary);
 
-            // Add the new role
-            const { data: insertedRole, error: roleError } = await supabase
-              .from('user_roles')
-              .insert({
-                user_id: user.id,
-                role: userType,
-                is_primary: shouldBePrimary
-              })
-              .select();
+            try {
+              // Add the new role
+              const { data: insertedRole, error: roleError } = await supabase
+                .from('user_roles')
+                .insert({
+                  user_id: user.id,
+                  role: userType,
+                  is_primary: shouldBePrimary
+                })
+                .select()
+                .single();
 
-            if (roleError) {
-              console.error('❌ Error adding role:', roleError);
-            } else {
+              if (roleError) throw roleError;
+              
               console.log(`✅ Successfully added '${userType}' role:`, insertedRole);
+              
+              // If we set this as primary, ensure no other roles are marked as primary
+              if (shouldBePrimary && userRoles?.length > 0) {
+                console.log('🔄 Updating other roles to non-primary');
+                await supabase
+                  .from('user_roles')
+                  .update({ is_primary: false })
+                  .eq('user_id', user.id)
+                  .neq('role', userType);
+              }
+            } catch (error) {
+              console.error('❌ Error in role management:', error);
+              // If role already exists (race condition), continue
+              if (!error.message.includes('duplicate key')) {
+                throw error;
+              }
             }
 
             // Refetch roles after adding new one
@@ -200,12 +225,30 @@ const AuthCallback = () => {
 
           toast.success(isNewUser ? 'Account created successfully!' : 'Successfully authenticated!');
 
-          // Redirect based on user type immediately
-          const redirectPath = userType === 'landlord' ? '/landlord/dashboard' : '/chat';
+          // Redirect based on user type
+          let redirectPath = '/profile';
+          
+          if (userType === 'landlord') {
+            redirectPath = '/landlord/dashboard';
+          } else if (userType === 'renter') {
+            redirectPath = '/chat';
+          }
+          
           console.log('🔄 Redirecting to:', redirectPath);
           
-          // Use replace to avoid back button issues
-          navigate(redirectPath, { replace: true });
+          // Force a small delay to ensure all state is updated
+          setTimeout(() => {
+            // Clear any cached data
+            window.dispatchEvent(new CustomEvent('rolesUpdated', { 
+              detail: { 
+                userId: user.id,
+                forceRefresh: true
+              } 
+            }));
+            
+            // Use replace to avoid back button issues
+            navigate(redirectPath, { replace: true });
+          }, 100);
         } else {
           console.log('No active session in callback');
 
