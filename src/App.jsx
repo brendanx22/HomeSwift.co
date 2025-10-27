@@ -116,6 +116,12 @@ const AppLayout = () => {
         isLoginPage
       });
 
+      // Skip redirects if we're in the middle of OAuth callback processing
+      if (path === '/auth/callback') {
+        console.log('Skipping redirects during OAuth callback processing');
+        return;
+      }
+
       // Handle homepage for authenticated users - redirect to appropriate dashboard
       if (path === '/') {
         const dashboardPath = detectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
@@ -190,7 +196,7 @@ const AppLayout = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-4"
+        className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br from-white via-gray-50 to-white p-4"
       >
         <div className="relative">
           {/* Animated logo */}
@@ -283,7 +289,7 @@ const AppLayout = () => {
                 repeat: Infinity,
                 ease: "easeInOut"
               }}
-              className="h-full bg-gradient-to-r from-[#FF6B35] to-[#e85e2f] rounded-full"
+              className="h-full bg-linear-to-r from-[#FF6B35] to-[#e85e2f] rounded-full"
             />
           </motion.div>
         </div>
@@ -293,7 +299,7 @@ const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-      <main className="flex-grow">
+      <main className="grow">
         <Toaster position="top-right" />
         <Suspense 
           fallback={
@@ -301,7 +307,7 @@ const AppLayout = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-4"
+              className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br from-white via-gray-50 to-white p-4"
             >
               <div className="relative">
                 {/* Animated logo */}
@@ -394,7 +400,7 @@ const AppLayout = () => {
                       repeat: Infinity,
                       ease: "easeInOut"
                     }}
-                    className="h-full bg-gradient-to-r from-[#FF6B35] to-[#e85e2f] rounded-full"
+                    className="h-full bg-linear-to-r from-[#FF6B35] to-[#e85e2f] rounded-full"
                   />
                 </motion.div>
               </div>

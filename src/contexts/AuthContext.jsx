@@ -389,30 +389,41 @@ const signup = async (userData) => {
 
       const { userType } = event.detail;
 
-      // Re-run the authentication check
-      const hasUserData = await loadUserData();
-
-      if (hasUserData && userType) {
-        console.log(`🔄 Switching to ${userType} role from auth callback`);
-
-        // Switch the role immediately
-        await switchRole(userType);
-
-        // Update the user object in localStorage to include the user_type
+      try {
+        // Get user data from localStorage (set by AuthCallback)
         const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-        if (storedUser.id) {
-          const updatedUserData = {
-            ...storedUser,
-            user_metadata: {
-              ...storedUser.user_metadata,
-              user_type: userType
-            }
-          };
-          localStorage.setItem('user', JSON.stringify(updatedUserData));
-        }
+        const storedRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
+        const savedCurrentRole = localStorage.getItem('currentRole');
 
-        // Clean up the URL
-        window.history.replaceState({}, document.title, window.location.pathname);
+        if (storedUser.id) {
+          console.log('✅ Found user data in localStorage after OAuth callback');
+
+          // Update React state immediately
+          setUser(storedUser);
+          setIsAuthenticated(true);
+
+          // Update roles if available
+          if (storedRoles.length > 0) {
+            setRoles(storedRoles);
+          }
+
+          // Set current role from localStorage or userType
+          const roleToSet = savedCurrentRole || userType || 'renter';
+          setCurrentRole(roleToSet);
+          localStorage.setItem('currentRole', roleToSet);
+
+          console.log(`✅ AuthContext updated with role: ${roleToSet}`);
+
+          // Fetch fresh roles from database to ensure consistency
+          await fetchUserRoles(storedUser.id);
+
+          // Clean up the URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+          console.log('❌ No user data found in localStorage after OAuth callback');
+        }
+      } catch (error) {
+        console.error('Error in auth callback event handler:', error);
       }
     };
 

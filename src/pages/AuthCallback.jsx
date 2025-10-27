@@ -223,7 +223,8 @@ const AuthCallback = () => {
 
           console.log(`🔄 AuthCallback: Redirecting to ${redirectPath} for userType: ${finalUserType}`);
 
-          setTimeout(() => navigate(redirectPath), 2000);
+          // Redirect immediately without timeout
+          navigate(redirectPath, { replace: true });
         } else {
           console.log('No active session in callback');
 
@@ -303,7 +304,8 @@ const AuthCallback = () => {
 
               console.log(`🔄 AuthCallback: Redirecting to ${redirectPath} for userType: ${finalUserType}`);
 
-              setTimeout(() => navigate(redirectPath), 2000);
+              // Redirect immediately without timeout
+              navigate(redirectPath, { replace: true });
               return;
             }
           }
