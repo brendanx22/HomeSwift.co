@@ -54,8 +54,7 @@ export const AuthProvider = ({ children }) => {
       console.log('✅ Valid user data found in localStorage:', {
         id: userData.id,
         email: userData.email,
-        userType: userData.user_metadata?.user_type,
-        userMetadata: userData.user_metadata
+        userType: userData.user_metadata?.user_type
       });
 
       // Try to get Supabase session to validate
@@ -75,13 +74,6 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(true);
         }
 
-        // Fallback: try to get currentRole from localStorage immediately
-        const savedCurrentRole = localStorage.getItem('currentRole');
-        if (savedCurrentRole) {
-          console.log('🔄 Using saved currentRole from localStorage:', savedCurrentRole);
-          setCurrentRole(savedCurrentRole);
-        }
-
         // Handle roles
         if (savedRolesString) {
           try {
@@ -92,13 +84,20 @@ export const AuthProvider = ({ children }) => {
               const primaryRole = savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role;
               console.log('Setting primary role to:', primaryRole);
               setCurrentRole(primaryRole);
-              localStorage.setItem('userRoles', JSON.stringify(savedRoles));
               localStorage.setItem('currentRole', primaryRole);
               return true;
             }
           } catch (rolesError) {
             console.error('❌ Failed to parse saved roles:', rolesError);
           }
+        }
+
+        // Fallback: try to get currentRole from localStorage
+        const savedCurrentRole = localStorage.getItem('currentRole');
+        if (savedCurrentRole) {
+          console.log('🔄 Using saved currentRole from localStorage:', savedCurrentRole);
+          setCurrentRole(savedCurrentRole);
+          return true;
         }
 
         // Additional fallback: check user_type from metadata if roles aren't available yet
@@ -332,36 +331,6 @@ const signup = async (userData) => {
         if (hasUserData) {
           console.log('✅ User authenticated, setting auth state');
           setIsAuthenticated(true);
-
-          // Check if there's a pending userType from OAuth callback
-          const urlParams = new URLSearchParams(window.location.search);
-          const pendingUserType = urlParams.get('userType');
-
-          if (pendingUserType) {
-            console.log('🔄 Found pending userType from OAuth:', pendingUserType);
-
-            // Fetch current roles first
-            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-            const userId = user?.id || storedUser?.id;
-
-            if (userId) {
-              const hasRoles = await fetchUserRoles(userId);
-
-              if (hasRoles) {
-                // Check if we need to switch the primary role
-                const currentRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
-                const primaryRole = currentRoles.find(r => r.is_primary)?.role || currentRoles[0]?.role;
-
-                if (primaryRole !== pendingUserType) {
-                  console.log(`🔄 Switching primary role from '${primaryRole}' to '${pendingUserType}'`);
-                  await switchRole(pendingUserType);
-                }
-              }
-            }
-
-            // Clean up the URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
         } else {
           console.log('❌ No valid authentication found, clearing state');
           // Clear any stale data
@@ -383,57 +352,7 @@ const signup = async (userData) => {
       }
     };
 
-    // Listen for auth callback completion event
-    const handleAuthCallbackComplete = async (event) => {
-      console.log('🔄 Auth callback completed, re-checking authentication:', event.detail);
-
-      const { userType } = event.detail;
-
-      try {
-        // Get user data from localStorage (set by AuthCallback)
-        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-        const storedRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
-        const savedCurrentRole = localStorage.getItem('currentRole');
-
-        if (storedUser.id) {
-          console.log('✅ Found user data in localStorage after OAuth callback');
-
-          // Update React state immediately
-          setUser(storedUser);
-          setIsAuthenticated(true);
-
-          // Update roles if available
-          if (storedRoles.length > 0) {
-            setRoles(storedRoles);
-          }
-
-          // Set current role from localStorage or userType
-          const roleToSet = savedCurrentRole || userType || 'renter';
-          setCurrentRole(roleToSet);
-          localStorage.setItem('currentRole', roleToSet);
-
-          console.log(`✅ AuthContext updated with role: ${roleToSet}`);
-
-          // Fetch fresh roles from database to ensure consistency
-          await fetchUserRoles(storedUser.id);
-
-          // Clean up the URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-        } else {
-          console.log('❌ No user data found in localStorage after OAuth callback');
-        }
-      } catch (error) {
-        console.error('Error in auth callback event handler:', error);
-      }
-    };
-
-    window.addEventListener('auth-callback-complete', handleAuthCallbackComplete);
-
     checkAuth();
-
-    return () => {
-      window.removeEventListener('auth-callback-complete', handleAuthCallbackComplete);
-    };
   }, [loadUserData]);
 
   // Add a new role to the current user
@@ -586,22 +505,17 @@ const signup = async (userData) => {
   // Switch the current user to a different role
   const switchRole = async (newRole) => {
     try {
-      const currentUser = user || JSON.parse(localStorage.getItem('user') || '{}');
-      if (!currentUser?.id) throw new Error('No user logged in');
-
-      console.log(`🔄 AuthContext.switchRole called with newRole: ${newRole}, currentUser:`, currentUser.id);
+      if (!user?.id) throw new Error('No user logged in');
 
       // Update the role in the database using the new function
       const { error } = await supabase.rpc('set_primary_role', {
-        user_id_param: currentUser.id,
+        user_id_param: user.id,
         role_name: newRole
       });
 
       if (error) throw error;
 
-      console.log(`✅ Database updated successfully for role: ${newRole}`);
-
-      // Update local state immediately
+      // Update local state
       setCurrentRole(newRole);
       localStorage.setItem('currentRole', newRole);
 
@@ -613,54 +527,10 @@ const signup = async (userData) => {
         }))
       );
 
-      // Update localStorage immediately
-      const updatedRoles = roles.map(role => ({
-        ...role,
-        is_primary: role.role === newRole
-      }));
-      localStorage.setItem('userRoles', JSON.stringify(updatedRoles));
-
-      console.log(`✅ Successfully switched to role: ${newRole}`);
       return { success: true };
     } catch (error) {
       console.error('Error switching role:', error);
       return { success: false, error: error.message };
-    }
-  };
-
-  // Google OAuth login with Supabase
-  const googleLogin = async (userType) => {
-    try {
-      console.log('Google OAuth login called with userType:', userType);
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?userType=${userType}`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        }
-      });
-
-      if (error) {
-        console.error('Google OAuth error:', error);
-        return {
-          success: false,
-          error: error.message || 'Google sign-in failed. Please try again.'
-        };
-      }
-
-      console.log('Google OAuth initiated successfully');
-      return { success: true, data };
-
-    } catch (error) {
-      console.error('Google login error:', error);
-      return {
-        success: false,
-        error: 'An unexpected error occurred during Google sign-in. Please try again.'
-      };
     }
   };
 
@@ -939,7 +809,6 @@ const signup = async (userData) => {
         roles,
         signup, 
         login, 
-        googleLogin,
         logout,
         updateCurrentRole,
         hasRole,

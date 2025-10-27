@@ -91,7 +91,7 @@ const AppLayout = () => {
 
     // Handle authenticated users
     if (isAuthenticated && user) {
-      const publicRoutes = ['/login', '/signup', '/user-type', '/forgot-password', '/reset-password', '/landlord/login'];
+      const publicRoutes = ['/', '/login', '/signup', '/user-type', '/forgot-password', '/reset-password', '/landlord/login'];
 
       // Get user data from multiple sources for consistency
       const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -102,48 +102,34 @@ const AppLayout = () => {
       const detectedRole = currentRole || allRoles.find(r => r.is_primary)?.role || allRoles[0]?.role || userType || 'renter';
 
       // Enhanced debug logging
-      console.log('AppLayout Auth Debug:', {
-        isAuthenticated,
-        user: user ? 'exists' : 'null',
-        userType,
-        storedRoles,
-        authContextRoles,
-        allRoles,
-        currentRole,
-        detectedRole,
-        path,
-        isLandlordLoginPage,
-        isLoginPage
-      });
-
-      // Skip redirects if we're in the middle of OAuth callback processing
-      if (path === '/auth/callback') {
-        console.log('Skipping redirects during OAuth callback processing');
-        return;
-      }
-
-      // Handle homepage for authenticated users - redirect to appropriate dashboard
-      if (path === '/') {
-        const dashboardPath = detectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
-        console.log('Redirecting from homepage to:', dashboardPath, 'based on role:', detectedRole);
-        navigate(dashboardPath, { replace: true });
-        return;
-      }
+      // console.log('AppLayout Auth Debug:', {
+      //   isAuthenticated,
+      //   user: user ? 'exists' : 'null',
+      //   userType,
+      //   storedRoles,
+      //   authContextRoles,
+      //   allRoles,
+      //   currentRole,
+      //   detectedRole,
+      //   path,
+      //   isLandlordLoginPage,
+      //   isLoginPage
+      // });
 
       // If we're on a login page, redirect to the appropriate dashboard
       if (isLoginPage || isLandlordLoginPage) {
         const dashboardPath = detectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
-        console.log('Redirecting from login to:', dashboardPath, 'based on role:', detectedRole);
+        // console.log('Redirecting from login to:', dashboardPath, 'based on role:', detectedRole);
         if (path !== dashboardPath) {
           navigate(dashboardPath, { replace: true });
         }
         return;
       }
 
-      // For other public routes when authenticated (exclude homepage)
+      // For other public routes when authenticated
       if (publicRoutes.includes(path)) {
         const dashboardPath = detectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
-        console.log('Redirecting from public route to:', dashboardPath);
+        // console.log('Redirecting from public route to:', dashboardPath);
         if (path !== dashboardPath) {
           navigate(dashboardPath, { replace: true });
         }
@@ -153,7 +139,7 @@ const AppLayout = () => {
       // If user is on a landlord route but not a landlord, redirect to renter dashboard
       // Exclude signup pages from this check since they should be accessible to unauthenticated users
       if (isLandlordRoute && detectedRole !== 'landlord' && !path.includes('/signup')) {
-        console.log('Not a landlord, redirecting to chat');
+        // console.log('Not a landlord, redirecting to chat');
         navigate('/chat', { replace: true });
         return;
       }
@@ -161,7 +147,7 @@ const AppLayout = () => {
       // If user is a renter but on a landlord route, redirect to renter dashboard
       // Exclude signup pages from this check
       if (detectedRole === 'renter' && isLandlordRoute && !path.includes('/signup')) {
-        console.log('Renter on landlord route, redirecting to chat');
+        // console.log('Renter on landlord route, redirecting to chat');
         navigate('/chat', { replace: true });
         return;
       }
@@ -196,7 +182,7 @@ const AppLayout = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br from-white via-gray-50 to-white p-4"
+        className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-4"
       >
         <div className="relative">
           {/* Animated logo */}
@@ -289,7 +275,7 @@ const AppLayout = () => {
                 repeat: Infinity,
                 ease: "easeInOut"
               }}
-              className="h-full bg-linear-to-r from-[#FF6B35] to-[#e85e2f] rounded-full"
+              className="h-full bg-gradient-to-r from-[#FF6B35] to-[#e85e2f] rounded-full"
             />
           </motion.div>
         </div>
@@ -299,7 +285,7 @@ const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-      <main className="grow">
+      <main className="flex-grow">
         <Toaster position="top-right" />
         <Suspense 
           fallback={
@@ -307,7 +293,7 @@ const AppLayout = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br from-white via-gray-50 to-white p-4"
+              className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-4"
             >
               <div className="relative">
                 {/* Animated logo */}
@@ -400,7 +386,7 @@ const AppLayout = () => {
                       repeat: Infinity,
                       ease: "easeInOut"
                     }}
-                    className="h-full bg-linear-to-r from-[#FF6B35] to-[#e85e2f] rounded-full"
+                    className="h-full bg-gradient-to-r from-[#FF6B35] to-[#e85e2f] rounded-full"
                   />
                 </motion.div>
               </div>
@@ -420,7 +406,7 @@ const AppLayout = () => {
               element={
                 !isAuthenticated || new URLSearchParams(location.search).get('from') === 'logout' ? (
                   <LoginPage />
-                ) : currentRole === 'landlord' ? (
+                ) : user?.user_type === 'landlord' ? (
                   <Navigate to="/landlord/dashboard" replace />
                 ) : (
                   <Navigate to="/chat" replace />
@@ -433,7 +419,7 @@ const AppLayout = () => {
               element={
                 !isAuthenticated ? (
                   <SignupPage />
-                ) : currentRole === 'landlord' ? (
+                ) : user?.user_type === 'landlord' ? (
                   <Navigate to="/landlord/dashboard" replace />
                 ) : (
                   <Navigate to="/chat" replace />
@@ -698,20 +684,6 @@ const AppLayout = () => {
                 <ProtectedRoute requiredRoles={['renter', 'landlord']}>
                   <HomeInspectionChecklist />
                 </ProtectedRoute>
-              }
-            />
-
-            {/* Catch-all route - redirect authenticated users to their dashboard */}
-            <Route
-              path="*"
-              element={
-                !isAuthenticated ? (
-                  <Navigate to="/login" replace />
-                ) : currentRole === 'landlord' ? (
-                  <Navigate to="/landlord/dashboard" replace />
-                ) : (
-                  <Navigate to="/chat" replace />
-                )
               }
             />
           </Routes>

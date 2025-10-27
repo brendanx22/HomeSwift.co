@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 export default function SignupPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signup: signUp, googleLogin, isAuthenticated, loading: authLoading, checkEmailExists } = useAuth();
+  const { signup: signUp, isAuthenticated, loading: authLoading, checkEmailExists } = useAuth();
   
   // Determine user type from localStorage first, then URL
   const [userType, setUserType] = useState('renter');
@@ -355,16 +355,8 @@ export default function SignupPage() {
       setGoogleLoading(true);
       setError('');
 
-      console.log('Starting Google OAuth signup with userType:', userType);
-
-      const result = await googleLogin(userType);
-
-      if (result.success) {
-        toast.success('Redirecting to Google...');
-        // The redirect will be handled by Supabase OAuth
-      } else {
-        toast.error(result.error || 'Google sign-up failed');
-      }
+      // Show toast notification that Google OAuth is not available
+      toast.error('Google sign-up is currently not available. Please use email and password to create your account.');
 
       setGoogleLoading(false);
     } catch (err) {

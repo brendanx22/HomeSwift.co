@@ -18,7 +18,7 @@ const LandlordSignupPage = () => {
   }, []);
 
   const navigate = useNavigate();
-  const { signup, googleLogin } = useAuth();
+  const { signup } = useAuth();
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -355,15 +355,32 @@ const LandlordSignupPage = () => {
     }
   };
 
-  const handleBackToHome = () => {
-    navigate('/user-type');
-  };
+ const handleGoogleSignUp = async () => {
+  console.log('🔐 Google signup initiated');
+  setGoogleLoading(true);
+  setErrors({});
+
+  try {
+    // Show toast notification that Google OAuth is not available
+    toast.error('Google sign-up is currently not available. Please use email and password to create your account.');
+
+    setGoogleLoading(false);
+  } catch (error) {
+    console.error('❌ Google signup failed:', error.message);
+    toast.error(error.message || 'Failed to sign in with Google');
+    setGoogleLoading(false);
+  }
+};
+
+const handleBackToHome = () => {
+  navigate('/user-type');
+};
 
   return (
     <div className="min-h-screen flex justify-center items-start pt-24 sm:pt-32 md:pt-40 pb-24 sm:pb-32 md:pb-40 px-6 bg-cover bg-center bg-no-repeat relative">
       {/* Background overlay for better text readability */}
       <div className="absolute inset-0 bg-white"></div>
-
+      
       {/* Back Button - Top Left Corner */}
       <button
         onClick={handleBackToHome}
@@ -406,7 +423,7 @@ const LandlordSignupPage = () => {
             </p>
           </div>
           {errors.general && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="bg-white/90 backdrop-blur-sm border border-[#2C3E50]/20 rounded-[2rem] px-8 py-12 min-h-[560px] md:min-h-[640px] shadow-xl">
               <p className="text-red-600 text-sm">{errors.general}</p>
             </div>
           )}

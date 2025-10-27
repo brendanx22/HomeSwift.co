@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link, useLocation } from 'react-router-do
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { authAPI } from '../utils/api';
 import { Toaster, toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabaseClient';
 
@@ -20,7 +21,7 @@ export default function LoginPage() {
   const [hasRequestedResend, setHasRequestedResend] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { login, googleLogin, isAuthenticated } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const from = location.state?.from?.pathname || '/';
   const [searchParams] = useSearchParams();
   const isVerified = searchParams.get('verified') === 'true';
@@ -45,7 +46,7 @@ export default function LoginPage() {
   useEffect(() => {
     const { state } = location;
     if (state?.verified) {
-      toast.success('Email verified successfully! You can now log in.');
+      setIsVerified(true);
       // Clear the state to prevent showing the message again
       navigate(location.pathname, { replace: true, state: {} });
     }
@@ -66,16 +67,16 @@ export default function LoginPage() {
 
     try {
       // First, try to log in with Supabase
-      const loginResult = await login({
-        email,
+      const loginResult = await login({ 
+        email, 
         password,
-        userType: isLandlord ? 'landlord' : 'renter'
+        userType: isLandlord ? 'landlord' : 'renter' 
       });
-
+      
       if (loginResult?.success) {
         // After successful Supabase login, get the backend token
         try {
-          const response = await fetch('https://api.homeswift.co/api/auth/signin', {
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/auth/signin`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -93,7 +94,7 @@ export default function LoginPage() {
         } catch (err) {
           console.warn('Could not get backend token, continuing with Supabase auth only:', err);
         }
-
+        
         toast.success(loginResult.message || 'Login successful!');
       } else {
         // Handle specific error cases
@@ -104,7 +105,7 @@ export default function LoginPage() {
         }
         setError(loginResult?.error || 'Login failed. Please check your credentials and try again.');
       }
-
+      
     } catch (err) {
       console.error('Login error:', err);
       setError('An error occurred during login. Please try again.');
@@ -119,30 +120,30 @@ export default function LoginPage() {
 
   const handleResendVerification = async () => {
     if (!unverifiedEmail) return;
-
+    
     try {
       setLoading(true);
       setError('');
-
-      const response = await fetch('https://api.homeswift.co/api/auth/resend-verification', {
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: unverifiedEmail })
       });
-
+      
       const data = await response.json();
-
+      
       if (!response.ok) {
         throw new Error(data.error || 'Failed to resend verification email');
       }
-
+      
       toast.success('Verification email sent! Please check your inbox.');
       setResendCooldown(60); // 60 seconds cooldown
       setShowResendVerification(true);
       setHasRequestedResend(true);
     } catch (error) {
       console.error('Resend verification error:', error);
-
+      
       if (error.response) {
         if (error.response.status === 429) {
           setResendCooldown(60);
@@ -164,17 +165,8 @@ export default function LoginPage() {
       setGoogleLoading(true);
       setError('');
 
-      const userType = isLandlord ? 'landlord' : 'renter';
-      console.log('Starting Google OAuth with userType:', userType);
-
-      const result = await googleLogin(userType);
-
-      if (result.success) {
-        toast.success('Redirecting to Google...');
-        // The redirect will be handled by Supabase OAuth
-      } else {
-        toast.error(result.error || 'Google sign-in failed');
-      }
+      // Show toast notification that Google OAuth is not available
+      toast.error('Google sign-in is currently not available. Please use email and password to sign in.');
 
       setGoogleLoading(false);
     } catch (err) {
@@ -185,7 +177,7 @@ export default function LoginPage() {
   };
 
   const handleBackToHome = () => {
-    navigate('/user-type');
+    navigate('/');
   };
 
   return (
