@@ -130,24 +130,24 @@ const AuthCallback = () => {
           const hasCurrentRole = userRoles?.some(r => r.role === userType);
           console.log('🔍 Has current role?', hasCurrentRole);
           
+          // Always update the current role in localStorage to match the login type
+          console.log(`🔄 Setting current role to: ${userType}`);
+          localStorage.setItem('currentRole', userType);
+          
+          // If user doesn't have this role yet, add it
           if (!hasCurrentRole) {
             console.log(`🆕 Adding new role '${userType}' for user`);
             
-            // For multi-role support, we only set as primary if no primary exists
-            // or if this is a new user
-            const hasPrimaryRole = userRoles?.some(r => r.is_primary);
-            const shouldBePrimary = !hasPrimaryRole || isNewUser;
-            
-            console.log('🔍 Has primary role?', hasPrimaryRole, '| Should be primary?', shouldBePrimary);
-
             try {
-              // Add the new role
+              // Add the new role as primary if it's the first role, otherwise non-primary
+              const isFirstRole = !userRoles || userRoles.length === 0;
+              
               const { data: insertedRole, error: roleError } = await supabase
                 .from('user_roles')
                 .insert({
                   user_id: user.id,
                   role: userType,
-                  is_primary: shouldBePrimary
+                  is_primary: isFirstRole
                 })
                 .select()
                 .single();
@@ -156,21 +156,53 @@ const AuthCallback = () => {
               
               console.log(`✅ Successfully added '${userType}' role:`, insertedRole);
               
-              // If we set this as primary, ensure no other roles are marked as primary
-              if (shouldBePrimary && userRoles?.length > 0) {
-                console.log('🔄 Updating other roles to non-primary');
-                await supabase
-                  .from('user_roles')
-                  .update({ is_primary: false })
-                  .eq('user_id', user.id)
-                  .neq('role', userType);
+              // If we added a new role, update the user_metadata with all roles
+              if (insertedRole) {
+                const allRoles = [...(userRoles || []).map(r => r.role), userType];
+                await supabase.auth.updateUser({
+                  data: { 
+                    roles: allRoles,
+                    current_role: userType
+                  }
+                });
+                
+                console.log('🔄 Updated user metadata with roles:', allRoles);
               }
+              
             } catch (error) {
               console.error('❌ Error in role management:', error);
               // If role already exists (race condition), continue
               if (!error.message.includes('duplicate key')) {
                 throw error;
               }
+            }
+          } else {
+            console.log(`✅ User already has '${userType}' role, updating as current`);
+            
+            // Update the current role in the database
+            await supabase.auth.updateUser({
+              data: { 
+                current_role: userType
+              }
+            });
+            
+            // Set this role as primary if it's not already
+            const currentRole = userRoles.find(r => r.role === userType);
+            if (currentRole && !currentRole.is_primary) {
+              console.log(`🔄 Setting '${userType}' as primary role`);
+              
+              // First, set all roles to non-primary
+              await supabase
+                .from('user_roles')
+                .update({ is_primary: false })
+                .eq('user_id', user.id);
+                
+              // Then set this role as primary
+              await supabase
+                .from('user_roles')
+                .update({ is_primary: true })
+                .eq('user_id', user.id)
+                .eq('role', userType);
             }
 
             // Refetch roles after adding new one
@@ -189,19 +221,28 @@ const AuthCallback = () => {
               // Dispatch custom event to notify auth context to refetch roles
               window.dispatchEvent(new CustomEvent('rolesUpdated', { detail: { userId: user.id } }));
             }
-          } else {
-            console.log(`ℹ️ User already has '${userType}' role, no need to add`);
-            
-            if (userRoles) {
-              localStorage.setItem('userRoles', JSON.stringify(userRoles));
-              
-              // Set current role to the one they're logging in as
-              localStorage.setItem('currentRole', userType);
-              console.log('✅ Updated currentRole to:', userType);
-            }
           }
 
-          // Try to get backend token for the authenticated user
+          // Ensure we have the latest roles
+          const { data: finalRoles } = await supabase
+            .from('user_roles')
+            .select('*')
+            .eq('user_id', user.id);
+          
+          if (finalRoles) {
+            localStorage.setItem('userRoles', JSON.stringify(finalRoles));
+            console.log('🔍 Final roles after update:', finalRoles);
+          }
+
+          // Update user metadata with current role
+          await supabase.auth.updateUser({
+            data: { 
+              current_role: userType,
+              roles: finalRoles?.map(r => r.role) || []
+            }
+          });
+
+          // Get backend token for the authenticated user
           try {
             const response = await fetch('https://api.homeswift.co/api/auth/token', {
               method: 'POST',
@@ -225,29 +266,51 @@ const AuthCallback = () => {
 
           toast.success(isNewUser ? 'Account created successfully!' : 'Successfully authenticated!');
 
-          // Redirect based on user type
+          // Determine redirect path based on user type
           let redirectPath = '/profile';
           
-          if (userType === 'landlord') {
-            redirectPath = '/landlord/dashboard';
-          } else if (userType === 'renter') {
-            redirectPath = '/chat';
+          // Always use the most specific path for the role
+          switch(userType) {
+            case 'landlord':
+              redirectPath = '/landlord/dashboard';
+              break;
+            case 'renter':
+              redirectPath = '/chat';
+              break;
+            default:
+              redirectPath = '/profile';
           }
           
-          console.log('🔄 Redirecting to:', redirectPath);
+          console.log(`🔄 User is now '${userType}', redirecting to:`, redirectPath);
           
-          // Force a small delay to ensure all state is updated
+          // Force state update before redirect
           setTimeout(() => {
-            // Clear any cached data
-            window.dispatchEvent(new CustomEvent('rolesUpdated', { 
-              detail: { 
-                userId: user.id,
-                forceRefresh: true
-              } 
+            // Dispatch event to update all components
+            window.dispatchEvent(new CustomEvent('authStateChanged', {
+              detail: {
+                user: {
+                  ...user,
+                  user_metadata: {
+                    ...user.user_metadata,
+                    current_role: userType
+                  }
+                },
+                currentRole: userType,
+                isAuthenticated: true
+              }
             }));
             
-            // Use replace to avoid back button issues
-            navigate(redirectPath, { replace: true });
+            // Force refresh any cached data
+            window.dispatchEvent(new Event('storage'));
+            
+            // Navigate to the appropriate dashboard
+            navigate(redirectPath, { 
+              replace: true,
+              state: { 
+                forceRefresh: true,
+                roleChanged: true
+              } 
+            });
           }, 100);
         } else {
           console.log('No active session in callback');
