@@ -355,13 +355,23 @@ export default function SignupPage() {
       setGoogleLoading(true);
       setError('');
 
-      // Show toast notification that Google OAuth is not available
-      toast.error('Google sign-up is currently not available. Please use email and password to create your account.');
+      // Persist selected user type for role assignment after OAuth
+      const storedUserType = localStorage.getItem('userType') || userType || 'renter';
+      localStorage.setItem('userType', storedUserType);
 
-      setGoogleLoading(false);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: { access_type: 'offline', prompt: 'consent' }
+        }
+      });
+      if (error) throw error;
     } catch (err) {
       console.error('Google signup error:', err);
       setError('Failed to sign up with Google. Please try again.');
+      toast.error('Failed to sign up with Google. Please try again.');
+    } finally {
       setGoogleLoading(false);
     }
   };

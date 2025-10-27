@@ -66,15 +66,25 @@ const LandlordLoginPage = () => {
     setErrors({});
 
     try {
-      // Show toast notification that Google OAuth is not available
-      toast.error('Google sign-in is currently not available. Please use email and password to sign in.');
+      // Persist selected user type for role assignment after OAuth
+      localStorage.setItem('userType', 'landlord');
 
-      setGoogleLoading(false);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: { access_type: 'offline', prompt: 'consent' }
+        }
+      });
+
+      if (error) throw error;
     } catch (error) {
       console.error('Google login error:', error);
       setErrors({
         general: error.message || 'Google sign-in failed. Please try again.'
       });
+      toast.error('Google sign-in failed. Please try again.');
+    } finally {
       setGoogleLoading(false);
     }
   };
@@ -119,7 +129,7 @@ const LandlordLoginPage = () => {
     if (resendCooldown > 0) return;
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/resend-verification', {
+      const response = await fetch('https://api.homeswift.co/api/auth/resend-verification', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

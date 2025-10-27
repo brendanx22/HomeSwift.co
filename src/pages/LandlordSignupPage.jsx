@@ -153,18 +153,23 @@ const LandlordSignupPage = () => {
   };
 
   const handleGoogleSignup = async () => {
-    console.log('🔐 Google signup initiated');
     setGoogleLoading(true);
     setErrors({});
 
     try {
-      // Show toast notification that Google OAuth is not available
-      toast.error('Google sign-up is currently not available. Please use email and password to create your account.');
-
-      setGoogleLoading(false);
+      localStorage.setItem('userType', 'landlord');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: { access_type: 'offline', prompt: 'consent' }
+        }
+      });
+      if (error) throw error;
     } catch (error) {
-      console.error('❌ Google signup failed:', error.message);
-      toast.error(error.message || 'Failed to sign in with Google');
+      setErrors({ general: error.message || 'Google sign-up failed. Please try again.' });
+      toast.error('Google sign-up failed. Please try again.');
+    } finally {
       setGoogleLoading(false);
     }
   };

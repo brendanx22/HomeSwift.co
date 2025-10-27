@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'react-hot-toast';
+import { generateUniqueAgentId } from '../utils/agentId.js';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -34,6 +35,23 @@ const AuthCallback = () => {
           // Get user data
           const user = data.session.user;
 
+          // Determine selected user type from previous selection
+          const selectedUserType = localStorage.getItem('userType') || user.user_metadata?.user_type || 'renter';
+
+          // Ensure metadata contains user_type and agent_id
+          const newMetadata = { ...user.user_metadata };
+          if (!newMetadata.user_type) newMetadata.user_type = selectedUserType;
+          if (!newMetadata.agent_id) {
+            try {
+              const agentId = await generateUniqueAgentId();
+              newMetadata.agent_id = agentId;
+            } catch {}
+          }
+
+          try {
+            await supabase.auth.updateUser({ data: newMetadata });
+          } catch {}
+
           // Store user in localStorage for consistency
           const userData = {
             id: user.id,
@@ -44,7 +62,7 @@ const AuthCallback = () => {
 
           // Try to get backend token for the authenticated user
           try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/auth/token`, {
+            const response = await fetch(`https://api.homeswift.co/api/auth/token`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -64,23 +82,42 @@ const AuthCallback = () => {
             console.warn('Could not get backend token, continuing with Supabase auth only:', err);
           }
 
-          // Check if user profile exists and determine user type
-          const { data: userProfile, error: profileError } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
+          // Assign or update roles based on selected user type, allow both roles
+          const expectedRole = selectedUserType === 'landlord' ? 'landlord' : 'renter';
+          try {
+            const { data: currentRoles } = await supabase
+              .from('user_roles')
+              .select('role, is_primary')
+              .eq('user_id', user.id);
 
-          if (profileError && profileError.code !== 'PGRST116') {
-            console.error('Error fetching user profile:', profileError);
+            const hasExpected = (currentRoles || []).some(r => r.role === expectedRole);
+            if (!hasExpected) {
+              // Insert expected role as primary
+              await supabase.from('user_roles').insert([{ user_id: user.id, role: expectedRole, is_primary: true }]);
+            } else {
+              // Ensure expected role is primary
+              await supabase.from('user_roles').update({ is_primary: false }).eq('user_id', user.id);
+              await supabase.from('user_roles').update({ is_primary: true }).eq('user_id', user.id).eq('role', expectedRole);
+            }
+
+            // Refresh roles and persist locally
+            const { data: refreshed } = await supabase
+              .from('user_roles')
+              .select('role, is_primary')
+              .eq('user_id', user.id);
+            if (refreshed) {
+              localStorage.setItem('userRoles', JSON.stringify(refreshed));
+              const primary = refreshed.find(r => r.is_primary)?.role || refreshed[0]?.role || expectedRole;
+              localStorage.setItem('currentRole', primary);
+            }
+          } catch (roleErr) {
+            console.error('Role assignment error:', roleErr);
           }
-
-          const userType = userProfile?.user_type || user.user_metadata?.user_type || 'renter';
 
           toast.success('Successfully authenticated!');
 
           // Redirect based on user type
-          const redirectPath = userType === 'landlord' ? '/landlord/dashboard' : '/chat';
+          const redirectPath = expectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
           setTimeout(() => navigate(redirectPath), 2000);
         } else {
           console.log('No active session in callback');
@@ -116,7 +153,7 @@ const AuthCallback = () => {
 
               // Try backend token
               try {
-                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/auth/token`, {
+                const response = await fetch(`https://api.homeswift.co/api/auth/token`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ user_id: user.id }),
@@ -134,8 +171,8 @@ const AuthCallback = () => {
               }
 
               toast.success('Successfully authenticated!');
-              const userType = user.user_metadata?.user_type || 'renter';
-              const redirectPath = userType === 'landlord' ? '/landlord/dashboard' : '/chat';
+              const selectedUserType = localStorage.getItem('userType') || user.user_metadata?.user_type || 'renter';
+              const redirectPath = selectedUserType === 'landlord' ? '/landlord/dashboard' : '/chat';
               setTimeout(() => navigate(redirectPath), 2000);
               return;
             }

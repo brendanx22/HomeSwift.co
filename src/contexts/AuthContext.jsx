@@ -355,6 +355,48 @@ const signup = async (userData) => {
     checkAuth();
   }, [loadUserData]);
 
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('userRoles');
+        localStorage.removeItem('currentRole');
+        localStorage.removeItem('backendToken');
+        setUser(null);
+        setRoles([]);
+        setCurrentRole(null);
+        setIsAuthenticated(false);
+        return;
+      }
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        const sUser = session?.user;
+        if (sUser?.id) {
+          setUser(sUser);
+          setIsAuthenticated(true);
+          localStorage.setItem('user', JSON.stringify({ id: sUser.id, email: sUser.email, ...sUser.user_metadata }));
+          await fetchUserRoles(sUser.id);
+        }
+      }
+    });
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`user_roles_changes_${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_roles', filter: `user_id=eq.${user.id}` }, () => {
+        fetchUserRoles(user.id);
+      });
+    channel.subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   // Add a new role to the current user
   const addRole = async (role, userId = null) => {
     const targetUserId = userId || user?.id;
