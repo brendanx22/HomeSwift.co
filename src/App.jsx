@@ -91,7 +91,7 @@ const AppLayout = () => {
 
     // Handle authenticated users
     if (isAuthenticated && user) {
-      const publicRoutes = ['/', '/login', '/signup', '/user-type', '/forgot-password', '/reset-password', '/landlord/login'];
+      const publicRoutes = ['/login', '/signup', '/user-type', '/forgot-password', '/reset-password', '/landlord/login'];
 
       // Get user data from multiple sources for consistency
       const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -102,34 +102,42 @@ const AppLayout = () => {
       const detectedRole = currentRole || allRoles.find(r => r.is_primary)?.role || allRoles[0]?.role || userType || 'renter';
 
       // Enhanced debug logging
-      // console.log('AppLayout Auth Debug:', {
-      //   isAuthenticated,
-      //   user: user ? 'exists' : 'null',
-      //   userType,
-      //   storedRoles,
-      //   authContextRoles,
-      //   allRoles,
-      //   currentRole,
-      //   detectedRole,
-      //   path,
-      //   isLandlordLoginPage,
-      //   isLoginPage
-      // });
+      console.log('AppLayout Auth Debug:', {
+        isAuthenticated,
+        user: user ? 'exists' : 'null',
+        userType,
+        storedRoles,
+        authContextRoles,
+        allRoles,
+        currentRole,
+        detectedRole,
+        path,
+        isLandlordLoginPage,
+        isLoginPage
+      });
+
+      // Handle homepage for authenticated users - redirect to appropriate dashboard
+      if (path === '/') {
+        const dashboardPath = detectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
+        console.log('Redirecting from homepage to:', dashboardPath, 'based on role:', detectedRole);
+        navigate(dashboardPath, { replace: true });
+        return;
+      }
 
       // If we're on a login page, redirect to the appropriate dashboard
       if (isLoginPage || isLandlordLoginPage) {
         const dashboardPath = detectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
-        // console.log('Redirecting from login to:', dashboardPath, 'based on role:', detectedRole);
+        console.log('Redirecting from login to:', dashboardPath, 'based on role:', detectedRole);
         if (path !== dashboardPath) {
           navigate(dashboardPath, { replace: true });
         }
         return;
       }
 
-      // For other public routes when authenticated
+      // For other public routes when authenticated (exclude homepage)
       if (publicRoutes.includes(path)) {
         const dashboardPath = detectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
-        // console.log('Redirecting from public route to:', dashboardPath);
+        console.log('Redirecting from public route to:', dashboardPath);
         if (path !== dashboardPath) {
           navigate(dashboardPath, { replace: true });
         }
@@ -139,7 +147,7 @@ const AppLayout = () => {
       // If user is on a landlord route but not a landlord, redirect to renter dashboard
       // Exclude signup pages from this check since they should be accessible to unauthenticated users
       if (isLandlordRoute && detectedRole !== 'landlord' && !path.includes('/signup')) {
-        // console.log('Not a landlord, redirecting to chat');
+        console.log('Not a landlord, redirecting to chat');
         navigate('/chat', { replace: true });
         return;
       }
@@ -147,7 +155,7 @@ const AppLayout = () => {
       // If user is a renter but on a landlord route, redirect to renter dashboard
       // Exclude signup pages from this check
       if (detectedRole === 'renter' && isLandlordRoute && !path.includes('/signup')) {
-        // console.log('Renter on landlord route, redirecting to chat');
+        console.log('Renter on landlord route, redirecting to chat');
         navigate('/chat', { replace: true });
         return;
       }
@@ -684,6 +692,20 @@ const AppLayout = () => {
                 <ProtectedRoute requiredRoles={['renter', 'landlord']}>
                   <HomeInspectionChecklist />
                 </ProtectedRoute>
+              }
+            />
+
+            {/* Catch-all route - redirect authenticated users to their dashboard */}
+            <Route
+              path="*"
+              element={
+                !isAuthenticated ? (
+                  <Navigate to="/login" replace />
+                ) : currentRole === 'landlord' ? (
+                  <Navigate to="/landlord/dashboard" replace />
+                ) : (
+                  <Navigate to="/chat" replace />
+                )
               }
             />
           </Routes>

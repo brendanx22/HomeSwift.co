@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build --mode production",
     "preview": "vite preview",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "deploy:frontend": "npm run build && echo 'Frontend built successfully. Deploy to Vercel.'",
+    "deploy:backend": "echo 'Deploy backend to your server (see README.md)'",
+    "deploy": "npm run deploy:frontend && npm run deploy:backend"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",

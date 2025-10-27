@@ -1,15 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUp, ArrowRight, Sparkles, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
 
 const Home = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, currentRole, loading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const [searchText, setSearchText] = useState('');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  // Redirect authenticated users to their dashboard
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      const dashboardPath = currentRole === 'landlord' ? '/landlord/dashboard' : '/chat';
+      console.log('Home: Redirecting authenticated user to:', dashboardPath);
+      navigate(dashboardPath, { replace: true });
+    }
+  }, [isAuthenticated, currentRole, loading, navigate]);
+
+  // Don't render if user is authenticated and being redirected
+  if (!loading && isAuthenticated) {
+    return null;
+  }
 
   const handleGetStartedClick = (e) => {
     e.preventDefault();
@@ -193,7 +209,7 @@ const Home = () => {
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 text-center">
         {/* Feature Tag */}
         <motion.div
-          className="flex items-center space-x-2 bg-[#FF6B35] rounded-[2rem] px-6 py-3 mb-6"
+          className="flex items-center space-x-2 bg-[#FF6B35] rounded-4xl px-6 py-3 mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}

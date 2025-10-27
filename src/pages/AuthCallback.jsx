@@ -202,10 +202,26 @@ const AuthCallback = () => {
           // Redirect based on user type
           const redirectPath = finalUserType === 'landlord' ? '/landlord/dashboard' : '/chat';
 
+          // Ensure user data is properly stored in localStorage before redirect
+          const currentUserData = JSON.parse(localStorage.getItem('user') || '{}');
+          const updatedUserData = {
+            ...currentUserData,
+            user_metadata: {
+              ...currentUserData.user_metadata,
+              user_type: finalUserType
+            }
+          };
+          localStorage.setItem('user', JSON.stringify(updatedUserData));
+
+          // Update current role immediately
+          localStorage.setItem('currentRole', finalUserType);
+
           // Trigger AuthContext to re-check authentication state
           window.dispatchEvent(new CustomEvent('auth-callback-complete', {
             detail: { userType: finalUserType }
           }));
+
+          console.log(`🔄 AuthCallback: Redirecting to ${redirectPath} for userType: ${finalUserType}`);
 
           setTimeout(() => navigate(redirectPath), 2000);
         } else {
@@ -266,10 +282,26 @@ const AuthCallback = () => {
               const finalUserType = userType || user.user_metadata?.user_type || 'renter';
               const redirectPath = finalUserType === 'landlord' ? '/landlord/dashboard' : '/chat';
 
+              // Ensure user data is properly stored in localStorage before redirect
+              const currentUserData = JSON.parse(localStorage.getItem('user') || '{}');
+              const updatedUserData = {
+                ...currentUserData,
+                user_metadata: {
+                  ...currentUserData.user_metadata,
+                  user_type: finalUserType
+                }
+              };
+              localStorage.setItem('user', JSON.stringify(updatedUserData));
+
+              // Update current role immediately
+              localStorage.setItem('currentRole', finalUserType);
+
               // Trigger AuthContext to re-check authentication state
               window.dispatchEvent(new CustomEvent('auth-callback-complete', {
                 detail: { userType: finalUserType }
               }));
+
+              console.log(`🔄 AuthCallback: Redirecting to ${redirectPath} for userType: ${finalUserType}`);
 
               setTimeout(() => navigate(redirectPath), 2000);
               return;

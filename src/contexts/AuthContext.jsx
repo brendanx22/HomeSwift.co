@@ -75,6 +75,13 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(true);
         }
 
+        // Fallback: try to get currentRole from localStorage immediately
+        const savedCurrentRole = localStorage.getItem('currentRole');
+        if (savedCurrentRole) {
+          console.log('🔄 Using saved currentRole from localStorage:', savedCurrentRole);
+          setCurrentRole(savedCurrentRole);
+        }
+
         // Handle roles
         if (savedRolesString) {
           try {
@@ -85,20 +92,13 @@ export const AuthProvider = ({ children }) => {
               const primaryRole = savedRoles.find(r => r.is_primary)?.role || savedRoles[0]?.role;
               console.log('Setting primary role to:', primaryRole);
               setCurrentRole(primaryRole);
+              localStorage.setItem('userRoles', JSON.stringify(savedRoles));
               localStorage.setItem('currentRole', primaryRole);
               return true;
             }
           } catch (rolesError) {
             console.error('❌ Failed to parse saved roles:', rolesError);
           }
-        }
-
-        // Fallback: try to get currentRole from localStorage
-        const savedCurrentRole = localStorage.getItem('currentRole');
-        if (savedCurrentRole) {
-          console.log('🔄 Using saved currentRole from localStorage:', savedCurrentRole);
-          setCurrentRole(savedCurrentRole);
-          return true;
         }
 
         // Additional fallback: check user_type from metadata if roles aren't available yet
