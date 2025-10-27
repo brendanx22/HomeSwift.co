@@ -94,10 +94,18 @@ const AuthCallback = () => {
             console.error('Error updating user metadata:', updateError);
           }
 
-          // Clear pending user type only after successful role assignment
-          if (hasCurrentRole || !pendingUserType) {
-            localStorage.removeItem('pendingUserType');
-          }
+          // Fetch existing user roles FIRST before using them
+          const { data: userRoles, error: rolesError } = await supabase
+            .from('user_roles')
+            .select('*')
+            .eq('user_id', user.id);
+
+          console.log('🔍 Existing user roles:', userRoles);
+          console.log('🔍 Checking if user has role:', userType);
+
+          // Check if user already has the current role
+          const hasCurrentRole = userRoles?.some(r => r.role === userType);
+          console.log('🔍 Has current role?', hasCurrentRole);
 
           // Store user in localStorage for consistency
           const userData = {
@@ -116,19 +124,6 @@ const AuthCallback = () => {
             }
           };
           localStorage.setItem('user', JSON.stringify(userData));
-
-          // Fetch existing user roles
-          const { data: userRoles, error: rolesError } = await supabase
-            .from('user_roles')
-            .select('*')
-            .eq('user_id', user.id);
-
-          console.log('🔍 Existing user roles:', userRoles);
-          console.log('🔍 Checking if user has role:', userType);
-
-          // Check if user already has the current role
-          const hasCurrentRole = userRoles?.some(r => r.role === userType);
-          console.log('🔍 Has current role?', hasCurrentRole);
           
           // Always update the current role in localStorage to match the login type
           console.log(`🔄 Setting current role to: ${userType}`);
@@ -228,7 +223,7 @@ const AuthCallback = () => {
             .from('user_roles')
             .select('*')
             .eq('user_id', user.id);
-          
+
           if (finalRoles) {
             localStorage.setItem('userRoles', JSON.stringify(finalRoles));
             console.log('🔍 Final roles after update:', finalRoles);
@@ -236,11 +231,17 @@ const AuthCallback = () => {
 
           // Update user metadata with current role
           await supabase.auth.updateUser({
-            data: { 
+            data: {
               current_role: userType,
               roles: finalRoles?.map(r => r.role) || []
             }
           });
+
+          // Clear pending user type after successful role assignment
+          if (pendingUserType) {
+            localStorage.removeItem('pendingUserType');
+            console.log('✅ Cleared pendingUserType from localStorage');
+          }
 
           // Get backend token for the authenticated user
           try {
