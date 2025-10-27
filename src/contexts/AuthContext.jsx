@@ -395,17 +395,30 @@ const signup = async (userData) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 Auth state changed:', event, session ? 'Session exists' : 'No session');
 
-      if (event === 'SIGNED_IN' && session) {
-        console.log('✅ User signed in, updating auth state');
+      // Handle all events that indicate a valid session
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+        console.log('✅ User session active, updating auth state');
         const user = session.user;
         
-        // Update user state
+        // Update user state immediately
         setUser(user);
         setIsAuthenticated(true);
-        localStorage.setItem('user', JSON.stringify(user));
+        
+        // Store in localStorage
+        const userData = {
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name,
+          avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
+          user_metadata: user.user_metadata
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
 
         // Fetch and set roles
         await fetchUserRoles(user.id);
+        
+        // Mark loading as complete
+        setLoading(false);
       } else if (event === 'SIGNED_OUT') {
         console.log('👋 User signed out, clearing auth state');
         setUser(null);
@@ -415,15 +428,35 @@ const signup = async (userData) => {
         localStorage.removeItem('user');
         localStorage.removeItem('userRoles');
         localStorage.removeItem('currentRole');
+        localStorage.removeItem('pendingUserType');
+        setLoading(false);
       } else if (event === 'TOKEN_REFRESHED' && session) {
         console.log('🔄 Token refreshed, updating session');
+        const userData = {
+          id: session.user.id,
+          email: session.user.email,
+          full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.name,
+          avatar_url: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
+          user_metadata: session.user.user_metadata
+        };
         setUser(session.user);
-        localStorage.setItem('user', JSON.stringify(session.user));
+        localStorage.setItem('user', JSON.stringify(userData));
       } else if (event === 'USER_UPDATED' && session) {
         console.log('🔄 User updated, refreshing data');
+        const userData = {
+          id: session.user.id,
+          email: session.user.email,
+          full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.name,
+          avatar_url: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
+          user_metadata: session.user.user_metadata
+        };
         setUser(session.user);
-        localStorage.setItem('user', JSON.stringify(session.user));
+        localStorage.setItem('user', JSON.stringify(userData));
         await fetchUserRoles(session.user.id);
+      } else if (!session) {
+        // No session at all
+        console.log('❌ No session found');
+        setLoading(false);
       }
     });
 
@@ -433,31 +466,26 @@ const signup = async (userData) => {
     };
   }, []);
 
-  // Check authentication on mount
+  // Initial session check (auth state listener will handle the rest)
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkInitialSession = async () => {
       try {
-        console.log('🔍 checkAuth - Starting authentication check...');
-        const hasValidAuth = await loadUserData();
+        console.log('🔍 Checking initial session...');
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (!hasValidAuth) {
-          console.log('❌ No valid authentication found, clearing state');
-          setUser(null);
-          setRoles([]);
-          setCurrentRole(null);
-          setIsAuthenticated(false);
+        if (!session) {
+          console.log('❌ No initial session found');
+          setLoading(false);
         }
+        // If session exists, the auth state listener will handle it via INITIAL_SESSION event
       } catch (error) {
-        console.error('💥 Auth check error:', error);
-        setIsAuthenticated(false);
-      } finally {
-        console.log('✅ Auth check completed, loading set to false');
+        console.error('💥 Initial session check error:', error);
         setLoading(false);
       }
     };
 
-    checkAuth();
-  }, [loadUserData]);
+    checkInitialSession();
+  }, []);
 
   // Add a new role to the current user
   const addRole = async (role, userId = null) => {

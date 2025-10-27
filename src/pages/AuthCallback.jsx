@@ -149,9 +149,12 @@ const AuthCallback = () => {
 
           toast.success(isNewUser ? 'Account created successfully!' : 'Successfully authenticated!');
 
-          // Redirect based on user type
+          // Redirect based on user type immediately
           const redirectPath = userType === 'landlord' ? '/landlord/dashboard' : '/chat';
-          setTimeout(() => navigate(redirectPath), 2000);
+          console.log('🔄 Redirecting to:', redirectPath);
+          
+          // Use replace to avoid back button issues
+          navigate(redirectPath, { replace: true });
         } else {
           console.log('No active session in callback');
 
@@ -206,7 +209,8 @@ const AuthCallback = () => {
               toast.success('Successfully authenticated!');
               const userType = user.user_metadata?.user_type || 'renter';
               const redirectPath = userType === 'landlord' ? '/landlord/dashboard' : '/chat';
-              setTimeout(() => navigate(redirectPath), 2000);
+              console.log('🔄 Redirecting to:', redirectPath);
+              navigate(redirectPath, { replace: true });
               return;
             }
           }
