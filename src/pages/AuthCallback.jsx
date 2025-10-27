@@ -160,6 +160,9 @@ const AuthCallback = () => {
               localStorage.setItem('userRoles', JSON.stringify(updatedRoles));
               localStorage.setItem('currentRole', userType);
               console.log('✅ Stored updated roles in localStorage');
+              
+              // Dispatch custom event to notify auth context to refetch roles
+              window.dispatchEvent(new CustomEvent('rolesUpdated', { detail: { userId: user.id } }));
             }
           } else {
             console.log(`ℹ️ User already has '${userType}' role, no need to add`);

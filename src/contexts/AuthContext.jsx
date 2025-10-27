@@ -392,6 +392,23 @@ const signup = async (userData) => {
     };
   }, [user?.id]);
 
+  // Listen for custom rolesUpdated event from AuthCallback
+  useEffect(() => {
+    const handleRolesUpdated = async (event) => {
+      console.log('🔄 Roles updated event received:', event.detail);
+      if (event.detail?.userId && user?.id === event.detail.userId) {
+        console.log('🔄 Refetching roles after update...');
+        await fetchUserRoles(event.detail.userId);
+      }
+    };
+
+    window.addEventListener('rolesUpdated', handleRolesUpdated);
+
+    return () => {
+      window.removeEventListener('rolesUpdated', handleRolesUpdated);
+    };
+  }, [user?.id]);
+
   // Listen to Supabase auth state changes to prevent hard refreshes
   useEffect(() => {
     console.log('🔄 Setting up Supabase auth state listener...');
@@ -403,6 +420,19 @@ const signup = async (userData) => {
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
         console.log('✅ User session active, updating auth state');
         const user = session.user;
+        
+        // Check if we're in the middle of an OAuth flow with a pending user type
+        const pendingUserType = localStorage.getItem('pendingUserType');
+        
+        // If there's a pending user type, let AuthCallback handle it
+        // Don't interfere with the role creation process
+        if (pendingUserType && window.location.pathname === '/auth/callback') {
+          console.log('🔄 OAuth flow in progress with pending type:', pendingUserType, '- letting AuthCallback handle it');
+          setUser(user);
+          setIsAuthenticated(true);
+          setLoading(false);
+          return; // Exit early, let AuthCallback handle role creation
+        }
         
         // Update user state immediately
         setUser(user);
