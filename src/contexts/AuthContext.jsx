@@ -340,22 +340,19 @@ const signup = async (userData) => {
         (payload) => {
           console.log('🔄 User profile updated:', payload);
           if (payload.new) {
-            setUser(prev => ({
-              ...prev,
-              ...payload.new,
-              user_metadata: {
-                ...prev?.user_metadata,
-                user_type: payload.new.user_type
-              }
-            }));
-            localStorage.setItem('user', JSON.stringify({
+            const updatedUser = {
               ...user,
               ...payload.new,
               user_metadata: {
                 ...user?.user_metadata,
                 user_type: payload.new.user_type
-              }
-            }));
+              },
+              _updated: Date.now() // Force re-render
+            };
+            
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            console.log('✅ Profile updated, state refreshed');
           }
         }
       )
@@ -374,8 +371,15 @@ const signup = async (userData) => {
         },
         async (payload) => {
           console.log('🔄 User roles updated:', payload);
+          
           // Refetch all roles when any role changes
-          await fetchUserRoles(user.id);
+          const rolesUpdated = await fetchUserRoles(user.id);
+          
+          // Force a state update to trigger re-renders
+          if (rolesUpdated) {
+            console.log('✅ Roles refreshed, forcing state update');
+            setUser(prev => ({ ...prev, _updated: Date.now() }));
+          }
         }
       )
       .subscribe();

@@ -45,39 +45,35 @@ const AuthCallback = () => {
             .eq('id', user.id)
             .single();
 
-          let userType = userProfile?.user_type || user.user_metadata?.user_type;
-          let isNewUser = false;
+          // Determine the user type for this login attempt
+          let userType = pendingUserType || userProfile?.user_type || user.user_metadata?.user_type || 'renter';
+          let isNewUser = !userProfile;
 
-          // If no existing user type, use the pending one or default to renter
-          if (!userType) {
-            userType = pendingUserType || 'renter';
-            isNewUser = true;
-            console.log('New user detected, using user type:', userType);
+          console.log('User type for this login:', userType, '| Is new user:', isNewUser);
 
-            // Update user metadata in Supabase
-            const { error: updateError } = await supabase.auth.updateUser({
-              data: { user_type: userType }
-            });
+          // Always create/update user profile
+          const { error: upsertError } = await supabase
+            .from('user_profiles')
+            .upsert({
+              id: user.id,
+              email: user.email,
+              full_name: user.user_metadata?.full_name || user.user_metadata?.name,
+              avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
+              user_type: userType,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'id' });
 
-            if (updateError) {
-              console.error('Error updating user metadata:', updateError);
-            }
+          if (upsertError) {
+            console.error('Error creating/updating user profile:', upsertError);
+          }
 
-            // Create or update user profile
-            const { error: upsertError } = await supabase
-              .from('user_profiles')
-              .upsert({
-                id: user.id,
-                email: user.email,
-                full_name: user.user_metadata?.full_name || user.user_metadata?.name,
-                avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
-                user_type: userType,
-                updated_at: new Date().toISOString()
-              }, { onConflict: 'id' });
+          // Update user metadata
+          const { error: updateError } = await supabase.auth.updateUser({
+            data: { user_type: userType }
+          });
 
-            if (upsertError) {
-              console.error('Error creating user profile:', upsertError);
-            }
+          if (updateError) {
+            console.error('Error updating user metadata:', updateError);
           }
 
           // Clear pending user type
@@ -96,31 +92,56 @@ const AuthCallback = () => {
           };
           localStorage.setItem('user', JSON.stringify(userData));
 
-          // Fetch and store user roles
+          // Fetch existing user roles
           const { data: userRoles, error: rolesError } = await supabase
             .from('user_roles')
             .select('*')
             .eq('user_id', user.id);
 
-          if (!rolesError && userRoles) {
-            console.log('User roles fetched:', userRoles);
-            localStorage.setItem('userRoles', JSON.stringify(userRoles));
+          console.log('Existing user roles:', userRoles);
 
-            // Set current role
-            const primaryRole = userRoles.find(r => r.is_primary)?.role || userType;
-            localStorage.setItem('currentRole', primaryRole);
-          } else if (isNewUser) {
-            // Create initial role for new user
+          // Check if user already has the current role
+          const hasCurrentRole = userRoles?.some(r => r.role === userType);
+          
+          if (!hasCurrentRole) {
+            console.log(`Adding new role '${userType}' for user`);
+            
+            // Determine if this should be primary (first role or no primary exists)
+            const hasPrimaryRole = userRoles?.some(r => r.is_primary);
+            const shouldBePrimary = !hasPrimaryRole || isNewUser;
+
+            // Add the new role
             const { error: roleError } = await supabase
               .from('user_roles')
               .insert({
                 user_id: user.id,
                 role: userType,
-                is_primary: true
+                is_primary: shouldBePrimary
               });
 
-            if (!roleError) {
-              localStorage.setItem('userRoles', JSON.stringify([{ user_id: user.id, role: userType, is_primary: true }]));
+            if (roleError) {
+              console.error('Error adding role:', roleError);
+            } else {
+              console.log(`✅ Successfully added '${userType}' role`);
+            }
+
+            // Refetch roles after adding new one
+            const { data: updatedRoles } = await supabase
+              .from('user_roles')
+              .select('*')
+              .eq('user_id', user.id);
+
+            if (updatedRoles) {
+              localStorage.setItem('userRoles', JSON.stringify(updatedRoles));
+              localStorage.setItem('currentRole', userType);
+            }
+          } else {
+            console.log(`User already has '${userType}' role`);
+            
+            if (userRoles) {
+              localStorage.setItem('userRoles', JSON.stringify(userRoles));
+              
+              // Set current role to the one they're logging in as
               localStorage.setItem('currentRole', userType);
             }
           }
