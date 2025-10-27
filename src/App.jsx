@@ -263,69 +263,6 @@ const AppLayout = () => {
                   }}
                   className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full mx-auto mb-6"
                 />
-
-                {/* Pulsing dots */}
-                <div className="flex justify-center space-x-2 mb-4">
-                  {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      animate={{
-                        scale: [1, 1.5, 1],
-                        opacity: [0.5, 1, 0.5]
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        delay: i * 0.2,
-                        ease: "easeInOut"
-                      }}
-                      className="w-3 h-3 bg-[#FF6B35] rounded-full"
-                    />
-                  ))}
-                </div>
-
-                {/* Loading text with typewriter effect */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="text-center"
-                >
-                  <motion.h2
-                    className="text-2xl font-bold text-[#2C3E50] mb-2"
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    Loading Page
-                  </motion.h2>
-                  <motion.p
-                    className="text-gray-600 text-lg"
-                    animate={{ opacity: [0.6, 1, 0.6] }}
-                    transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
-                  >
-                    Please wait...
-                  </motion.p>
-                </motion.div>
-
-                {/* Progress bar */}
-                <motion.div
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ duration: 3, ease: "easeInOut" }}
-                  className="mt-8 w-64 h-1 bg-gray-200 rounded-full overflow-hidden mx-auto"
-                >
-                  <motion.div
-                    animate={{
-                      x: ["0%", "100%", "0%"]
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    }}
-                    className="h-full bg-gradient-to-r from-[#FF6B35] to-[#e85e2f] rounded-full"
-                  />
-                </motion.div>
               </div>
             </motion.div>
           }
