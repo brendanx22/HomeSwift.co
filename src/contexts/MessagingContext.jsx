@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { useAuth } from './AuthContext';
 import { io } from 'socket.io-client';
 import { supabase } from '../lib/supabaseClient';
+import { trackMessageSent } from '../lib/posthog';
 
 const MessagingContext = createContext();
 
@@ -446,6 +447,15 @@ export const MessagingProvider = ({ children }) => {
         const message = await response.json();
         setMessages(prev => [...prev, message]);
         updateConversationLastMessage(conversationId, message);
+        
+        // Track message sent event
+        trackMessageSent({
+          content: content,
+          conversationId: conversationId,
+          userRole: user?.user_metadata?.user_type || 'unknown',
+          attachments: false
+        });
+        
         return message;
       }
     } catch (error) {

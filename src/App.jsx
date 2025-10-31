@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { OfflineIndicator, PWAInstallPrompt, UpdatePrompt, registerServiceWorker } from './utils/pwa.jsx';
@@ -8,6 +8,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { MessagingProvider } from './contexts/MessagingContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import { initPostHog } from './lib/posthog';
 
 // Lazy load pages for better performance
 const Home = React.lazy(() => import('./pages/Home'));
@@ -53,6 +54,8 @@ const ComparisonHistory = React.lazy(() => import('./pages/ComparisonHistory'));
 const MarketTrends = React.lazy(() => import('./pages/MarketTrends'));
 const LandlordProperties = React.lazy(() => import('./pages/LandlordProperties'));
 const HomeInspectionChecklist = React.lazy(() => import('./pages/HomeInspectionChecklist'));
+const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
+const RenterHomePage = React.lazy(() => import('./pages/RenterHomePage'));
 
 const Settings = React.lazy(() => import('./pages/Settings'));
 
@@ -170,6 +173,11 @@ const AppLayout = () => {
       }
     }
   }, [user, loading, isAuthenticated, location.pathname, navigate, roles, currentRole]);
+
+  // Initialize PostHog
+  useEffect(() => {
+    initPostHog();
+  }, []);
 
   // Set document title
   React.useEffect(() => {
@@ -330,6 +338,15 @@ const AppLayout = () => {
               path="/chat"
               element={
                 <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <RenterHomePage />
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route
+              path="/messages"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
                   <ChatPage />
                 </ProtectedRoute>
               }
@@ -349,6 +366,15 @@ const AppLayout = () => {
               element={
                 <ProtectedRoute requiredRoles={['landlord']}>
                   <LandlordSettings />
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route
+              path="/admin/analytics"
+              element={
+                <ProtectedRoute requiredRoles={['landlord', 'renter']}>
+                  <AdminDashboard />
                 </ProtectedRoute>
               }
             />

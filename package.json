@@ -20,6 +20,7 @@
     "lucide-react": "^0.545.0",
     "nodemailer": "^7.0.9",
     "nodemailer-mailgun-transport": "^2.1.5",
+    "posthog-js": "^1.282.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.6.0",

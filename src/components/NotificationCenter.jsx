@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell,
   X,
@@ -10,11 +10,11 @@ import {
   MessageSquare,
   Home,
   Settings as SettingsIcon,
-  ExternalLink
-} from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabaseClient';
-import { formatDistanceToNow } from 'date-fns';
+  ExternalLink,
+} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../lib/supabaseClient";
+import { formatDistanceToNow } from "date-fns";
 
 const NotificationCenter = () => {
   const { user, isAuthenticated } = useAuth();
@@ -29,19 +29,19 @@ const NotificationCenter = () => {
 
       // Set up real-time subscription for notifications
       const subscription = supabase
-        .channel('notifications_changes')
+        .channel("notifications_changes")
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: '*',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
+            event: "*",
+            schema: "public",
+            table: "notifications",
+            filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
-            console.log('📡 Notification update received:', payload);
+            console.log("📡 Notification update received:", payload);
             loadNotifications(); // Reload notifications when changes occur
-          }
+          },
         )
         .subscribe();
 
@@ -57,14 +57,14 @@ const NotificationCenter = () => {
 
       // Fetch real notifications from database
       const { data: notificationsData, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
         .limit(50);
 
       if (error) {
-        console.error('Error fetching notifications:', error);
+        console.error("Error fetching notifications:", error);
         // Fallback to mock data if database query fails
         setNotifications(getMockNotifications());
         setUnreadCount(3); // Mock unread count
@@ -72,22 +72,23 @@ const NotificationCenter = () => {
       }
 
       // Transform database data to match component format
-      const transformedNotifications = notificationsData?.map(notification => ({
-        id: notification.id,
-        type: notification.type,
-        title: notification.title,
-        message: notification.message,
-        timestamp: new Date(notification.created_at),
-        read: notification.read,
-        action_url: notification.action_url,
-        action_label: notification.action_label,
-        data: notification.data
-      })) || [];
+      const transformedNotifications =
+        notificationsData?.map((notification) => ({
+          id: notification.id,
+          type: notification.type,
+          title: notification.title,
+          message: notification.message,
+          timestamp: new Date(notification.created_at),
+          read: notification.read,
+          action_url: notification.action_url,
+          action_label: notification.action_label,
+          data: notification.data,
+        })) || [];
 
       setNotifications(transformedNotifications);
-      setUnreadCount(transformedNotifications.filter(n => !n.read).length);
+      setUnreadCount(transformedNotifications.filter((n) => !n.read).length);
     } catch (error) {
-      console.error('Error loading notifications:', error);
+      console.error("Error loading notifications:", error);
       // Fallback to mock data on error
       setNotifications(getMockNotifications());
       setUnreadCount(3);
@@ -100,53 +101,53 @@ const NotificationCenter = () => {
     try {
       // Update database
       const { error } = await supabase
-        .from('notifications')
+        .from("notifications")
         .update({ read: true, updated_at: new Date().toISOString() })
-        .eq('id', notificationId)
-        .eq('user_id', user.id);
+        .eq("id", notificationId)
+        .eq("user_id", user.id);
 
       if (error) {
-        console.error('Error marking notification as read:', error);
+        console.error("Error marking notification as read:", error);
         return;
       }
 
       // Update local state
-      setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)),
       );
 
       // Update unread count
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error("Error marking notification as read:", error);
     }
   };
 
   const markAllAsRead = async () => {
     try {
       // Get all unread notification IDs
-      const unreadNotifications = notifications.filter(n => !n.read);
-      const unreadIds = unreadNotifications.map(n => n.id);
+      const unreadNotifications = notifications.filter((n) => !n.read);
+      const unreadIds = unreadNotifications.map((n) => n.id);
 
       if (unreadIds.length === 0) return;
 
       // Update database
       const { error } = await supabase
-        .from('notifications')
+        .from("notifications")
         .update({ read: true, updated_at: new Date().toISOString() })
-        .in('id', unreadIds)
-        .eq('user_id', user.id);
+        .in("id", unreadIds)
+        .eq("user_id", user.id);
 
       if (error) {
-        console.error('Error marking all notifications as read:', error);
+        console.error("Error marking all notifications as read:", error);
         return;
       }
 
       // Update local state
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (error) {
-      console.error('Error marking all as read:', error);
+      console.error("Error marking all as read:", error);
     }
   };
 
@@ -154,61 +155,64 @@ const NotificationCenter = () => {
     try {
       // Delete from database
       const { error } = await supabase
-        .from('notifications')
+        .from("notifications")
         .delete()
-        .eq('id', notificationId)
-        .eq('user_id', user.id);
+        .eq("id", notificationId)
+        .eq("user_id", user.id);
 
       if (error) {
-        console.error('Error removing notification:', error);
+        console.error("Error removing notification:", error);
         return;
       }
 
       // Update local state
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
 
       // Update unread count if the removed notification was unread
-      const removedNotification = notifications.find(n => n.id === notificationId);
+      const removedNotification = notifications.find(
+        (n) => n.id === notificationId,
+      );
       if (removedNotification && !removedNotification.read) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        setUnreadCount((prev) => Math.max(0, prev - 1));
       }
     } catch (error) {
-      console.error('Error removing notification:', error);
+      console.error("Error removing notification:", error);
     }
   };
 
   const getMockNotifications = () => {
     return [
       {
-        id: 'mock-1',
-        type: 'property_alert',
-        title: 'New Property Match',
-        message: '3 new properties match your saved search criteria in Lagos',
+        id: "mock-1",
+        type: "property_alert",
+        title: "New Property Match",
+        message: "3 new properties match your saved search criteria in Lagos",
         timestamp: new Date(Date.now() - 1000 * 60 * 30),
         read: false,
-        action_url: '/browse',
-        action_label: 'View Properties'
+        action_url: "/browse",
+        action_label: "View Properties",
       },
       {
-        id: 'mock-2',
-        type: 'inquiry_response',
-        title: 'Inquiry Response',
-        message: 'Landlord responded to your inquiry about "Modern Apartment in VI"',
+        id: "mock-2",
+        type: "inquiry_response",
+        title: "Inquiry Response",
+        message:
+          'Landlord responded to your inquiry about "Modern Apartment in VI"',
         timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
         read: false,
-        action_url: '/chat',
-        action_label: 'View Chat'
+        action_url: "/chat",
+        action_label: "View Chat",
       },
       {
-        id: 'mock-3',
-        type: 'property_viewed',
-        title: 'Property Viewed',
+        id: "mock-3",
+        type: "property_viewed",
+        title: "Property Viewed",
         message: 'Someone viewed your property "Luxury Villa in Lekki"',
         timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
         read: true,
-        action_url: '/landlord/dashboard',
-        action_label: 'View Analytics'
-      }
+        action_url: "/landlord/dashboard",
+        action_label: "View Analytics",
+      },
     ];
   };
 
@@ -218,11 +222,11 @@ const NotificationCenter = () => {
 
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'property_alert':
+      case "property_alert":
         return <Home className="w-5 h-5 text-blue-500" />;
-      case 'inquiry_response':
+      case "inquiry_response":
         return <MessageSquare className="w-5 h-5 text-green-500" />;
-      case 'property_viewed':
+      case "property_viewed":
         return <CheckCircle className="w-5 h-5 text-purple-500" />;
       default:
         return <Info className="w-5 h-5 text-gray-500" />;
@@ -238,12 +242,12 @@ const NotificationCenter = () => {
       {/* Notification Bell */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-600 hover:text-gray-800 transition-colors"
+        className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
       >
-        <Bell className="w-6 h-6" />
+        <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
@@ -290,7 +294,7 @@ const NotificationCenter = () => {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                        !notification.read ? 'bg-orange-50' : ''
+                        !notification.read ? "bg-orange-50" : ""
                       }`}
                       onClick={() => {
                         if (!notification.read) {
@@ -363,10 +367,7 @@ const NotificationCenter = () => {
 
       {/* Backdrop */}
       {isOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsOpen(false)}
-        />
+        <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
       )}
     </div>
   );

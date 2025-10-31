@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { authAPI } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
+import { identifyUser, resetUser, trackLogin, trackSignup, trackRoleSwitch } from '../lib/posthog';
 
 export const AuthContext = createContext();
 
@@ -285,6 +286,9 @@ const signup = async (userData) => {
   // Sign out the current user
   const logout = async () => {
     try {
+      // Track logout event before clearing data
+      resetUser();
+      
       // Clear all auth related data from localStorage first
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -307,6 +311,7 @@ const signup = async (userData) => {
     } catch (error) {
       console.error('Logout error:', error);
       // Even if there's an error, we still want to clear the local state
+      resetUser();
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('userRoles');
@@ -451,6 +456,14 @@ const signup = async (userData) => {
         // Fetch and set roles
         await fetchUserRoles(user.id);
         
+        // Identify user in PostHog
+        identifyUser(user.id, {
+          email: user.email,
+          name: user.user_metadata?.full_name || user.user_metadata?.name,
+          user_type: user.user_metadata?.user_type,
+          created_at: user.created_at
+        });
+        
         // Mark loading as complete
         setLoading(false);
       } else if (event === 'SIGNED_OUT') {
@@ -502,23 +515,46 @@ const signup = async (userData) => {
 
   // Initial session check (auth state listener will handle the rest)
   useEffect(() => {
+    // Safety timeout to ensure loading is always set to false
+    const loadingTimeout = setTimeout(() => {
+      console.log('⏱️ Loading timeout reached, forcing loading to false');
+      setLoading(false);
+    }, 5000); // 5 second timeout
+
     const checkInitialSession = async () => {
       try {
         console.log('🔍 Checking initial session...');
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('❌ Error getting session:', error);
+          clearTimeout(loadingTimeout);
+          setLoading(false);
+          return;
+        }
         
         if (!session) {
           console.log('❌ No initial session found');
+          clearTimeout(loadingTimeout);
           setLoading(false);
+          return;
         }
-        // If session exists, the auth state listener will handle it via INITIAL_SESSION event
+        
+        console.log('✅ Initial session found, auth state listener will handle it');
+        // The auth state listener will handle the session via INITIAL_SESSION event
       } catch (error) {
         console.error('💥 Initial session check error:', error);
+        clearTimeout(loadingTimeout);
         setLoading(false);
       }
     };
 
     checkInitialSession();
+    
+    // Cleanup function
+    return () => {
+      clearTimeout(loadingTimeout);
+    };
   }, []);
 
   // Add a new role to the current user

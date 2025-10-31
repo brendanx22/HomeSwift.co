@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { PropertyAPI } from '../lib/propertyAPI';
 import { useAuth } from '../contexts/AuthContext';
 import { useMessaging } from '../contexts/MessagingContext';
+import { trackListingViewed } from '../lib/posthog';
 import {
   ChevronLeft,
   ChevronRight,
@@ -80,6 +81,15 @@ export default function PropertyDetails() {
           if (propertyData?.landlord_id && isAuthenticated && user?.id !== propertyData.landlord_id) {
             await trackPropertyView(propertyData.id, propertyData.landlord_id, propertyData.title);
           }
+          
+          // Track listing viewed in PostHog
+          trackListingViewed({
+            id: propertyData.id,
+            title: propertyData.title,
+            price: propertyData.price,
+            location: propertyData.location,
+            property_type: propertyData.property_type
+          });
         } else {
           setError('Property not found');
         }
