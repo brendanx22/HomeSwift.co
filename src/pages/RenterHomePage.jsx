@@ -585,29 +585,6 @@ const RenterHomePage = () => {
   const displayedGroups = groupedProperties.slice(0, visibleRows);
   const hasMoreRows = groupedProperties.length > visibleRows;
 
-  // Navigate to browse page with search params
-  const handleSearchNavigation = () => {
-    const params = new URLSearchParams();
-    if (location) {
-      params.set('search', location);
-      params.set('location', location);
-    }
-    if (propertyType && propertyType !== 'all') {
-      params.set('type', propertyType);
-    }
-    // Optional: you can include other filters like priceRange or bedrooms here
-    navigate(`/browse?${params.toString()}`);
-
-    // Track search event if analytics is available
-    if (trackSearch) {
-      trackSearch({
-        query: location || '',
-        filters: { propertyType, priceRange, bedrooms },
-        resultsCount: filteredProperties.length
-      });
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-10">
       {/* Header */}
@@ -764,7 +741,6 @@ const RenterHomePage = () => {
                 {/* Search Button */}
                 <button
                   onClick={() => {
-                    handleSearchNavigation();
                     setActiveSearchSection(null);
                     setShowLocationDropdown(false);
                     setShowTypeDropdown(false);
