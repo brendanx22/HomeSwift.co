@@ -25,6 +25,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { PropertyAPI } from "../lib/propertyAPI";
+import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { useMessaging } from "../contexts/MessagingContext";
 import { trackListingViewed, trackSearch } from "../lib/posthog";
@@ -240,42 +241,48 @@ const RenterHomePage = () => {
     try {
       setLoading(true);
 
-      console.log("📞 Calling PropertyAPI.getAllProperties()...");
+      console.log("📞 Testing direct Supabase query...");
 
-      const response = await PropertyAPI.getAllProperties();
+      // Direct Supabase query to test
+      const { data, error, count } = await supabase
+        .from("properties")
+        .select("*", { count: "exact" })
+        .limit(10);
 
-      console.log("📦 API Response received:", response);
-      console.log("🔍 Properties loaded:", {
-        success: response?.success,
-        hasProperties: !!response?.properties,
-        count: response?.properties?.length,
-        firstProperty: response?.properties?.[0],
+      console.log("📊 Direct query result:", {
+        hasData: !!data,
+        dataLength: data?.length,
+        hasError: !!error,
+        errorMessage: error?.message,
+        errorCode: error?.code,
+        errorDetails: error?.details,
+        count: count,
       });
 
-      if (response?.success && Array.isArray(response?.properties)) {
-        console.log(
-          "✅ Valid properties array received:",
-          response.properties.length,
-        );
+      if (error) {
+        console.error("❌ Supabase error:", error);
+        toast.error(`Database error: ${error.message}`);
+        setProperties([]);
+        setFilteredProperties([]);
+        setGroupedProperties({});
+        return;
+      }
 
-        if (response.properties.length > 0) {
-          setProperties(response.properties);
-          setFilteredProperties(response.properties);
-          const grouped = groupPropertiesByLocation(response.properties);
-          setGroupedProperties(grouped);
-          console.log("✅ Properties set successfully:", {
-            total: response.properties.length,
-            groupedLocations: Object.keys(grouped),
-            groupedCount: Object.keys(grouped).length,
-          });
-        } else {
-          console.log("⚠️ No properties in database");
-          setProperties([]);
-          setFilteredProperties([]);
-          setGroupedProperties({});
-        }
+      if (data && data.length > 0) {
+        console.log("✅ Properties loaded:", data.length);
+        console.log("📦 First property:", data[0]);
+        setProperties(data);
+        setFilteredProperties(data);
+        const grouped = groupPropertiesByLocation(data);
+        setGroupedProperties(grouped);
+        console.log("✅ Properties set successfully:", {
+          total: data.length,
+          groupedLocations: Object.keys(grouped),
+          groupedCount: Object.keys(grouped).length,
+        });
       } else {
-        console.log("❌ Invalid response format:", response);
+        console.log("⚠️ No properties found in database");
+        toast.info("No properties available at the moment");
         setProperties([]);
         setFilteredProperties([]);
         setGroupedProperties({});
@@ -287,15 +294,7 @@ const RenterHomePage = () => {
         stack: error.stack,
         name: error.name,
       });
-
-      if (error.message?.includes("timeout")) {
-        toast.error(
-          "Loading properties is taking longer than usual. Please refresh the page.",
-        );
-      } else {
-        toast.error(`Failed to load properties: ${error.message}`);
-      }
-      // Set empty arrays on error
+      toast.error(`Failed to load properties: ${error.message}`);
       setProperties([]);
       setFilteredProperties([]);
       setGroupedProperties({});
