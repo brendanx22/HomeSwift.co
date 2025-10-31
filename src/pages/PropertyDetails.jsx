@@ -57,14 +57,16 @@ export default function PropertyDetails() {
   const [movemateEnabled, setMovemateEnabled] = useState(false);
 
   const [property, setProperty] = useState(preloadedProperty || null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!preloadedProperty);
   const [error, setError] = useState(null);
 
   // Derive images from property data
   const images = property?.images || [];
 
   React.useEffect(() => {
+    // If we have a preloaded property that matches the ID, don't fetch
     if (preloadedProperty && preloadedProperty.id === id) {
+      setProperty(preloadedProperty);
       setLoading(false);
       return;
     }

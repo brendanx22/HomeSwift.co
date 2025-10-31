@@ -105,19 +105,19 @@ const AppLayout = () => {
       const detectedRole = currentRole || allRoles.find(r => r.is_primary)?.role || allRoles[0]?.role || userType || 'renter';
 
       // Enhanced debug logging
-      // console.log('AppLayout Auth Debug:', {
-      //   isAuthenticated,
-      //   user: user ? 'exists' : 'null',
-      //   userType,
-      //   storedRoles,
-      //   authContextRoles,
-      //   allRoles,
-      //   currentRole,
-      //   detectedRole,
-      //   path,
-      //   isLandlordLoginPage,
-      //   isLoginPage
-      // });
+      console.log('AppLayout Auth Debug:', {
+        isAuthenticated,
+        user: user ? 'exists' : 'null',
+        userType,
+        storedRoles,
+        authContextRoles,
+        allRoles,
+        currentRole,
+        detectedRole,
+        path,
+        isLandlordLoginPage,
+        isLoginPage
+      });
 
       // If we're on a login page, redirect to the appropriate dashboard
       if (isLoginPage || isLandlordLoginPage) {

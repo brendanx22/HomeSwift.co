@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Heart, MapPin, Bed, Bath, Square, ArrowLeft } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Heart, MapPin, Bed, Bath, Square, ArrowLeft, Home, ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PropertyAPI } from '../lib/propertyAPI';
 import { useAuth } from '../contexts/AuthContext';
@@ -116,51 +116,47 @@ export default function SavedProperties() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gray-50"
-    >
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+        <div className="px-4 sm:px-6 lg:px-10">
+          <div className="flex items-center justify-between h-16 lg:h-20">
+            {/* Logo & Back */}
+            <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate('/chat')}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <ArrowLeft className="w-5 h-5" />
-                <span>Back to Chat</span>
+                <ChevronLeft className="w-5 h-5" />
               </button>
-              <div className="h-6 w-px bg-gray-300"></div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Saved Properties</h1>
-                <p className="text-gray-600">Properties you've saved for later</p>
-              </div>
+              <Link to="/chat" className="flex items-center">
+                <img
+                  src="/images/logo.png"
+                  alt="HomeSwift"
+                  className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-lg"
+                />
+              </Link>
             </div>
-            <button
-              onClick={() => navigate('/browse')}
-              className="text-white px-4 py-2 rounded-lg font-semibold transition-colors"
-              style={{ backgroundColor: '#FF6B35' }}
-            >
-              Browse More
-            </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* Main Content */}
+      <div className="px-4 sm:px-6 lg:px-10 py-8 max-w-[1760px] mx-auto">
+        {/* Page Title */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold text-gray-900 mb-2">Saved Properties</h1>
+          <p className="text-gray-600">{savedProperties.length} {savedProperties.length === 1 ? 'property' : 'properties'} saved</p>
+        </div>
+
         {error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
             <div className="text-red-500 text-6xl mb-4">⚠</div>
             <h2 className="text-xl font-bold text-red-900 mb-2">Error Loading Saved Properties</h2>
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={loadSavedProperties}
-              className="text-white px-4 py-2 rounded-lg font-semibold transition-colors"
-              style={{ backgroundColor: '#FF6B35' }}
+              className="bg-[#FF6B35] text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
             >
               Try Again
             </button>
@@ -173,15 +169,14 @@ export default function SavedProperties() {
               You haven't saved any properties yet. Start browsing and save properties you're interested in for easy access later.
             </p>
             <button
-              onClick={() => navigate('/browse')}
-              className="text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-              style={{ backgroundColor: '#FF6B35' }}
+              onClick={() => navigate('/chat')}
+              className="bg-[#FF6B35] text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
             >
               Start Browsing
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {savedProperties.map((savedItem) => {
               const property = savedItem.properties;
               if (!property) return null;
@@ -191,56 +186,57 @@ export default function SavedProperties() {
                   key={property.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                  className="group cursor-pointer"
+                  onClick={() => navigate(`/properties/${property.id}`, { state: { property } })}
                 >
-                  <div className="relative h-48">
+                  {/* Image Section */}
+                  <div className="relative aspect-square overflow-hidden rounded-xl mb-3">
                     {property.images && property.images.length > 0 ? (
                       <img
                         src={property.images[0]}
                         alt={property.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
                       <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                        <div className="text-gray-400 text-4xl">🏠</div>
+                        <Home className="w-12 h-12 text-gray-400" />
                       </div>
                     )}
 
                     {/* Favorite Button */}
                     <button
-                      onClick={() => handleRemoveFromSaved(property.id)}
-                      className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-sm hover:shadow-md transition-shadow"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveFromSaved(property.id);
+                      }}
+                      className="absolute top-3 right-3 p-2 hover:scale-110 transition-transform"
                     >
-                      <Heart className="w-5 h-5 text-red-500 fill-current" />
+                      <Heart className="w-6 h-6 text-red-500 fill-red-500 drop-shadow-md" />
                     </button>
                   </div>
 
-                  <div className="p-6">
-                    <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2">
+                  {/* Property Info */}
+                  <div>
+                    <div className="flex items-start justify-between mb-1">
+                      <h3 className="font-semibold text-gray-900 line-clamp-1">
+                        {property.location?.split(',')[0] || 'Location'}
+                      </h3>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm">★</span>
+                        <span className="text-sm font-medium">4.9</span>
+                      </div>
+                    </div>
+                    <p className="text-gray-600 text-sm mb-1 line-clamp-1">
                       {property.title}
-                    </h3>
-
-                    <div className="flex items-center text-gray-600 mb-3">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      <span className="text-sm">{property.location}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="text-xl font-bold text-[#FF6B35]">
+                    </p>
+                    <p className="text-gray-600 text-sm mb-2">
+                      {property.bedrooms || 0} bed • {property.bathrooms || 0} bath
+                    </p>
+                    <div>
+                      <span className="font-semibold text-gray-900">
                         ₦{property.price?.toLocaleString()}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {property.bedrooms || property.rooms} bed • {property.bathrooms} bath
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => navigate(`/properties/${property.id}`)}
-                        className="flex-1 text-center py-2 px-4 bg-[#FF6B35] text-white rounded-lg hover:bg-orange-600 transition-colors"
-                      >
-                        View Details
-                      </button>
+                      </span>
+                      <span className="text-gray-600 text-sm"> /year</span>
                     </div>
                   </div>
                 </motion.div>
@@ -249,6 +245,6 @@ export default function SavedProperties() {
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

@@ -284,6 +284,7 @@ const RenterHomePage = () => {
         setProperties(formattedProperties);
         setFilteredProperties(formattedProperties);
         const grouped = groupProperties(formattedProperties);
+        console.log('📦 Grouped properties:', grouped.length, 'groups');
         setGroupedProperties(grouped);
         setVisibleRows(5); // Reset visible rows when properties change
       } else {
@@ -594,15 +595,12 @@ const RenterHomePage = () => {
           {/* Top Bar */}
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/" className="flex items-center">
               <img
                 src="/images/logo.png"
                 alt="HomeSwift"
-                className="w-10 h-10 object-cover rounded-lg"
+                className="w-14 h-14 sm:w-58 sm:h-24 object-cover rounded-lg"
               />
-              <span className="hidden sm:block text-xl font-bold text-[#FF6B35]">
-                HomeSwift
-              </span>
             </Link>
 
             {/* Desktop - Spacer */}
@@ -612,10 +610,25 @@ const RenterHomePage = () => {
             <div className="flex items-center gap-3">
               {user && (
                 <>
+                  {/* Saved Properties */}
+                  <Link
+                    to="/saved"
+                    className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+                    title="Saved Properties"
+                  >
+                    <Heart className="w-5 h-5" />
+                    {savedProperties.size > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white text-xs font-bold rounded-full flex items-center justify-center">
+                        {savedProperties.size}
+                      </span>
+                    )}
+                  </Link>
+
                   {/* Messages */}
                   <Link
-                    to="/chat"
+                    to="/message-center"
                     className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+                    title="Messages"
                   >
                     <MessageSquare className="w-5 h-5" />
                     {unreadCount > 0 && (
@@ -1168,6 +1181,7 @@ const RenterHomePage = () => {
           </div>
         ) : filteredProperties.length > 0 ? (
           <div className="space-y-12 -mx-4 sm:-mx-6 lg:-mx-10">
+            {console.log('🎯 Displaying groups:', displayedGroups.length, 'out of', groupedProperties.length)}
             {displayedGroups.map((group) => {
               const groupKey = `${group.location}_${group.type}`;
               const typeDisplay = group.type === 'all' ? 'Properties' : 

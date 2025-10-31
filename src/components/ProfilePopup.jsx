@@ -12,14 +12,19 @@ import {
   Calendar,
   X,
   Save,
-  Upload
+  Upload,
+  Heart,
+  MessageSquare,
+  Home as HomeIcon
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'react-hot-toast';
 
 const ProfilePopup = ({ isOpen, onClose, position = 'navbar', onAvatarUpdate }) => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [profileData, setProfileData] = useState({
     first_name: '',
     last_name: '',
@@ -243,197 +248,123 @@ const ProfilePopup = ({ isOpen, onClose, position = 'navbar', onAvatarUpdate }) 
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: -10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: -10 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="absolute top-16 right-4 sm:right-6 z-50"
-        style={{
-          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
-        }}
-      >
-        <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 min-w-[320px] max-w-[400px] overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Profile</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-            {/* Profile Picture Section */}
-            <div className="flex flex-col items-center mb-6">
-              <div className="relative mb-4">
-                <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden ring-4 ring-orange-100">
-                  {profileData.avatar_url ? (
-                    <img
-                      src={profileData.avatar_url}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User className="w-12 h-12 text-gray-400" />
-                  )}
-                </div>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/20 z-40"
+          />
+          
+          {/* Popup */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed top-20 right-4 sm:right-6 z-50"
+            style={{
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-[280px] overflow-hidden">
+              {/* Header */}
+              <div className="p-4 border-b border-gray-100">
                 <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-0 right-0 bg-orange-500 rounded-full p-2 hover:bg-orange-600 transition-colors shadow-lg"
+                  onClick={onClose}
+                  className="absolute top-4 right-4 p-1.5 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  <Camera className="w-4 h-4 text-white" />
+                  <X className="w-4 h-4 text-gray-500" />
                 </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) handleAvatarUpload(file);
+              </div>
+
+              {/* Navigation Menu */}
+              <div className="py-2">
+                <button
+                  onClick={() => {
+                    navigate('/saved');
+                    onClose();
                   }}
-                  className="hidden"
-                />
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <Heart className="w-5 h-5 text-gray-700" />
+                  <span className="text-sm font-medium text-gray-900">Saved Properties</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    navigate('/message-center');
+                    onClose();
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <MessageSquare className="w-5 h-5 text-gray-700" />
+                  <span className="text-sm font-medium text-gray-900">Messages</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    navigate('/chat');
+                    onClose();
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <HomeIcon className="w-5 h-5 text-gray-700" />
+                  <span className="text-sm font-medium text-gray-900">Home</span>
+                </button>
               </div>
 
-              {isEditing ? (
-                <div className="w-full max-w-xs space-y-3">
-                  <input
-                    type="text"
-                    value={profileData.first_name || ''}
-                    onChange={(e) => handleInputChange('first_name', e.target.value)}
-                    placeholder="First name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                  <input
-                    type="text"
-                    value={profileData.last_name || ''}
-                    onChange={(e) => handleInputChange('last_name', e.target.value)}
-                    placeholder="Last name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
-              ) : (
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {profileData.first_name || 'User'} {profileData.last_name || ''}
-                  </h3>
-                  <p className="text-sm text-gray-600">{profileData.email}</p>
-                </div>
-              )}
-            </div>
+              {/* Divider */}
+              <div className="border-t border-gray-200" />
 
-            {/* Profile Information */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <Mail className="w-5 h-5 text-gray-400" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Email</p>
-                  <p className="text-sm text-gray-600">{profileData.email}</p>
-                </div>
+              {/* Profile & Settings */}
+              <div className="py-2">
+                <button
+                  onClick={() => {
+                    navigate('/profile');
+                    onClose();
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <User className="w-5 h-5 text-gray-700" />
+                  <span className="text-sm font-medium text-gray-900">Profile</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    navigate('/settings');
+                    onClose();
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <SettingsIcon className="w-5 h-5 text-gray-700" />
+                  <span className="text-sm font-medium text-gray-900">Settings</span>
+                </button>
               </div>
 
-              {profileData.phone && (
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <Phone className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Phone</p>
-                    <p className="text-sm text-gray-600">{profileData.phone}</p>
-                  </div>
-                </div>
-              )}
+              {/* Divider */}
+              <div className="border-t border-gray-200" />
 
-              {profileData.location && (
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <MapPin className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Location</p>
-                    <p className="text-sm text-gray-600">{profileData.location}</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <Calendar className="w-5 h-5 text-gray-400" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Member Since</p>
-                  <p className="text-sm text-gray-600">{profileData.join_date}</p>
-                </div>
+              {/* Logout */}
+              <div className="py-2">
+                <button
+                  onClick={() => {
+                    logout();
+                    onClose();
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <LogOut className="w-5 h-5 text-gray-700" />
+                  <span className="text-sm font-medium text-gray-900">Log out</span>
+                </button>
               </div>
-
-              {profileData.bio && (
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium text-gray-900 mb-2">Bio</p>
-                  <p className="text-sm text-gray-600">{profileData.bio}</p>
-                </div>
-              )}
             </div>
-
-            {/* Navigation Links */}
-            <div className="border-t pt-4 space-y-2">
-              <button
-                onClick={() => {
-                  navigate('/settings');
-                  onClose();
-                }}
-                className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                <SettingsIcon className="w-4 h-4" />
-                <span>Settings</span>
-              </button>
-            </div>
-
-            {/* Edit/Save Buttons */}
-            <div className="flex space-x-3 mt-6">
-              {isEditing ? (
-                <>
-                  <button
-                    onClick={handleProfileUpdate}
-                    disabled={loading}
-                    className="flex-1 bg-orange-500 text-white py-2 px-4 rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                  >
-                    {loading ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    ) : (
-                      <Save className="w-4 h-4" />
-                    )}
-                    <span>Save</span>
-                  </button>
-                  <button
-                    onClick={() => setIsEditing(false)}
-                    className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 flex items-center justify-center space-x-2"
-                  >
-                    <Edit className="w-4 h-4" />
-                    <span>Edit Profile</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      logout();
-                      onClose();
-                    }}
-                    className="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 flex items-center justify-center space-x-2"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Logout</span>
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </motion.div>
+          </motion.div>
+        </>
+      )}
     </AnimatePresence>
   );
 };

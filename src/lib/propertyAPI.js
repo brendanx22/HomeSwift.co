@@ -61,13 +61,35 @@ export class PropertyAPI {
     try {
       const { data, error } = await supabase
         .from("properties")
-        .select("*")
+        .select(`
+          *,
+          landlord:user_profiles!landlord_id (
+            full_name,
+            profile_image
+          )
+        `)
         .eq("id", propertyId)
         .single();
 
       if (error) throw error;
 
-      return { success: true, property: data };
+      console.log('🏠 Property data from DB:', {
+        hasLandlordData: !!data.landlord,
+        landlordName: data.landlord?.full_name,
+        landlordImage: data.landlord?.profile_image
+      });
+
+      // Flatten the landlord data
+      const property = {
+        ...data,
+        landlord_name: data.landlord?.full_name || 'Property Owner',
+        landlord_profile_image: data.landlord?.profile_image || null
+      };
+      
+      // Remove the nested landlord object
+      delete property.landlord;
+
+      return { success: true, property };
     } catch (error) {
       console.error("Error fetching property:", error);
       return { success: false, error: error.message };
@@ -168,34 +190,31 @@ export class PropertyAPI {
    */
   static async getSavedProperties(userId) {
     try {
+      console.log('🔍 Fetching saved properties for user:', userId);
+      
       const { data: savedData, error: savedError } = await supabase
         .from("saved_properties")
-        .select("property_id, created_at")
+        .select(`
+          property_id,
+          created_at,
+          properties (
+            *
+          )
+        `)
         .eq("user_id", userId);
 
-      if (savedError) throw savedError;
+      if (savedError) {
+        console.error('❌ Error fetching saved properties:', savedError);
+        throw savedError;
+      }
+
+      console.log('✅ Saved properties loaded:', savedData?.length || 0);
 
       if (!savedData || savedData.length === 0) {
         return { success: true, savedProperties: [] };
       }
 
-      const propertyIds = savedData.map((item) => item.property_id);
-
-      const { data: propertiesData, error: propertiesError } = await supabase
-        .from("properties")
-        .select("*")
-        .in("id", propertyIds);
-
-      if (propertiesError) throw propertiesError;
-
-      const savedProperties = savedData.map((saved) => ({
-        property_id: saved.property_id,
-        created_at: saved.created_at,
-        properties:
-          propertiesData.find((prop) => prop.id === saved.property_id) || null,
-      }));
-
-      return { success: true, savedProperties };
+      return { success: true, savedProperties: savedData };
     } catch (error) {
       console.error("Error fetching saved properties:", error);
       return { success: false, error: error.message };
