@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { PropertyAPI } from '../lib/propertyAPI';
 import { useAuth } from '../contexts/AuthContext';
@@ -46,6 +46,8 @@ import { supabase } from '../lib/supabaseClient';
 export default function PropertyDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const preloadedProperty = location.state?.property;
   const { user, isAuthenticated } = useAuth();
   const { createConversation } = useMessaging();
   const [currentImage, setCurrentImage] = useState(0);
@@ -54,7 +56,7 @@ export default function PropertyDetails() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [movemateEnabled, setMovemateEnabled] = useState(false);
 
-  const [property, setProperty] = useState(null);
+  const [property, setProperty] = useState(preloadedProperty || null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -62,6 +64,11 @@ export default function PropertyDetails() {
   const images = property?.images || [];
 
   React.useEffect(() => {
+    if (preloadedProperty && preloadedProperty.id === id) {
+      setLoading(false);
+      return;
+    }
+
     const loadProperty = async () => {
       try {
         setLoading(true);

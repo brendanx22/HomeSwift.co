@@ -95,7 +95,8 @@ const PropertyCard = ({ property, isSaved, onSave, onNavigate }) => {
   };
 
   const handleCardClick = () => {
-    onNavigate(`/properties/${property.id}`);
+    // Pass the full property object via location state for faster load in details page
+    onNavigate(`/properties/${property.id}`, { state: { property } });
   };
 
   const handleSaveClick = (e) => {
