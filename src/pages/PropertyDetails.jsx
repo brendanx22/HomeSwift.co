@@ -65,7 +65,11 @@ export default function PropertyDetails() {
     const loadProperty = async () => {
       try {
         setLoading(true);
-        const { success, property: propertyData } = await PropertyAPI.getProperty(id, user);
+        console.log('🔍 Loading property with id', id);
+        const { success, property: propertyData, error: apiError } = await PropertyAPI.getProperty(id);
+        if (!success) {
+          console.error('❌ PropertyAPI error:', apiError);
+        }
         if (success) {
           setProperty(propertyData);
 
@@ -104,7 +108,7 @@ export default function PropertyDetails() {
     if (id) {
       loadProperty();
     }
-  }, [id, isAuthenticated, user]);
+  }, [id, isAuthenticated]);
 
   const trackPropertyView = async (propertyId, landlordId, propertyTitle) => {
     try {

@@ -29,7 +29,6 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { useMessaging } from "../contexts/MessagingContext";
 import { trackListingViewed, trackSearch } from "../lib/posthog";
-import { supabase } from "../lib/supabaseClient";
 import toast from "react-hot-toast";
 import ProfilePopup from "../components/ProfilePopup";
 import NotificationCenter from "../components/NotificationCenter";
@@ -66,6 +65,15 @@ const CATEGORIES = [
 
 // Property Card Component
 const PropertyCard = ({ property, isSaved, onSave, onNavigate }) => {
+  console.log("🎴 PropertyCard rendering with property:", {
+    id: property?.id,
+    title: property?.title,
+    location: property?.location,
+    price: property?.price,
+    images: property?.images?.length || 0,
+    property: property,
+  });
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const images = property.images || [];
@@ -216,7 +224,8 @@ const RenterHomePage = () => {
   // State
   const [properties, setProperties] = useState([]);
   const [filteredProperties, setFilteredProperties] = useState([]);
-  const [groupedProperties, setGroupedProperties] = useState({});
+  const [groupedProperties, setGroupedProperties] = useState([]);
+  const [visibleRows, setVisibleRows] = useState(5); // Show first 5 rows initially
   const [loading, setLoading] = useState(true);
   const [location, setLocation] = useState("");
   const [priceRange, setPriceRange] = useState({ min: "", max: "" });
@@ -235,116 +244,58 @@ const RenterHomePage = () => {
   const [activeSearchSection, setActiveSearchSection] = useState(null);
   const scrollContainerRefs = useRef({});
 
-  // Load properties
   const loadProperties = async () => {
-    console.log("🔄 Starting property load...");
     try {
       setLoading(true);
+      console.log("🔍 Fetching properties from database...");
+      
+      const { data: propertiesData, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
 
-      console.log("📞 Testing direct Supabase query...");
+      if (error) throw error;
 
-      // Direct Supabase query to test
-      const { data, error, count } = await supabase
-        .from("properties")
-        .select("*", { count: "exact" })
-        .limit(10);
+      console.log(`✅ Successfully loaded ${propertiesData?.length || 0} properties`);
+      
+      if (propertiesData && propertiesData.length > 0) {
+        // Transform the data to match the expected property structure
+        const formattedProperties = propertiesData.map(property => ({
+          id: property.id,
+          title: property.title || 'No Title',
+          location: property.location || 'Location not specified',
+          price: property.price || 0,
+          bedrooms: property.bedrooms || 0,
+          bathrooms: property.bathrooms || 0,
+          area: property.area || 0,
+          images: property.images || [],
+          property_type: property.property_type || 'house',
+          category: property.category || 'all',
+          description: property.description || '',
+          amenities: property.amenities || [],
+          is_featured: property.is_featured || false,
+          created_at: property.created_at,
+          updated_at: property.updated_at,
+          landlord_id: property.landlord_id
+        }));
 
-      console.log("📊 Direct query result:", {
-        hasData: !!data,
-        dataLength: data?.length,
-        hasError: !!error,
-        errorMessage: error?.message,
-        errorCode: error?.code,
-        errorDetails: error?.details,
-        count: count,
-      });
-
-      if (error) {
-        console.error("❌ Supabase error:", error);
-        toast.error(`Database error: ${error.message}`);
-        setProperties([]);
-        setFilteredProperties([]);
-        setGroupedProperties({});
-        return;
-      }
-
-      if (data && data.length > 0) {
-        console.log("✅ Properties loaded:", data.length);
-        console.log("📦 First property:", data[0]);
-        setProperties(data);
-        setFilteredProperties(data);
-        const grouped = groupPropertiesByLocation(data);
+        setProperties(formattedProperties);
+        setFilteredProperties(formattedProperties);
+        const grouped = groupProperties(formattedProperties);
         setGroupedProperties(grouped);
-        console.log("✅ Properties set successfully:", {
-          total: data.length,
-          groupedLocations: Object.keys(grouped),
-          groupedCount: Object.keys(grouped).length,
-        });
+        setVisibleRows(5); // Reset visible rows when properties change
       } else {
-        console.log("⚠️ No properties found in database");
-        toast.info("No properties available at the moment");
+        // If no properties found, reset the state
         setProperties([]);
         setFilteredProperties([]);
-        setGroupedProperties({});
+        setGroupedProperties([]);
       }
     } catch (error) {
-      console.error("❌ Error loading properties:", error);
-      console.error("Error details:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-      });
-      toast.error(`Failed to load properties: ${error.message}`);
-      setProperties([]);
-      setFilteredProperties([]);
-      setGroupedProperties({});
+      console.error('❌ Error loading properties:', error);
+      toast.error('Failed to load properties. Please try again.');
     } finally {
-      console.log("🏁 Property loading finished");
       setLoading(false);
-    }
-  };
-
-  // Load user data
-  const loadData = async () => {
-    if (!user) return;
-
-    try {
-      // Load saved properties
-      const { data, error } = await supabase
-        .from("saved_properties")
-        .select("property_id")
-        .eq("user_id", user.id);
-
-      if (!error && data) {
-        setSavedProperties(new Set(data.map((item) => item.property_id)));
-      }
-
-      // Load user profile
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (!profileError && profileData) {
-        if (profileData.avatar_url) {
-          setUserAvatar(profileData.avatar_url);
-        }
-
-        let firstName = "";
-        if (profileData.first_name) {
-          firstName = profileData.first_name;
-        } else if (profileData.full_name) {
-          firstName = profileData.full_name.split(" ")[0];
-        } else if (user.user_metadata?.first_name) {
-          firstName = user.user_metadata.first_name;
-        } else if (user.email) {
-          firstName = user.email.split("@")[0];
-        }
-        setUserFirstName(firstName);
-      }
-    } catch (error) {
-      console.error("Error loading user data:", error);
     }
   };
 
@@ -352,6 +303,43 @@ const RenterHomePage = () => {
     console.log("🚀 Component mounted, loading properties...");
     loadProperties();
   }, []);
+
+  const loadData = async () => {
+    try {
+      if (!user) return;
+      
+      // Load user profile data
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, avatar_url')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      if (profile) {
+        setUserFirstName(profile.first_name || '');
+        if (profile.avatar_url) {
+          setUserAvatar(profile.avatar_url);
+        }
+      }
+
+      // Load saved properties
+      const { data: saved, error: savedError } = await supabase
+        .from('saved_properties')
+        .select('property_id')
+        .eq('user_id', user.id);
+
+      if (savedError) throw savedError;
+
+      if (saved) {
+        const savedIds = new Set(saved.map(item => item.property_id));
+        setSavedProperties(savedIds);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -371,17 +359,35 @@ const RenterHomePage = () => {
     }
   }, [conversations, user]);
 
-  // Group properties by location
-  const groupPropertiesByLocation = (propertiesToGroup) => {
+  // Group properties by location and property type
+  const groupProperties = (properties) => {
     const grouped = {};
-    propertiesToGroup.forEach((property) => {
-      const locationKey = property.location || "Other Areas";
-      if (!grouped[locationKey]) {
-        grouped[locationKey] = [];
+    
+    properties.forEach(property => {
+      // Extract city from location (first part before comma)
+      const location = property.location.split(',').length > 1 
+        ? property.location.split(',')[0].trim() 
+        : property.location.trim();
+      
+      // Get property type or default to 'other'
+      const type = property.property_type?.toLowerCase() || 'other';
+      
+      // Create a unique key for each location-type combination
+      const groupKey = `${location}_${type}`;
+      
+      if (!grouped[groupKey]) {
+        grouped[groupKey] = {
+          location,
+          type,
+          properties: []
+        };
       }
-      grouped[locationKey].push(property);
+      
+      grouped[groupKey].properties.push(property);
     });
-    return grouped;
+    
+    // Convert to array and sort by location name
+    return Object.values(grouped).sort((a, b) => a.location.localeCompare(b.location));
   };
 
   // Filter properties
@@ -391,9 +397,12 @@ const RenterHomePage = () => {
       location,
       propertyType,
       activeCategory,
+      bedrooms,
+      priceRange,
     });
 
     let filtered = [...properties];
+    console.log("🔍 Starting with properties:", filtered.length);
 
     // Category filter
     if (activeCategory !== "all") {
@@ -402,6 +411,7 @@ const RenterHomePage = () => {
           property.category === activeCategory ||
           property.property_type === activeCategory,
       );
+      console.log("🔍 After category filter:", filtered.length);
     }
 
     // Location filter
@@ -409,14 +419,17 @@ const RenterHomePage = () => {
       filtered = filtered.filter((p) =>
         p.location?.toLowerCase().includes(location.toLowerCase()),
       );
+      console.log("🔍 After location filter:", filtered.length);
     }
 
     // Price range filter
     if (priceRange.min) {
       filtered = filtered.filter((p) => p.price >= parseInt(priceRange.min));
+      console.log("🔍 After min price filter:", filtered.length);
     }
     if (priceRange.max) {
       filtered = filtered.filter((p) => p.price <= parseInt(priceRange.max));
+      console.log("🔍 After max price filter:", filtered.length);
     }
 
     // Property type filter
@@ -428,32 +441,22 @@ const RenterHomePage = () => {
           (p) => p.property_type?.toLowerCase() === propertyType.toLowerCase(),
         );
       }
+      console.log("🔍 After property type filter:", filtered.length);
     }
 
     // Bedrooms filter
     if (bedrooms) {
       filtered = filtered.filter((p) => p.bedrooms >= parseInt(bedrooms));
+      console.log("🔍 After bedrooms filter:", filtered.length);
     }
 
-    // Category filter
-    if (activeCategory !== "all") {
-      if (activeCategory === "luxury") {
-        filtered = filtered.filter((p) => p.price >= 500000);
-      } else {
-        filtered = filtered.filter(
-          (p) =>
-            p.property_type?.toLowerCase() === activeCategory.toLowerCase(),
-        );
-      }
-    }
-
-    console.log("✅ Filtered properties:", {
+    console.log("✅ Final filtered properties:", {
       filteredCount: filtered.length,
-      properties: filtered,
+      sampleProperty: filtered[0],
     });
 
     setFilteredProperties(filtered);
-    const grouped = groupPropertiesByLocation(filtered);
+    const grouped = groupProperties(filtered);
     setGroupedProperties(grouped);
 
     console.log("📍 Grouped properties:", grouped);
@@ -478,6 +481,31 @@ const RenterHomePage = () => {
   useEffect(() => {
     filterProperties();
   }, [filterProperties]);
+
+  // Debug: Track all state changes
+  useEffect(() => {
+    console.log("📊 STATE UPDATE:", {
+      propertiesCount: properties.length,
+      filteredPropertiesCount: filteredProperties.length,
+      groupedPropertiesKeys: Object.keys(groupedProperties),
+      loading,
+      location,
+      propertyType,
+      activeCategory,
+      bedrooms,
+      priceRange,
+    });
+  }, [
+    properties,
+    filteredProperties,
+    groupedProperties,
+    loading,
+    location,
+    propertyType,
+    activeCategory,
+    bedrooms,
+    priceRange,
+  ]);
 
   const getUserInitial = () => {
     if (userFirstName) {
@@ -507,7 +535,7 @@ const RenterHomePage = () => {
     setBedrooms("");
     setActiveCategory("all");
     setFilteredProperties(properties);
-    const grouped = groupPropertiesByLocation(properties);
+    const grouped = groupProperties(properties);
     setGroupedProperties(grouped);
   };
 
@@ -553,8 +581,35 @@ const RenterHomePage = () => {
     }
   };
 
+  // Slice the grouped properties to show only the visible rows
+  const displayedGroups = groupedProperties.slice(0, visibleRows);
+  const hasMoreRows = groupedProperties.length > visibleRows;
+
+  // Navigate to browse page with search params
+  const handleSearchNavigation = () => {
+    const params = new URLSearchParams();
+    if (location) {
+      params.set('search', location);
+      params.set('location', location);
+    }
+    if (propertyType && propertyType !== 'all') {
+      params.set('type', propertyType);
+    }
+    // Optional: you can include other filters like priceRange or bedrooms here
+    navigate(`/browse?${params.toString()}`);
+
+    // Track search event if analytics is available
+    if (trackSearch) {
+      trackSearch({
+        query: location || '',
+        filters: { propertyType, priceRange, bedrooms },
+        resultsCount: filteredProperties.length
+      });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-10">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
         <div className="px-4 sm:px-6 lg:px-10">
@@ -709,6 +764,7 @@ const RenterHomePage = () => {
                 {/* Search Button */}
                 <button
                   onClick={() => {
+                    handleSearchNavigation();
                     setActiveSearchSection(null);
                     setShowLocationDropdown(false);
                     setShowTypeDropdown(false);
@@ -1114,6 +1170,10 @@ const RenterHomePage = () => {
       {/* Main Content */}
       <main className="py-6 lg:py-8">
         {/* Properties Sections */}
+        {console.log("🎨 Render check:", {
+          loading,
+          filteredPropertiesCount: filteredProperties.length,
+        })}
         {loading ? (
           <div className="px-4 sm:px-6 lg:px-10 max-w-[1760px] mx-auto">
             <div className="animate-pulse mb-4 h-8 bg-gray-200 rounded w-64" />
@@ -1130,53 +1190,74 @@ const RenterHomePage = () => {
             </div>
           </div>
         ) : filteredProperties.length > 0 ? (
-          <div className="-mx-4 sm:-mx-6 lg:-mx-10">
-            {/* Section Header */}
-            <div className="px-4 sm:px-6 lg:px-10 max-w-[1760px] mx-auto mb-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-900 mb-1">
-                  {location ? `Stays in ${location}` : "All Stays"}
-                </h2>
-                <p className="text-sm text-gray-600">
-                  {filteredProperties.length} properties
-                </p>
-              </div>
-              <div className="hidden lg:flex items-center gap-2">
-                <button
-                  onClick={() => scroll("all", "left")}
-                  className="p-2 rounded-full border border-gray-300 hover:shadow-md transition-shadow bg-white"
-                  aria-label="Scroll left"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => scroll("all", "right")}
-                  className="p-2 rounded-full border border-gray-300 hover:shadow-md transition-shadow bg-white"
-                  aria-label="Scroll right"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Horizontal Scrolling Properties */}
-            <div className="px-4 sm:px-6 lg:px-10 max-w-[1760px] mx-auto">
-              <div
-                ref={(el) => (scrollContainerRefs.current["all"] = el)}
-                className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory"
-              >
-                {filteredProperties.map((property) => (
-                  <div key={property.id} className="flex-none w-80 snap-start">
-                    <PropertyCard
-                      property={property}
-                      isSaved={savedProperties.has(property.id)}
-                      onSave={toggleSaveProperty}
-                      onNavigate={navigate}
-                    />
+          <div className="space-y-12 -mx-4 sm:-mx-6 lg:-mx-10">
+            {displayedGroups.map((group) => {
+              const groupKey = `${group.location}_${group.type}`;
+              const typeDisplay = group.type === 'all' ? 'Properties' : 
+                                group.type.charAt(0).toUpperCase() + group.type.slice(1) + 's';
+              
+              return (
+                <div key={groupKey} className="px-4 sm:px-6 lg:px-10 max-w-[1760px] mx-auto">
+                  {/* Section Header */}
+                  <div className="mb-6 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-semibold text-gray-900 mb-1">
+                        {typeDisplay} in {group.location}
+                      </h2>
+                      <p className="text-sm text-gray-600">
+                        {group.properties.length} {group.properties.length === 1 ? 'property' : 'properties'} available
+                      </p>
+                    </div>
+                    <div className="hidden lg:flex items-center gap-2">
+                      <button
+                        onClick={() => scroll(groupKey, "left")}
+                        className="p-2 rounded-full border border-gray-300 hover:shadow-md transition-shadow bg-white"
+                        aria-label={`Scroll ${groupKey} left`}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => scroll(groupKey, "right")}
+                        className="p-2 rounded-full border border-gray-300 hover:shadow-md transition-shadow bg-white"
+                        aria-label={`Scroll ${groupKey} right`}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                ))}
+
+                  {/* Horizontal Scrolling Properties */}
+                  <div>
+                    <div
+                      ref={(el) => (scrollContainerRefs.current[groupKey] = el)}
+                      className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory"
+                    >
+                      {group.properties.map((property) => (
+                        <div key={property.id} className="flex-none w-80 snap-start">
+                          <PropertyCard
+                            property={property}
+                            isSaved={savedProperties.has(property.id)}
+                            onSave={toggleSaveProperty}
+                            onNavigate={navigate}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            
+            {hasMoreRows && (
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={() => setVisibleRows(prev => prev + 5)} // Show 5 more rows
+                  className="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                >
+                  Load More
+                </button>
               </div>
-            </div>
+            )}
           </div>
         ) : (
           <div className="px-4 sm:px-6 lg:px-10 max-w-[1760px] mx-auto text-center py-20">
