@@ -310,19 +310,30 @@ const RenterHomePage = () => {
     try {
       if (!user) return;
       
-      // Load user profile data
+      // Load user profile data from user_profiles table
       const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, avatar_url')
+        .from('user_profiles')
+        .select('full_name, profile_image')
         .eq('id', user.id)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.log('Profile error:', profileError);
+        // If no profile exists, that's okay - use defaults
+        if (profileError.code !== 'PGRST116') {
+          throw profileError;
+        }
+      }
 
       if (profile) {
-        setUserFirstName(profile.first_name || '');
-        if (profile.avatar_url) {
-          setUserAvatar(profile.avatar_url);
+        const firstName = profile.full_name?.split(' ')[0] || '';
+        setUserFirstName(firstName);
+        if (profile.profile_image) {
+          console.log('✅ Setting user avatar from DB:', profile.profile_image);
+          setUserAvatar(profile.profile_image);
+        } else {
+          console.log('ℹ️ No profile image in DB, will show initials');
+          setUserAvatar(null);
         }
       }
 
@@ -599,7 +610,7 @@ const RenterHomePage = () => {
               <img
                 src="/images/logo.png"
                 alt="HomeSwift"
-                className="w-14 h-14 sm:w-58 sm:h-24 object-cover rounded-lg"
+                className="w-16 h-16 sm:w-58 sm:h-24 object-cover rounded-lg"
               />
             </Link>
 

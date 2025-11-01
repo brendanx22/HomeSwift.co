@@ -51,16 +51,20 @@ export default function SavedProperties() {
       setLoading(true);
       setError(null);
 
-      const { success, savedProperties: savedData } = await PropertyAPI.getSavedProperties(user.id);
+      console.log('📋 Loading saved properties for user:', user.id);
+      const result = await PropertyAPI.getSavedProperties(user.id);
+      console.log('📋 Result from API:', result);
 
-      if (success) {
-        setSavedProperties(savedData || []);
+      if (result.success) {
+        console.log('✅ Saved properties loaded:', result.savedProperties?.length || 0);
+        setSavedProperties(result.savedProperties || []);
       } else {
-        setError('Failed to load saved properties');
+        console.error('❌ Failed to load saved properties:', result.error);
+        setError(result.error || 'Failed to load saved properties');
       }
     } catch (error) {
-      console.error('Error loading saved properties:', error);
-      setError('Failed to load saved properties');
+      console.error('❌ Exception loading saved properties:', error);
+      setError(error.message || 'Failed to load saved properties');
     } finally {
       setLoading(false);
     }
