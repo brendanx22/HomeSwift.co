@@ -598,6 +598,16 @@ const RenterHomePage = () => {
   const displayedGroups = groupedProperties.slice(0, visibleRows);
   const hasMoreRows = groupedProperties.length > visibleRows;
 
+  // Debug logging before render
+  console.log("🎨 Render state:", {
+    loading,
+    propertiesCount: properties.length,
+    filteredPropertiesCount: filteredProperties.length,
+    groupedPropertiesCount: groupedProperties.length,
+    displayedGroupsCount: displayedGroups.length,
+    visibleRows
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-10">
       {/* Header */}
@@ -608,7 +618,7 @@ const RenterHomePage = () => {
             {/* Logo */}
             <Link to="/" className="flex items-center">
               <img
-                src="/images/logo.png"
+                src="/images/3.png"
                 alt="HomeSwift"
                 className="w-16 h-16 sm:w-58 sm:h-24 object-cover rounded-lg"
               />
@@ -1171,10 +1181,6 @@ const RenterHomePage = () => {
       {/* Main Content */}
       <main className="py-6 lg:py-8">
         {/* Properties Sections */}
-        {console.log("🎨 Render check:", {
-          loading,
-          filteredPropertiesCount: filteredProperties.length,
-        })}
         {loading ? (
           <div className="px-4 sm:px-6 lg:px-10 max-w-[1760px] mx-auto">
             <div className="animate-pulse mb-4 h-8 bg-gray-200 rounded w-64" />
@@ -1192,7 +1198,6 @@ const RenterHomePage = () => {
           </div>
         ) : filteredProperties.length > 0 ? (
           <div className="space-y-12 -mx-4 sm:-mx-6 lg:-mx-10">
-            {console.log('🎯 Displaying groups:', displayedGroups.length, 'out of', groupedProperties.length)}
             {displayedGroups.map((group) => {
               const groupKey = `${group.location}_${group.type}`;
               const typeDisplay = group.type === 'all' ? 'Properties' : 
