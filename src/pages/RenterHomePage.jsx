@@ -5,7 +5,7 @@ import React, {
   useCallback,
   createRef,
 } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -96,7 +96,15 @@ const PropertyCard = ({ property, isSaved, onSave, onNavigate }) => {
 
   const handleCardClick = () => {
     // Pass the full property object via location state for faster load in details page
-    onNavigate(`/properties/${property.id}`, { state: { property } });
+    // Use replace: false to ensure browser back button works correctly
+    onNavigate(`/properties/${property.id}`, { 
+      state: { 
+        property,
+        // Add a timestamp to prevent stale data
+        _timestamp: Date.now()
+      },
+      replace: false
+    });
   };
 
   const handleSaveClick = (e) => {
@@ -217,10 +225,53 @@ const PropertyCard = ({ property, isSaved, onSave, onNavigate }) => {
   );
 };
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Error in RenterHomePage:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h2>
+          <p className="text-gray-700 mb-6">
+            We're having trouble loading properties. Please try refreshing the page.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-[#FF6B35] text-white rounded-lg hover:bg-[#e85e2f] transition-colors"
+          >
+            Refresh Page
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const RenterHomePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { conversations, loadConversations } = useMessaging();
+  
+  // Cache control
+  const [lastFetched, setLastFetched] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
   // State
   const [properties, setProperties] = useState([]);
@@ -228,7 +279,7 @@ const RenterHomePage = () => {
   const [groupedProperties, setGroupedProperties] = useState([]);
   const [visibleRows, setVisibleRows] = useState(5); // Show first 5 rows initially
   const [loading, setLoading] = useState(true);
-  const [location, setLocation] = useState("");
+  const [searchLocation, setSearchLocation] = useState("");
   const [priceRange, setPriceRange] = useState({ min: "", max: "" });
   const [propertyType, setPropertyType] = useState("all");
   const [bedrooms, setBedrooms] = useState("");
@@ -245,9 +296,19 @@ const RenterHomePage = () => {
   const [activeSearchSection, setActiveSearchSection] = useState(null);
   const scrollContainerRefs = useRef({});
 
-  const loadProperties = async () => {
+  const loadProperties = async (forceRefresh = false) => {
+    // Only refetch if data is older than 2 minutes or forceRefresh is true
+    const twoMinutesAgo = new Date();
+    twoMinutesAgo.setMinutes(twoMinutesAgo.getMinutes() - 2);
+    
+    if (!forceRefresh && lastFetched && lastFetched > twoMinutesAgo) {
+      console.log("Using cached properties data");
+      return;
+    }
+
     try {
       setLoading(true);
+      setError(null);
       console.log("🔍 Fetching properties from database...");
       
       const { data: propertiesData, error } = await supabase
@@ -278,7 +339,9 @@ const RenterHomePage = () => {
           is_featured: property.is_featured || false,
           created_at: property.created_at,
           updated_at: property.updated_at,
-          landlord_id: property.landlord_id
+          landlord_id: property.landlord_id,
+          // Add a unique key for React rendering
+          _key: `${property.id}_${new Date(property.updated_at || property.created_at).getTime()}`
         }));
 
         setProperties(formattedProperties);
@@ -287,11 +350,13 @@ const RenterHomePage = () => {
         console.log('📦 Grouped properties:', grouped.length, 'groups');
         setGroupedProperties(grouped);
         setVisibleRows(5); // Reset visible rows when properties change
+        setLastFetched(new Date());
       } else {
         // If no properties found, reset the state
         setProperties([]);
         setFilteredProperties([]);
         setGroupedProperties([]);
+        setLastFetched(new Date());
       }
     } catch (error) {
       console.error('❌ Error loading properties:', error);
@@ -301,10 +366,27 @@ const RenterHomePage = () => {
     }
   };
 
+  // Handle browser back/forward navigation
   useEffect(() => {
+    const handlePopState = () => {
+      if (location.pathname === '/') {
+        console.log('🔄 Detected navigation to home, refreshing data...');
+        loadProperties(true);
+      }
+    };
+
+    // Add event listener for popstate (back/forward navigation)
+    window.addEventListener('popstate', handlePopState);
+    
+    // Initial load
     console.log("🚀 Component mounted, loading properties...");
     loadProperties();
-  }, []);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [location.pathname]);
 
   const loadData = async () => {
     try {
@@ -371,6 +453,20 @@ const RenterHomePage = () => {
       setUnreadCount(unread);
     }
   }, [conversations, user]);
+
+  // Handle manual refresh
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      await loadProperties(true);
+      toast.success('Properties refreshed successfully');
+    } catch (err) {
+      console.error('Error refreshing properties:', err);
+      toast.error('Failed to refresh properties');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Group properties by location and property type
   const groupProperties = (properties) => {
@@ -601,15 +697,43 @@ const RenterHomePage = () => {
   // Debug logging before render
   console.log("🎨 Render state:", {
     loading,
+    isRefreshing,
+    lastFetched: lastFetched?.toISOString(),
     propertiesCount: properties.length,
     filteredPropertiesCount: filteredProperties.length,
     groupedPropertiesCount: groupedProperties.length,
-    displayedGroupsCount: displayedGroups.length,
-    visibleRows
+    displayedGroupsCount: displayedGroups?.length || 0,
+    visibleRows,
+    pathname: location.pathname,
+    searchLocation
   });
 
+  // Show error boundary if there's an error
+  if (error) {
+    throw error;
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-10">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-10">
+        {/* Refresh button */}
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className={`fixed bottom-6 right-6 z-50 p-3 bg-[#FF6B35] text-white rounded-full shadow-lg hover:bg-[#e85e2f] transition-colors ${isRefreshing ? 'opacity-75 cursor-not-allowed' : ''}`}
+          title="Refresh properties"
+        >
+          {isRefreshing ? (
+            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ) : (
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          )}
+        </button>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
         <div className="px-4 sm:px-6 lg:px-10">
@@ -1344,7 +1468,8 @@ const RenterHomePage = () => {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
 
