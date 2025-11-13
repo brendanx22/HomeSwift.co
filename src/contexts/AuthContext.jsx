@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { authAPI } from '../utils/api';
-import { supabase, getSupabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 import { identifyUser, resetUser, trackLogin, trackSignup, trackRoleSwitch } from '../lib/posthog';
 
 export const AuthContext = createContext();
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
 
       // Try to get Supabase session to validate
       try {
-        const { data: sessionData, error: sessionError } = await getSupabase().auth.getSession();
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
           console.warn('⚠️ Supabase session error:', sessionError.message);
@@ -288,7 +288,7 @@ const signup = async (userData) => {
     console.log('Generated agent ID:', agentId);
 
     // Use Supabase's client-side auth for signup to trigger email verification
-    const { data, error } = await getSupabase().auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: userData.email,
       password: userData.password,
       options: {
@@ -358,7 +358,7 @@ const signup = async (userData) => {
       console.log('🔐 Attempting to sign out from Supabase...');
       try {
         const { error } = await Promise.race([
-          getSupabase().auth.signOut(),
+          supabase.auth.signOut(),
           new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Sign out timed out')), 5000)
           )
@@ -686,12 +686,12 @@ const signup = async (userData) => {
     };
 
     // Set up the auth state listener
-    const { data: { subscription }, error } = getSupabase().auth.onAuthStateChange(handleAuthStateChange);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
 
     // Initial session check
     const checkInitialSession = async () => {
       try {
-        const { data: { session } } = await getSupabase().auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         if (session && isMounted) {
           await handleAuthStateChange('INITIAL_SESSION', session);
         } else if (isMounted) {
@@ -732,7 +732,7 @@ const signup = async (userData) => {
     const checkInitialSession = async () => {
       try {
         console.log('🔍 Checking initial session...');
-        const { data: { session }, error } = await getSupabase().auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('❌ Error getting session:', error);
@@ -819,7 +819,7 @@ const signup = async (userData) => {
     
     // If role doesn't exist, add it
     try {
-      const { data, error } = await getSupabase()
+      const { data, error } = await supabase
         .from('user_roles')
         .insert([
           { 
@@ -965,7 +965,7 @@ const signup = async (userData) => {
         localStorage.setItem('pendingUserType', credentials.userType);
       }
 
-      const { data, error } = await getSupabase().auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
       });
@@ -989,7 +989,7 @@ const signup = async (userData) => {
 
       if (user) {
         // Ensure we have the latest user data
-        const { data: { user: updatedUser } } = await getSupabase().auth.getUser();
+        const { data: { user: updatedUser } } = await supabase.auth.getUser();
         
         console.log('🔍 Login - User object before processing:', {
           id: user.id,
@@ -1032,7 +1032,7 @@ const signup = async (userData) => {
           // Update the user metadata in Supabase to persist any changes
           if (user.user_metadata && (user.user_metadata.first_name !== data.user.user_metadata?.first_name || user.user_metadata.full_name !== data.user.user_metadata?.full_name)) {
             try {
-              const { error: updateError } = await getSupabase().auth.updateUser({
+              const { error: updateError } = await supabase.auth.updateUser({
                 data: user.user_metadata
               });
               if (updateError) {
@@ -1056,7 +1056,7 @@ const signup = async (userData) => {
 
           // Update the user metadata in Supabase to persist the agent ID
           try {
-            const { error: updateError } = await getSupabase().auth.updateUser({
+            const { error: updateError } = await supabase.auth.updateUser({
               data: user.user_metadata
             });
             if (updateError) {
@@ -1263,7 +1263,7 @@ const signup = async (userData) => {
       console.log('🔍 Verified pendingUserType in localStorage:', storedType);
 
       // Use Supabase's Google OAuth
-      const { data, error } = await getSupabase().auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
