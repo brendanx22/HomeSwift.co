@@ -77,24 +77,16 @@ export default defineConfig({
   build: {
     outDir: "dist",
     assetsDir: "assets",
-    // Source map configuration
-    sourcemap: process.env.NODE_ENV === 'production' ? 'hidden' : true,
-    
-    // Minification settings
-    minify: 'terser',
-    
-    // Chunk size warning limit
+    sourcemap: false,
+    minify: "terser",
     chunkSizeWarningLimit: 1000,
-    
-    // Rollup configuration
     rollupOptions: {
       output: {
         // Add content hashes to filenames for better caching
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
-        
-        // Manual chunks for better code splitting
+        // Set manual chunks for better loading
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
             if (id.includes('react') || id.includes('react-dom')) {
@@ -111,11 +103,13 @@ export default defineConfig({
         }
       }
     },
-    
+    // Generate source maps for production
+    sourcemap: process.env.NODE_ENV === 'production' ? 'hidden' : false,
+    // Enable minification
+    minify: 'terser',
     // Enable brotli compression
     brotliSize: true,
-    
-    // Terser options for minification
+    // Remove console logs in production
     terserOptions: {
       compress: {
         drop_console: process.env.NODE_ENV === 'production',
@@ -146,9 +140,7 @@ export default defineConfig({
   },
   // Environment variables
   define: {
-    // In production, these will be replaced with actual values during build
-    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL || ''),
-    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || ''),
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
+    'process.env': {},
+    // Add other global variables here
   },
 });

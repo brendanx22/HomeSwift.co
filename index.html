@@ -4,61 +4,10 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/images/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#FF6B35" />
-    <meta name="description" content="HomeSwift - Find your perfect home" />
     <title>HomeSwift</title>
-    
-    <!-- Preload critical assets -->
-    <link rel="preload" href="/src/main.jsx" as="script" />
-    
-    <!-- Add this script to ensure proper initialization order in production -->
-    <script>
-      // Set a global flag to track if we're in a production environment
-      window.__PROD__ = true;
-      
-      // Ensure Supabase environment variables are available before the app loads
-      if (!window.__SUPABASE_ENV__) {
-        window.__SUPABASE_ENV__ = {
-          VITE_SUPABASE_URL: '%VITE_SUPABASE_URL%',
-          VITE_SUPABASE_ANON_KEY: '%VITE_SUPABASE_ANON_KEY%'
-        };
-      }
-      
-      // Error handler for uncaught errors
-      window.addEventListener('error', function(event) {
-        console.error('Uncaught error:', event.error);
-      });
-      
-      // Handle unhandled promise rejections
-      window.addEventListener('unhandledrejection', function(event) {
-        console.error('Unhandled promise rejection:', event.reason);
-      });
-    </script>
   </head>
   <body>
     <div id="root"></div>
-    
-    <!-- Load the app script with defer to ensure proper loading order -->
-    <script type="module" src="/src/main.jsx" defer></script>
-    
-    <!-- Fallback for older browsers -->
-    <script>
-      // Check if the browser supports all required features
-      const isModernBrowser = (
-        'Promise' in window &&
-        'fetch' in window &&
-        'IntersectionObserver' in window
-      );
-      
-      if (!isModernBrowser) {
-        // Load polyfills or show a message
-        document.getElementById('root').innerHTML = `
-          <div style="padding: 2rem; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-            <h1>Browser Not Supported</h1>
-            <p>Please use a modern browser like Chrome, Firefox, Safari, or Edge to use this application.</p>
-          </div>
-        `;
-      }
-    </script>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
