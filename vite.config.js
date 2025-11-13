@@ -146,7 +146,9 @@ export default defineConfig({
   },
   // Environment variables
   define: {
-    'process.env': {},
-    // Add other global variables here
+    // In production, these will be replaced with actual values during build
+    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL || ''),
+    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || ''),
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
   },
 });
