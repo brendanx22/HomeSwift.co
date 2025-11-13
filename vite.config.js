@@ -77,16 +77,24 @@ export default defineConfig({
   build: {
     outDir: "dist",
     assetsDir: "assets",
-    sourcemap: false,
-    minify: "terser",
+    // Source map configuration
+    sourcemap: process.env.NODE_ENV === 'production' ? 'hidden' : true,
+    
+    // Minification settings
+    minify: 'terser',
+    
+    // Chunk size warning limit
     chunkSizeWarningLimit: 1000,
+    
+    // Rollup configuration
     rollupOptions: {
       output: {
         // Add content hashes to filenames for better caching
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
-        // Set manual chunks for better loading
+        
+        // Manual chunks for better code splitting
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
             if (id.includes('react') || id.includes('react-dom')) {
@@ -103,13 +111,11 @@ export default defineConfig({
         }
       }
     },
-    // Generate source maps for production
-    sourcemap: process.env.NODE_ENV === 'production' ? 'hidden' : false,
-    // Enable minification
-    minify: 'terser',
+    
     // Enable brotli compression
     brotliSize: true,
-    // Remove console logs in production
+    
+    // Terser options for minification
     terserOptions: {
       compress: {
         drop_console: process.env.NODE_ENV === 'production',
