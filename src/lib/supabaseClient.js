@@ -1,26 +1,48 @@
 import { createClient } from '@supabase/supabase-js'
 
-// First, ensure window is defined (for SSR/SSG)
-const isClient = typeof window !== 'undefined'
+let _supabase = null;
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const initSupabase = () => {
+  if (_supabase) return _supabase;
 
-// Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase configuration')
-}
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const supabase = isClient 
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-        storage: window.localStorage,
-        storageKey: 'supabase.auth.token'
-      }
-    })
-  : null
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('❌ Missing Supabase configuration');
+    return null;
+  }
 
-export { supabase }
+  try {
+    if (typeof window !== 'undefined') {
+      // Client-side initialization
+      _supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true,
+          storage: window.localStorage,
+          storageKey: 'supabase.auth.token'
+        }
+      });
+    } else {
+      // Server-side initialization
+      _supabase = createClient(supabaseUrl, supabaseAnonKey);
+    }
+    
+    console.log('✅ Supabase client initialized');
+    return _supabase;
+  } catch (error) {
+    console.error('❌ Failed to initialize Supabase:', error);
+    return null;
+  }
+};
+
+// Initialize immediately
+const supabase = initSupabase();
+
+// Export a function that ensures initialization
+export const getSupabase = () => _supabase || initSupabase();
+
+// Default export for backward compatibility
+export { supabase };
