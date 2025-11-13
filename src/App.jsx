@@ -1,12 +1,9 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { OfflineIndicator, PWAInstallPrompt, UpdatePrompt, registerServiceWorker } from './utils/pwa.jsx';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { LanguageProvider } from './contexts/LanguageContext';
-import { MessagingProvider } from './contexts/MessagingContext';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { initPostHog } from './lib/posthog';
 
@@ -176,7 +173,15 @@ const AppLayout = () => {
 
   // Initialize PostHog
   useEffect(() => {
-    initPostHog();
+    try {
+      if (typeof initPostHog === 'function') {
+        initPostHog();
+      } else {
+        console.warn('initPostHog is not a function');
+      }
+    } catch (error) {
+      console.error('Failed to initialize PostHog:', error);
+    }
   }, []);
 
   // Set document title
@@ -593,42 +598,91 @@ const AppLayout = () => {
   );
 };
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-red-50 p-4">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h2 className="text-xl font-bold text-red-600 mb-4">Something went wrong</h2>
+            <p className="text-gray-700 mb-4">
+              We're sorry, but an unexpected error occurred. The issue has been logged.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 // Main App Component
 const App = () => {
-  // Register service worker for PWA functionality
-  React.useEffect(() => {
-    registerServiceWorker();
+  // Initialize PostHog and register service worker
+  useEffect(() => {
+    // Initialize PostHog
+    try {
+      initPostHog();
+    } catch (error) {
+      console.error('Failed to initialize PostHog:', error);
+    }
+
+    // Register service worker for PWA functionality in production
+    if (process.env.NODE_ENV === 'production') {
+      const handleUpdateAvailable = () => {
+        console.log('Service Worker: Update available, reloading...');
+        window.location.reload();
+      };
+
+      // Register service worker with update handler
+      registerServiceWorker(handleUpdateAvailable).catch(error => {
+        console.error('Failed to register service worker:', error);
+      });
+    }
   }, []);
 
   return (
-    <Router>
-      <AuthProvider>
-        <ThemeProvider>
-          <LanguageProvider>
-            <MessagingProvider>
-              <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-                <OfflineIndicator />
-                <PWAInstallPrompt />
-                <UpdatePrompt onUpdate={() => window.location.reload()} />
-                <Toaster
-                  position="top-right"
-                  toastOptions={{
-                    duration: 3000,
-                    style: {
-                      background: '#363636',
-                      color: '#fff',
-                      borderRadius: '0.5rem',
-                      padding: '1rem',
-                    },
-                  }}
-                />
-                <AppLayout />
-              </div>
-            </MessagingProvider>
-          </LanguageProvider>
-        </ThemeProvider>
-      </AuthProvider>
-    </Router>
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+        <OfflineIndicator />
+        <PWAInstallPrompt />
+        <UpdatePrompt onUpdate={() => window.location.reload()} />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+            },
+          }}
+        />
+        <AppLayout />
+      </div>
+    </ErrorBoundary>
   );
 };
 

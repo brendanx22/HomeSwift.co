@@ -306,33 +306,98 @@ export const CacheManager = () => {
 };
 
 // Service Worker Registration
-export const registerServiceWorker = async () => {
-  if ('serviceWorker' in navigator) {
-    try {
-      const registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('Service Worker registered successfully:', registration);
+export const registerServiceWorker = async (onUpdate) => {
+  // Skip in development or if not in browser
+  if (process.env.NODE_ENV !== 'production' || typeof window === 'undefined') {
+    console.log('Service Worker: Skipping in development or server-side');
+    return null;
+  }
 
-      // Check for updates
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New update available - trigger a custom event that components can listen to
-              console.log('New update available');
-              window.dispatchEvent(new CustomEvent('sw-update-available'));
-            }
-          });
+  if (!('serviceWorker' in navigator)) {
+    console.warn('Service Worker: Not supported in this browser');
+    return null;
+  }
+
+  try {
+    // Clear existing registrations
+    console.log('Service Worker: Unregistering existing service workers...');
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (const registration of registrations) {
+      console.log('Service Worker: Unregistering old service worker');
+      await registration.unregister();
+    }
+
+    // Clear all caches
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames.map(cacheName => {
+          console.log('Service Worker: Clearing cache:', cacheName);
+          return caches.delete(cacheName);
+        })
+      );
+    }
+
+    // Register new service worker
+    console.log('Service Worker: Registering new service worker...');
+    const registration = await navigator.serviceWorker.register('/sw.js', {
+      updateViaCache: 'none',
+      scope: '/'
+    });
+    
+    console.log('Service Worker: Registered successfully');
+
+    // Handle updates
+    registration.addEventListener('updatefound', () => {
+      const newWorker = registration.installing;
+      if (!newWorker) return;
+      
+      console.log('Service Worker: New service worker found');
+      
+      newWorker.addEventListener('statechange', () => {
+        console.log('Service Worker: State changed to:', newWorker.state);
+        
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          console.log('Service Worker: New update available');
+          if (onUpdate) {
+            onUpdate();
+          }
         }
       });
+    });
 
-      return registration;
-    } catch (error) {
-      console.error('Service Worker registration failed:', error);
-      return null;
-    }
+    // Check for updates periodically
+    const checkForUpdates = async () => {
+      try {
+        console.log('Service Worker: Checking for updates...');
+        await registration.update();
+      } catch (error) {
+        console.error('Service Worker: Error checking for updates:', error);
+      }
+    };
+
+    // Check for updates on page load
+    await checkForUpdates();
+    
+    // Check for updates every hour
+    const updateInterval = setInterval(checkForUpdates, 60 * 60 * 1000);
+    
+    // Clean up interval on page unload
+    window.addEventListener('beforeunload', () => {
+      clearInterval(updateInterval);
+    });
+
+    // Handle controller changes (when a new service worker takes over)
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      console.log('Service Worker: Controller changed, reloading page...');
+      window.location.reload();
+    });
+
+    return registration;
+  } catch (error) {
+    console.error('Service Worker: Registration failed:', error);
+    return null;
   }
-  return null;
 };
 
 // PWA Meta Tags Component (for index.html)

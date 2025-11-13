@@ -1,32 +1,93 @@
-const CACHE_NAME = 'homeswift-v1';
-const STATIC_CACHE = 'homeswift-static-v1';
-const DYNAMIC_CACHE = 'homeswift-dynamic-v1';
-
-// Assets to cache immediately
-const STATIC_ASSETS = [
-  '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/manifest.json',
-  '/favicon.ico',
-  // Add more critical assets as needed
-];
+const CACHE_NAME = 'homeswift-v3';
+const STATIC_CACHE = 'homeswift-static-v3';
+const DYNAMIC_CACHE = 'homeswift-dynamic-v3';
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
   console.log('Service Worker: Installing...');
-
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => {
-      console.log('Service Worker: Caching static assets');
-      return cache.addAll(STATIC_ASSETS);
-    }).catch((error) => {
-      console.error('Service Worker: Failed to cache static assets', error);
-    })
-  );
-
+  
   // Skip waiting to activate immediately
   self.skipWaiting();
+  
+  // Don't block installation on cache operations
+  event.waitUntil(
+    caches.open(STATIC_CACHE)
+      .then(cache => {
+        console.log('Service Worker: Static cache opened');
+        return true;
+      })
+      .catch(error => {
+        console.error('Service Worker: Cache open error:', error);
+      })
+  );
+});
+
+// Activate event - clean up old caches
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker: Activating...');
+  
+  // Remove old caches
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+            console.log('Service Worker: Removing old cache', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  
+  // Take control of all clients
+  self.clients.claim();
+});
+
+// Fetch event - handle network requests
+self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') return;
+  
+  // Skip non-http(s) requests
+  if (!event.request.url.startsWith('http')) return;
+  
+  // For development, skip Vite's HMR and other development server requests
+  if (event.request.url.includes('sockjs-node') || 
+      event.request.url.includes('__vite_ping') ||
+      event.request.url.includes('localhost:3000')) {
+    return;
+  }
+  
+  event.respondWith(
+    caches.match(event.request)
+      .then(cachedResponse => {
+        // Return cached response if found
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        
+        // Otherwise, fetch from network
+        return fetch(event.request)
+          .then(response => {
+            // Don't cache non-200 responses
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+            
+            // Clone the response
+            const responseToCache = response.clone();
+            
+            // Cache the response
+            caches.open(DYNAMIC_CACHE)
+              .then(cache => {
+                cache.put(event.request, responseToCache);
+              });
+              
+            return response;
+          });
+      })
+  );
 });
 
 // Activate event - clean up old caches

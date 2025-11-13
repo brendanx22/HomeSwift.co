@@ -119,81 +119,103 @@ const LandlordDashboard = () => {
   // Check if user is authenticated and has landlord role
   useEffect(() => {
     const checkAuth = async () => {
-      if (!authLoading) {
-        if (!isAuthenticated) {
-          navigate('/landlord/login', {
-            state: { from: '/landlord/dashboard' }
-          });
-          return;
-        }
-
-        // Check if user has landlord role - use localStorage for consistency
-        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-        const userType = storedUser?.user_metadata?.user_type || storedUser?.user_type;
-        const storedRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
-        const currentRole = storedRoles.find(r => r.is_primary)?.role || storedRoles[0]?.role || userType || 'renter';
-
-        // console.log('Dashboard Auth Check:', { currentRole, userType, storedRoles, userId: user?.id });
-
-        // More robust role checking - create landlord role if user has properties
-        if (currentRole !== 'landlord' && user?.id) {
-          // Double-check by looking at user metadata or trying to load dashboard data
-          // If they have properties in the database, they're likely a landlord
-          try {
-            const { data: properties, error } = await supabase
-              .from('properties')
-              .select('id')
-              .eq('landlord_id', user.id)
-              .limit(1);
-
-            if (!error && properties && properties.length > 0) {
-              // User has properties, create/update landlord role
-              console.log('✅ User has properties, creating landlord role');
-
-              // Update user metadata to include landlord role
-              const { error: updateError } = await supabase
-                .from('user_profiles')
-                .upsert({
-                  id: user.id,
-                  user_type: 'landlord',
-                  updated_at: new Date().toISOString()
-                });
-
-              if (updateError) {
-                console.error('❌ Error updating user role:', updateError);
-              } else {
-                // Update localStorage with new role
-                const updatedUser = {
-                  ...storedUser,
-                  user_metadata: {
-                    ...storedUser.user_metadata,
-                    user_type: 'landlord'
-                  }
-                };
-                localStorage.setItem('user', JSON.stringify(updatedUser));
-
-                // Update roles array
-                const updatedRoles = [{ role: 'landlord', is_primary: true }];
-                localStorage.setItem('userRoles', JSON.stringify(updatedRoles));
-
-                console.log('✅ Landlord role created successfully');
-              }
-            } else {
-              // console.log('❌ No properties found, redirecting to chat');
-              navigate('/chat');
-              return;
-            }
-          } catch (err) {
-            // console.log('❌ Error checking properties, redirecting to chat');
-            navigate('/chat');
+      try {
+        if (!authLoading) {
+          if (!isAuthenticated) {
+            navigate('/landlord/login', {
+              state: { from: '/landlord/dashboard' }
+            });
+            setLoading(false);
             return;
           }
-        }
 
-        // Load dashboard data
-        await loadDashboardData();
-        await loadRecentData();
-        await loadAllInquiries();
+          // Check if user has landlord role - use localStorage for consistency
+          const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+          const userType = storedUser?.user_metadata?.user_type || storedUser?.user_type;
+          const storedRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
+          const currentRole = storedRoles.find(r => r.is_primary)?.role || storedRoles[0]?.role || userType || 'renter';
+
+          console.log('🔍 Dashboard Auth Check:', { 
+            currentRole, 
+            userType, 
+            storedRoles, 
+            userId: user?.id,
+            isAuthenticated,
+            authLoading
+          });
+
+          // More robust role checking - create landlord role if user has properties
+          if (currentRole !== 'landlord' && user?.id) {
+            // Double-check by looking at user metadata or trying to load dashboard data
+            // If they have properties in the database, they're likely a landlord
+            try {
+              const { data: properties, error } = await supabase
+                .from('properties')
+                .select('id')
+                .eq('landlord_id', user.id)
+                .limit(1);
+
+              if (!error && properties && properties.length > 0) {
+                // User has properties, create/update landlord role
+                console.log('✅ User has properties, creating landlord role');
+
+                // Update user metadata to include landlord role
+                const { error: updateError } = await supabase
+                  .from('user_profiles')
+                  .upsert({
+                    id: user.id,
+                    user_type: 'landlord',
+                    updated_at: new Date().toISOString()
+                  });
+
+                if (updateError) {
+                  console.error('❌ Error updating user role:', updateError);
+                } else {
+                  // Update localStorage with new role
+                  const updatedUser = {
+                    ...storedUser,
+                    user_metadata: {
+                      ...storedUser.user_metadata,
+                      user_type: 'landlord'
+                    }
+                  };
+                  localStorage.setItem('user', JSON.stringify(updatedUser));
+
+                  // Update roles array
+                  const updatedRoles = [{ role: 'landlord', is_primary: true }];
+                  localStorage.setItem('userRoles', JSON.stringify(updatedRoles));
+                  console.log('✅ Landlord role created successfully');
+                }
+              } else {
+                console.log('❌ No properties found, redirecting to chat');
+                navigate('/chat');
+                setLoading(false);
+                return;
+              }
+            } catch (err) {
+              console.error('❌ Error checking properties:', err);
+              navigate('/chat');
+              setLoading(false);
+              return;
+            }
+          }
+
+          // If we get here, user is authenticated and has landlord role
+          console.log('✅ User is authenticated and has landlord role, loading dashboard data');
+          
+          // Load dashboard data in parallel
+          await Promise.all([
+            loadDashboardData(),
+            loadRecentData(),
+            loadAllInquiries()
+          ]);
+          
+          console.log('✅ Dashboard data loaded successfully');
+        }
+      } catch (error) {
+        console.error('❌ Error in auth check:', error);
+      } finally {
+        // Always ensure loading is set to false
         setLoading(false);
       }
     };

@@ -1,25 +1,41 @@
 import posthog from 'posthog-js';
 
+let isInitialized = false;
+
 // Initialize PostHog
 export const initPostHog = () => {
-  if (typeof window !== 'undefined') {
+  if (isInitialized || typeof window === 'undefined' || !import.meta.env.VITE_POSTHOG_KEY) {
+    return;
+  }
+
+  try {
     posthog.init(
-      import.meta.env.VITE_POSTHOG_KEY || 'phc_your_project_api_key',
+      import.meta.env.VITE_POSTHOG_KEY,
       {
         api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://app.posthog.com',
         loaded: (posthog) => {
-          if (import.meta.env.MODE === 'development') {
-            console.log('PostHog loaded successfully');
+          if (import.meta.env.DEV) {
+            posthog.debug(); // Enable debug mode in development
+            console.log('PostHog debug mode enabled');
           }
         },
-        capture_pageview: true, // Automatically capture pageviews
-        capture_pageleave: true, // Capture when users leave pages
-        autocapture: true, // Automatically capture clicks and form submissions
+        capture_pageview: true,
+        capture_pageleave: true,
+        autocapture: true,
         session_recording: {
           recordCrossOriginIframes: true,
         },
+        persistence: 'localStorage',
+        disable_session_recording: import.meta.env.DEV, // Disable session recording in dev
+        disable_persistence: import.meta.env.TEST, // Disable persistence in test env
+        opt_out_capturing_by_default: import.meta.env.DEV, // Opt out by default in dev
       }
     );
+    
+    isInitialized = true;
+    console.log('PostHog initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize PostHog:', error);
   }
 };
 

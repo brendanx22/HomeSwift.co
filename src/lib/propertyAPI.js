@@ -192,15 +192,10 @@ export class PropertyAPI {
     try {
       console.log('🔍 Fetching saved properties for user:', userId);
       
+      // First, get the saved property IDs for the user
       const { data: savedData, error: savedError } = await supabase
         .from("saved_properties")
-        .select(`
-          property_id,
-          created_at,
-          properties (
-            *
-          )
-        `)
+        .select('property_id, created_at')
         .eq("user_id", userId);
 
       if (savedError) {
@@ -208,16 +203,40 @@ export class PropertyAPI {
         throw savedError;
       }
 
-      console.log('✅ Saved properties loaded:', savedData?.length || 0);
-
       if (!savedData || savedData.length === 0) {
+        console.log('ℹ️ No saved properties found for user');
         return { success: true, savedProperties: [] };
       }
 
-      return { success: true, savedProperties: savedData };
+      // Extract property IDs
+      const propertyIds = savedData.map(item => item.property_id);
+      
+      // Then fetch the complete property details
+      const { data: properties, error: propertiesError } = await supabase
+        .from('properties')
+        .select('*')
+        .in('id', propertyIds);
+
+      if (propertiesError) {
+        console.error('❌ Error fetching property details:', propertiesError);
+        throw propertiesError;
+      }
+
+      // Combine the saved properties with their details
+      const savedProperties = savedData.map(savedItem => ({
+        ...savedItem,
+        properties: properties.find(p => p.id === savedItem.property_id) || null
+      })).filter(item => item.properties !== null); // Filter out any properties that weren't found
+
+      console.log(`✅ Loaded ${savedProperties.length} saved properties`);
+      return { success: true, savedProperties };
     } catch (error) {
-      console.error("Error fetching saved properties:", error);
-      return { success: false, error: error.message };
+      console.error("Error in getSavedProperties:", error);
+      return { 
+        success: false, 
+        error: error.message || 'Failed to load saved properties',
+        details: error
+      };
     }
   }
 

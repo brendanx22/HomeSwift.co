@@ -351,9 +351,17 @@ const ProfilePopup = ({ isOpen, onClose, position = 'navbar', onAvatarUpdate }) 
               {/* Logout */}
               <div className="py-2">
                 <button
-                  onClick={() => {
-                    logout();
-                    onClose();
+                  onClick={async () => {
+                    console.log('🔴 Logout button clicked');
+                    try {
+                      console.log('🔄 Attempting to log out...');
+                      await logout();
+                      console.log('✅ Logout successful');
+                      onClose();
+                    } catch (error) {
+                      console.error('❌ Logout failed:', error);
+                      toast.error('Failed to log out. Please try again.');
+                    }
                   }}
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
                 >

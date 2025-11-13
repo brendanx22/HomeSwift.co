@@ -1,4 +1,5 @@
 // src/components/ProtectedRoute.jsx
+import { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -17,6 +18,20 @@ export default function ProtectedRoute({
 }) {
   const { user, currentRole, loading } = useAuth();
   const location = useLocation();
+  const [forceUpdate, setForceUpdate] = useState(0);
+
+  // Listen for role updates and force a re-render
+  useEffect(() => {
+    const handleRoleUpdate = () => {
+      console.log('🔄 Role update detected, forcing re-render');
+      setForceUpdate(prev => prev + 1);
+    };
+
+    window.addEventListener('role-updated', handleRoleUpdate);
+    return () => {
+      window.removeEventListener('role-updated', handleRoleUpdate);
+    };
+  }, []);
 
   // Show loading spinner while auth state is being determined
   if (loading) {

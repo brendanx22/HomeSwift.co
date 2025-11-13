@@ -28,7 +28,15 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { PropertyAPI } from '../lib/propertyAPI';
+import { supabase } from '../lib/supabaseClient';
+import { useMessaging } from '../contexts/MessagingContext';
+import { trackListingViewed, trackSearch } from '../lib/posthog';
+import toast from 'react-hot-toast';
+import { AnimatePresence, motion } from 'framer-motion';
 import NotificationCenter from '../components/NotificationCenter';
+
+// Check if mobile
+const isMobile = window.innerWidth < 768;
 
 export default function RenterDashboard() {
   const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
@@ -42,6 +50,8 @@ export default function RenterDashboard() {
   const [locationFilter, setLocationFilter] = useState('');
   const [priceRange, setPriceRange] = useState([0, 500000]);
   const [bedrooms, setBedrooms] = useState('');
+  const [userAvatar, setUserAvatar] = useState(null);
+  const [showProfilePopup, setShowProfilePopup] = useState(false);
 
   // Check authentication and load data
   useEffect(() => {
@@ -59,12 +69,59 @@ export default function RenterDashboard() {
     };
 
     checkAuth();
-  }, [isAuthenticated, authLoading, navigate]);
+    
+    // Set up real-time subscription for profile updates
+    const channel = supabase
+      .channel('profile_changes')
+      .on('postgres_changes', 
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'user_profiles',
+          filter: `id=eq.${user?.id}`
+        }, 
+        (payload) => {
+          console.log('Profile update received:', payload);
+          setUserAvatar(payload.new.avatar_url);
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAuthenticated, authLoading, navigate, user?.id]);
+
+  // Load user avatar from database
+  const loadUserAvatar = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading user avatar:', error);
+        return;
+      }
+
+      setUserAvatar(data?.avatar_url || null);
+    } catch (err) {
+      console.error('Error loading user avatar:', err);
+      setUserAvatar(null);
+    }
+  }, [user?.id]);
 
   // Load dashboard data
   const loadDashboardData = async () => {
     try {
       if (!user?.id) return;
+
+      // Load user avatar
+      await loadUserAvatar();
 
       // Fetch properties
       const { success: propertiesSuccess, properties: propertiesData } = await PropertyAPI.getProperties();
@@ -285,13 +342,99 @@ export default function RenterDashboard() {
             </div>
 
             {/* User Profile */}
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-[#FF6B35] rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">{firstName[0]?.toUpperCase()}</span>
-              </div>
-              <div className="hidden md:block text-sm">
-                <div className="font-medium text-gray-900">{firstName}</div>
-              </div>
+            <div className="relative">
+              <button
+                onClick={() => setShowProfilePopup(!showProfilePopup)}
+                className="flex items-center space-x-2 focus:outline-none group"
+              >
+                <div className="relative">
+                  <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] flex items-center justify-center">
+                    {userAvatar ? (
+                      <img
+                        src={userAvatar}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`${userAvatar ? 'hidden' : ''} w-full h-full flex items-center justify-center`}>
+                      <span className="text-white text-sm font-bold">
+                        {firstName[0]?.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {!isMobile && (
+                  <div className="hidden md:block text-left">
+                    <div className="text-sm font-medium text-gray-900 group-hover:text-[#FF6B35] transition-colors">
+                      {firstName}
+                    </div>
+                  </div>
+                )}
+              </button>
+              
+              {/* Profile Popup */}
+              <AnimatePresence>
+                {showProfilePopup && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50"
+                  >
+                    <div className="p-4 border-b border-gray-100">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] flex items-center justify-center">
+                          {userAvatar ? (
+                            <img
+                              src={userAvatar}
+                              alt="Profile"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`${userAvatar ? 'hidden' : ''} w-full h-full flex items-center justify-center`}>
+                            <span className="text-white text-sm font-bold">
+                              {firstName[0]?.toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{firstName}</p>
+                          <p className="text-xs text-gray-500">View Profile</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          navigate('/profile');
+                          setShowProfilePopup(false);
+                        }}
+                        className="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-50 hover:text-[#FF6B35] transition-colors"
+                      >
+                        Account Settings
+                      </button>
+                      <button
+                        onClick={() => {
+                          logout();
+                          setShowProfilePopup(false);
+                        }}
+                        className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
