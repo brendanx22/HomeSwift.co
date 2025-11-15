@@ -93,15 +93,19 @@ export default defineConfig({
         // Set manual chunks for better loading
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'vendor';
+            // Keep React core together
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react/') || id.includes('scheduler')) {
+              return 'vendor-react';
             }
+            // UI libraries
             if (id.includes('framer-motion') || id.includes('lucide-react')) {
               return 'ui';
             }
+            // Supabase (already excluded from optimization)
             if (id.includes('@supabase')) {
               return 'supabase';
             }
+            // Other vendor libraries
             return 'vendor-other';
           }
         }
