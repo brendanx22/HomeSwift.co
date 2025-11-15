@@ -614,7 +614,7 @@ const signup = async (userData) => {
                 if (window.location.pathname.includes('/login') || window.location.pathname.includes('/landlord/login')) {
                   // Always prioritize the pendingUserType if it exists
                   const targetRole = pendingUserType || userType || 'landlord';
-                  console.log(`🔄 Login redirect: ${window.location.pathname} -> /${targetRole}/dashboard`, {
+                  console.log(`🔄 Login redirect: ${window.location.pathname} -> ${targetRole === 'renter' ? '/chat' : '/landlord/dashboard'}`, {
                     pendingUserType,
                     userType,
                     currentPath: window.location.pathname
@@ -625,7 +625,8 @@ const signup = async (userData) => {
                     console.log('🔵 Forcing redirect to landlord dashboard');
                     window.location.href = '/landlord/dashboard';
                   } else {
-                    window.location.href = `/${targetRole}/dashboard`;
+                    // Redirect renters to /chat, landlords to /landlord/dashboard
+                    window.location.href = targetRole === 'renter' ? '/chat' : '/landlord/dashboard';
                   }
                   return;
                 }
