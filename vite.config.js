@@ -3,6 +3,9 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  // Base path for production deployment
+  base: '/',
+  
   plugins: [
     react(),
 
@@ -58,9 +61,9 @@ export default defineConfig({
     host: "0.0.0.0",
     proxy: {
       "/api": {
-        target: "http://localhost:5000",
+        target: "https://api.homeswift.co",
         changeOrigin: true,
-        secure: false,
+        secure: true,
       },
     },
   },
