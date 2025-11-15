@@ -98,11 +98,20 @@ export default defineConfig({
   // Clean, conflict-free optimization
   optimizeDeps: {
     exclude: ["@supabase/supabase-js"],
+    include: [
+      '@supabase/postgrest-js',
+      '@supabase/functions-js',
+      '@supabase/gotrue-js',
+      '@supabase/realtime-js',
+      '@supabase/storage-js'
+    ],
   },
 
   resolve: {
     alias: {
       "@": "/src",
     },
+    // Handle Supabase module resolution
+    conditions: ["module", "browser", "default"],
   },
 });
