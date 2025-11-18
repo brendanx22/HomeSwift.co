@@ -2,21 +2,86 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
-export default defineConfig({
-  // Base path for production deployment
-  base: '/',
-  
-  plugins: [
-    react(),
+export default defineConfig(({ command, mode }) => {
+  // Environment variables
+  const isProduction = mode === 'production';
+  const apiUrl = isProduction 
+    ? 'https://api.homeswift.co' 
+    : 'http://localhost:5000';
 
-    VitePWA({
-      registerType: "autoUpdate",
-
-      manifest: {
-        name: "HomeSwift",
-        short_name: "HomeSwift",
-        display: "standalone",
-        start_url: "/",
+  return {
+    // Base path for production deployment
+    base: '/',
+    
+    // Environment variables that will be available in the client
+    define: {
+      'import.meta.env.VITE_API_URL': JSON.stringify(apiUrl),
+      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL),
+      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY),
+      'import.meta.env.VITE_POSTHOG_KEY': JSON.stringify(process.env.VITE_POSTHOG_KEY),
+      'import.meta.env.VITE_POSTHOG_HOST': JSON.stringify(process.env.VITE_POSTHOG_HOST),
+    },
+    
+    // Development server configuration
+    server: {
+      port: 3000,
+      proxy: {
+        // Proxy API requests to the backend server
+        '/api': {
+          target: apiUrl,
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api/, ''),
+          configure: (proxy, _options) => {
+            proxy.on('error', (err, _req, _res) => {
+              console.error('Proxy error:', err);
+            });
+            proxy.on('proxyReq', (proxyReq, req, _res) => {
+              console.log('Sending Request to the Target:', req.method, req.url);
+            });
+            proxy.on('proxyRes', (proxyRes, req, _res) => {
+              console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+            });
+          },
+        },
+        // Proxy WebSocket connections
+        '/socket.io': {
+          target: apiUrl,
+          ws: true,
+          changeOrigin: true,
+        },
+      },
+    },
+    
+    // Build configuration
+    build: {
+      outDir: 'dist',
+      sourcemap: !isProduction,
+      minify: isProduction ? 'terser' : false,
+      chunkSizeWarningLimit: 1000, // in kbs
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Split vendor and app code
+            vendor: ['react', 'react-dom', 'react-router-dom'],
+            // Split Supabase client
+            supabase: ['@supabase/supabase-js'],
+            // Split UI libraries
+            ui: ['lucide-react', 'framer-motion'],
+          },
+        },
+      },
+    },
+    
+    plugins: [
+      react(),
+      VitePWA({
+        registerType: "autoUpdate",
+        manifest: {
+          name: "HomeSwift",
+          short_name: "HomeSwift",
+          display: "standalone",
+          start_url: "/",
         theme_color: "#FF6B35",
         background_color: "#ffffff",
         icons: [

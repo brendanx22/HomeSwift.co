@@ -13,6 +13,7 @@ export const initPostHog = () => {
       import.meta.env.VITE_POSTHOG_KEY,
       {
         api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://app.posthog.com',
+        cross_origin_support: true, // Enable cross-origin support
         loaded: (posthog) => {
           if (import.meta.env.DEV) {
             posthog.debug(); // Enable debug mode in development
@@ -21,14 +22,24 @@ export const initPostHog = () => {
         },
         capture_pageview: true,
         capture_pageleave: true,
-        autocapture: true,
+        autocapture: {
+          url_allowlist: ['homeswift.co', 'www.homeswift.co'],
+          cors_safelist: ['homeswift.co', 'www.homeswift.co'],
+        },
         session_recording: {
           recordCrossOriginIframes: true,
+          cross_origin_iframe: true,
         },
         persistence: 'localStorage',
         disable_session_recording: import.meta.env.DEV, // Disable session recording in dev
         disable_persistence: import.meta.env.TEST, // Disable persistence in test env
         opt_out_capturing_by_default: import.meta.env.DEV, // Opt out by default in dev
+        secure_cookie: true,
+        cross_subdomain_cookie: true,
+        cookie_domain: '.homeswift.co',
+        ui_host: 'app.posthog.com',
+        save_referrer: true,
+        property_blacklist: ['$current_url', '$pathname', '$host'],
       }
     );
     

@@ -248,47 +248,26 @@ const RenterHomePage = () => {
   const loadProperties = async () => {
     try {
       setLoading(true);
-      console.log("🔍 Fetching properties from database...");
+      console.log("🔍 Fetching properties from API...");
       
-      const { data: propertiesData, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      console.log(`✅ Successfully loaded ${propertiesData?.length || 0} properties`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/properties`);
+      const result = await response.json();
       
-      if (propertiesData && propertiesData.length > 0) {
-        // Transform the data to match the expected property structure
-        const formattedProperties = propertiesData.map(property => ({
-          id: property.id,
-          title: property.title || 'No Title',
-          location: property.location || 'Location not specified',
-          price: property.price || 0,
-          bedrooms: property.bedrooms || 0,
-          bathrooms: property.bathrooms || 0,
-          area: property.area || 0,
-          images: property.images || [],
-          property_type: property.property_type || 'house',
-          category: property.category || 'all',
-          description: property.description || '',
-          amenities: property.amenities || [],
-          is_featured: property.is_featured || false,
-          created_at: property.created_at,
-          updated_at: property.updated_at,
-          landlord_id: property.landlord_id
-        }));
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch properties');
+      }
 
-        setProperties(formattedProperties);
-        setFilteredProperties(formattedProperties);
-        const grouped = groupProperties(formattedProperties);
+      console.log(`✅ Successfully loaded ${result.data?.length || 0} properties`);
+      
+      if (result.data && result.data.length > 0) {
+        // The API already returns the data in the correct format
+        setProperties(result.data);
+        setFilteredProperties(result.data);
+        const grouped = groupProperties(result.data);
         console.log('📦 Grouped properties:', grouped.length, 'groups');
         setGroupedProperties(grouped);
-        setVisibleRows(5); // Reset visible rows when properties change
+        setVisibleRows(5);
       } else {
-        // If no properties found, reset the state
         setProperties([]);
         setFilteredProperties([]);
         setGroupedProperties([]);

@@ -1,9 +1,10 @@
 // src/lib/propertyAPI.js
-import { supabase } from "./supabaseClient";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 /**
  * Property Management API
- * Handles all property-related database operations
+ * Handles all property-related API calls
  */
 
 export class PropertyAPI {
@@ -12,17 +13,16 @@ export class PropertyAPI {
    */
   static async getAllProperties() {
     try {
-      const { data, error } = await supabase
-        .from("properties")
-        .select("*")
-        .eq("status", "active")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
+      const response = await fetch(`${API_BASE_URL}/properties`);
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch properties');
+      }
 
       return {
         success: true,
-        properties: data || [],
+        properties: result.data || [],
       };
     } catch (error) {
       console.error("Error fetching properties:", error);
