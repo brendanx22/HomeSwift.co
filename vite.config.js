@@ -25,12 +25,13 @@ export default defineConfig(({ command, mode }) => {
     // Development server configuration
     server: {
       port: 3000,
+      host: "0.0.0.0",
       proxy: {
         // Proxy API requests to the backend server
         '/api': {
           target: apiUrl,
           changeOrigin: true,
-          secure: false,
+          secure: isProduction,
           rewrite: (path) => path.replace(/^\/api/, ''),
           configure: (proxy, _options) => {
             proxy.on('error', (err, _req, _res) => {
@@ -56,23 +57,51 @@ export default defineConfig(({ command, mode }) => {
     // Build configuration
     build: {
       outDir: 'dist',
+      assetsDir: 'assets',
       sourcemap: !isProduction,
       minify: isProduction ? 'terser' : false,
-      chunkSizeWarningLimit: 1000, // in kbs
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash].[ext]',
           manualChunks: {
-            // Split vendor and app code
-            vendor: ['react', 'react-dom', 'react-router-dom'],
-            // Split Supabase client
-            supabase: ['@supabase/supabase-js'],
-            // Split UI libraries
-            ui: ['lucide-react', 'framer-motion'],
-          },
-        },
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'supabase': ['@supabase/supabase-js'],
+            'ui-vendor': ['framer-motion', 'lucide-react']
+          }
+        }
       },
+      terserOptions: isProduction ? {
+        compress: {
+          drop_console: true,
+          drop_debugger: true,
+        },
+      } : {}
     },
     
+    // Optimize dependencies
+    optimizeDeps: {
+      exclude: ["@supabase/supabase-js"],
+      include: [
+        '@supabase/postgrest-js',
+        '@supabase/functions-js',
+        '@supabase/gotrue-js',
+        '@supabase/realtime-js',
+        '@supabase/storage-js'
+      ],
+    },
+    
+    // Resolve configuration
+    resolve: {
+      alias: {
+        "@": "/src",
+      },
+      conditions: ["module", "browser", "default"],
+    },
+    
+    // Plugins
     plugins: [
       react(),
       VitePWA({
@@ -82,101 +111,40 @@ export default defineConfig(({ command, mode }) => {
           short_name: "HomeSwift",
           display: "standalone",
           start_url: "/",
-        theme_color: "#FF6B35",
-        background_color: "#ffffff",
-        icons: [
-          {
-            src: "/icons/icon-192x192.png",
-            sizes: "192x192",
-            type: "image/png",
-          },
-          {
-            src: "/icons/icon-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-          },
-        ],
-      },
-
-      workbox: {
-        // ❌ Do NOT cache JS files — this breaks React and Supabase
-        globPatterns: ["**/*.{css,html,ico,png,svg,woff2}"],
-
-        navigateFallbackDenylist: [/react/i, /vendor/i, /supabase/i],
-
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/[^/]+\.supabase\.co\//,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "supabase-api-cache",
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 86400,
+          theme_color: "#FF6B35",
+          background_color: "#ffffff",
+          icons: [
+            {
+              src: "/icons/icon-192x192.png",
+              sizes: "192x192",
+              type: "image/png",
+            },
+            {
+              src: "/icons/icon-512x512.png",
+              sizes: "512x512",
+              type: "image/png",
+            },
+          ],
+        },
+        workbox: {
+          // Don't cache JS files to prevent issues with React and Supabase
+          globPatterns: ["**/*.{css,html,ico,png,svg,woff2}"],
+          navigateFallbackDenylist: [/react/i, /vendor/i, /supabase/i],
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/[^/]+\.supabase\.co\//,
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "supabase-api-cache",
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 86400,
+                },
               },
             },
-          },
-        ],
-      },
-    }),
-  ],
-
-  server: {
-    port: 3000,
-    host: "0.0.0.0",
-    proxy: {
-      "/api": {
-        target: "https://api.homeswift.co",
-        changeOrigin: true,
-        secure: true,
-      },
-    },
-  },
-
-  build: {
-    outDir: "dist",
-    assetsDir: "assets",
-    sourcemap: false,
-    minify: "terser",
-
-    rollupOptions: {
-      output: {
-        chunkFileNames: "assets/[name]-[hash].js",
-        entryFileNames: "assets/[name]-[hash].js",
-        assetFileNames: "assets/[name]-[hash].[ext]",
-        // Keep React and related modules together to prevent forwardRef errors
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['framer-motion', 'lucide-react'],
-        }
-      },
-    },
-
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
-    },
-  },
-
-  // Clean, conflict-free optimization
-  optimizeDeps: {
-    exclude: ["@supabase/supabase-js"],
-    include: [
-      '@supabase/postgrest-js',
-      '@supabase/functions-js',
-      '@supabase/gotrue-js',
-      '@supabase/realtime-js',
-      '@supabase/storage-js'
+          ],
+        },
+      }),
     ],
-  },
-
-  resolve: {
-    alias: {
-      "@": "/src",
-    },
-    // Handle Supabase module resolution
-    conditions: ["module", "browser", "default"],
-  },
+  };
 });

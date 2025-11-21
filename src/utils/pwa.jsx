@@ -318,24 +318,42 @@ export const registerServiceWorker = async (onUpdate) => {
     return null;
   }
 
+  // Check if we're in an iframe
+  if (window.self !== window.top) {
+    console.log('Service Worker: Skipping in iframe');
+    return null;
+  }
+
   try {
     // Clear existing registrations
-    console.log('Service Worker: Unregistering existing service workers...');
+    console.log('Service Worker: Checking for existing service workers...');
     const registrations = await navigator.serviceWorker.getRegistrations();
-    for (const registration of registrations) {
-      console.log('Service Worker: Unregistering old service worker');
-      await registration.unregister();
+    
+    // Only unregister if we have registrations
+    if (registrations.length > 0) {
+      console.log(`Service Worker: Found ${registrations.length} existing registration(s)`);
+      await Promise.all(registrations.map(reg => {
+        console.log('Service Worker: Unregistering service worker:', reg.scope);
+        return reg.unregister();
+      }));
+    } else {
+      console.log('Service Worker: No existing registrations found');
     }
 
     // Clear all caches
     if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      await Promise.all(
-        cacheNames.map(cacheName => {
-          console.log('Service Worker: Clearing cache:', cacheName);
-          return caches.delete(cacheName);
-        })
-      );
+      try {
+        const cacheNames = await caches.keys();
+        console.log(`Service Worker: Found ${cacheNames.length} caches`);
+        await Promise.all(
+          cacheNames.map(cacheName => {
+            console.log('Service Worker: Deleting cache:', cacheName);
+            return caches.delete(cacheName);
+          })
+        );
+      } catch (cacheError) {
+        console.error('Service Worker: Error clearing caches:', cacheError);
+      }
     }
 
     // Register new service worker
