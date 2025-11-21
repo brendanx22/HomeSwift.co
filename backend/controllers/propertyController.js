@@ -25,10 +25,7 @@ exports.getAllProperties = async (req, res) => {
     log(req, 'Fetching all active properties');
     const { data: properties, error } = await supabase
       .from('properties')
-      .select(`
-        *,
-        user:user_profiles(id, full_name, email)
-      `)
+      .select('*')
       .eq('status', 'active')
       .order('created_at', { ascending: false });
 
