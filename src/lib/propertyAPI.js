@@ -1,6 +1,7 @@
 // src/lib/propertyAPI.js
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Ensure the API base URL includes the /api prefix
+const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api` || 'http://localhost:5000/api';
 
 /**
  * Property Management API

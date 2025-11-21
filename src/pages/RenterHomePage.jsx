@@ -250,20 +250,18 @@ const RenterHomePage = () => {
       setLoading(true);
       console.log("🔍 Fetching properties from API...");
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/properties`);
-      const result = await response.json();
+      const { success, properties: propertiesData, error } = await PropertyAPI.getAllProperties();
       
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch properties');
+      if (!success) {
+        throw new Error(error || 'Failed to fetch properties');
       }
 
-      console.log(`✅ Successfully loaded ${result.data?.length || 0} properties`);
+      console.log(`✅ Successfully loaded ${propertiesData?.length || 0} properties`);
       
-      if (result.data && result.data.length > 0) {
-        // The API already returns the data in the correct format
-        setProperties(result.data);
-        setFilteredProperties(result.data);
-        const grouped = groupProperties(result.data);
+      if (propertiesData && propertiesData.length > 0) {
+        setProperties(propertiesData);
+        setFilteredProperties(propertiesData);
+        const grouped = groupProperties(propertiesData);
         console.log('📦 Grouped properties:', grouped.length, 'groups');
         setGroupedProperties(grouped);
         setVisibleRows(5);
