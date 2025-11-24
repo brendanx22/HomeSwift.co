@@ -191,49 +191,97 @@ export class PropertyAPI {
    * Get saved properties for a user
    */
   static async getSavedProperties(userId) {
+    const startTime = Date.now();
     try {
-      console.log('🔍 Fetching saved properties for user:', userId);
+      console.log('🔍 [getSavedProperties] Starting fetch for user:', userId);
 
-      // Step 1: Get saved property IDs
-      const { data: savedData, error: savedError } = await supabase
+      // Step 1: Get saved property IDs with timeout
+      console.log('📋 [Step 1] Fetching saved property IDs...');
+      const savedPromise = supabase
         .from("saved_properties")
         .select('property_id, created_at')
         .eq("user_id", userId);
 
+      const savedResult = await Promise.race([
+        savedPromise,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Step 1 timeout: Fetching saved property IDs took too long')), 10000)
+        )
+      ]);
+
+      const { data: savedData, error: savedError } = savedResult;
+      console.log(`✅ [Step 1] Completed in ${Date.now() - startTime}ms`);
+
       if (savedError) {
-        console.error('❌ Error fetching saved properties:', savedError);
+        console.error('❌ [Step 1] Error:', savedError);
         throw savedError;
       }
 
       if (!savedData || savedData.length === 0) {
-        console.log('ℹ️ No saved properties found for user');
+        console.log('ℹ️ [Step 1] No saved properties found');
         return { success: true, savedProperties: [] };
       }
 
-      // Step 2: Get property details
-      const propertyIds = savedData.map(item => item.property_id);
-      console.log('🔍 Fetching details for properties:', propertyIds);
+      console.log(`📊 [Step 1] Found ${savedData.length} saved property IDs:`, savedData.map(s => s.property_id));
 
-      const { data: properties, error: propertiesError } = await supabase
+      // Step 2: Get property details with timeout
+      const propertyIds = savedData.map(item => item.property_id);
+      console.log('📋 [Step 2] Fetching property details for IDs:', propertyIds);
+
+      const propertiesPromise = supabase
         .from('properties')
         .select('*')
         .in('id', propertyIds);
 
+      const propertiesResult = await Promise.race([
+        propertiesPromise,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Step 2 timeout: Fetching property details took too long')), 10000)
+        )
+      ]);
+
+      const { data: properties, error: propertiesError } = propertiesResult;
+      console.log(`✅ [Step 2] Completed in ${Date.now() - startTime}ms`);
+
       if (propertiesError) {
-        console.error('❌ Error fetching property details:', propertiesError);
+        console.error('❌ [Step 2] Error:', propertiesError);
         throw propertiesError;
       }
 
-      // Combine data
-      const savedProperties = savedData.map(savedItem => ({
-        ...savedItem,
-        properties: properties.find(p => p.id === savedItem.property_id) || null
-      })).filter(item => item.properties !== null);
+      if (!properties || properties.length === 0) {
+        console.warn('⚠️ [Step 2] No properties found for saved IDs. This might indicate deleted properties or RLS issues.');
+        return { success: true, savedProperties: [] };
+      }
 
-      console.log(`✅ Loaded ${savedProperties.length} saved properties`);
+      console.log(`📊 [Step 2] Found ${properties.length} properties out of ${propertyIds.length} IDs`);
+
+      // Step 3: Combine data
+      console.log('📋 [Step 3] Combining saved properties with details...');
+      const savedProperties = savedData.map(savedItem => {
+        const property = properties.find(p => p.id === savedItem.property_id);
+        if (!property) {
+          console.warn(`⚠️ Property ${savedItem.property_id} not found in results`);
+        }
+        return {
+          ...savedItem,
+          properties: property || null
+        };
+      }).filter(item => item.properties !== null);
+
+      const totalTime = Date.now() - startTime;
+      console.log(`✅ [Complete] Loaded ${savedProperties.length} saved properties in ${totalTime}ms`);
+
       return { success: true, savedProperties };
     } catch (error) {
-      console.error("Error in getSavedProperties:", error);
+      const totalTime = Date.now() - startTime;
+      console.error(`❌ [Error] getSavedProperties failed after ${totalTime}ms:`, error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+
       return {
         success: false,
         error: error.message || 'Failed to load saved properties',
