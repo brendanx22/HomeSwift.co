@@ -284,15 +284,7 @@ const RenterHomePage = () => {
 
   const loadData = async () => {
     try {
-      console.log('🚀 [RenterHomePage] loadData called', {
-        hasUser: !!user,
-        userId: user?.id
-      });
-
-      if (!user) {
-        console.warn('⚠️ [RenterHomePage] No user found, skipping data load');
-        return;
-      }
+      if (!user) return;
 
       setLoadingSaved(true);
 
@@ -625,7 +617,7 @@ const RenterHomePage = () => {
           {/* Top Bar */}
           <div className="flex items-center justify-end h-16 lg:h-20">
             {/* Logo */}
-            <div className="flex-1 flex items-center gap-4">
+            <div className="flex-1 flex items-center">
               <Link to="/" className="flex items-center gap-2">
                 <img
                   src="/images/logo.png"
@@ -636,29 +628,6 @@ const RenterHomePage = () => {
                   HomeSwift
                 </span>
               </Link>
-
-              {/* Temporary Debug Button */}
-              <button
-                onClick={async () => {
-                  try {
-                    console.log('🧪 Testing database connection...');
-                    const { data, error } = await supabase.from('properties').select('count').limit(1);
-                    if (error) {
-                      console.error('❌ Database test failed:', error);
-                      alert('Database Error: ' + error.message);
-                    } else {
-                      console.log('✅ Database test passed:', data);
-                      alert('Database Connection Successful! Check console for details.');
-                    }
-                  } catch (err) {
-                    console.error('❌ Exception during test:', err);
-                    alert('Exception: ' + err.message);
-                  }
-                }}
-                className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"
-              >
-                Test DB
-              </button>
             </div>
 
             {/* Right Actions */}
