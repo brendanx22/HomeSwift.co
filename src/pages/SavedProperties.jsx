@@ -15,6 +15,12 @@ export default function SavedProperties() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    console.log('🔍 [SavedProperties] useEffect triggered', {
+      isAuthenticated,
+      hasUser: !!user,
+      userId: user?.id
+    });
+
     let isMounted = true;
     const safetyTimeout = setTimeout(() => {
       if (loading && isMounted) {
@@ -25,6 +31,7 @@ export default function SavedProperties() {
     }, 30000); // 30 seconds timeout
 
     if (isAuthenticated && user?.id) {
+      console.log('✅ [SavedProperties] Authentication check passed, calling loadSavedProperties');
       loadSavedProperties();
 
       // Set up real-time subscription for saved_properties table
@@ -53,6 +60,11 @@ export default function SavedProperties() {
         subscription.unsubscribe();
       };
     } else {
+      console.warn('⚠️ [SavedProperties] Authentication check failed', {
+        isAuthenticated,
+        hasUser: !!user,
+        userId: user?.id
+      });
       setLoading(false);
       return () => {
         isMounted = false;
@@ -63,6 +75,11 @@ export default function SavedProperties() {
 
   const loadSavedProperties = async () => {
     try {
+      console.log('🚀 [loadSavedProperties] Starting...', {
+        userId: user?.id,
+        userObject: user
+      });
+
       setLoading(true);
       setError(null);
 
