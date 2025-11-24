@@ -15,6 +15,15 @@ export default function SavedProperties() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+    const safetyTimeout = setTimeout(() => {
+      if (loading && isMounted) {
+        console.warn('⚠️ Safety timeout reached for saved properties loading');
+        setLoading(false);
+        setError('Request timed out. Please try again.');
+      }
+    }, 10000); // 10 seconds timeout
+
     if (isAuthenticated && user?.id) {
       loadSavedProperties();
 
@@ -39,10 +48,16 @@ export default function SavedProperties() {
 
       // Cleanup subscription on unmount
       return () => {
+        isMounted = false;
+        clearTimeout(safetyTimeout);
         subscription.unsubscribe();
       };
     } else {
       setLoading(false);
+      return () => {
+        isMounted = false;
+        clearTimeout(safetyTimeout);
+      };
     }
   }, [isAuthenticated, user?.id]);
 

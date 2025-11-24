@@ -138,9 +138,8 @@ const PropertyCard = ({ property, isSaved, onSave, onNavigate }) => {
           className="absolute top-3 right-3 p-2 hover:scale-110 transition-transform"
         >
           <Heart
-            className={`w-6 h-6 drop-shadow-md ${
-              isSaved ? "fill-red-500 text-red-500" : "text-white fill-black/50"
-            }`}
+            className={`w-6 h-6 drop-shadow-md ${isSaved ? "fill-red-500 text-red-500" : "text-white fill-black/50"
+              }`}
           />
         </button>
 
@@ -150,9 +149,8 @@ const PropertyCard = ({ property, isSaved, onSave, onNavigate }) => {
             {images.map((_, index) => (
               <div
                 key={index}
-                className={`w-1.5 h-1.5 rounded-full transition-all ${
-                  index === currentImageIndex ? "bg-white w-2" : "bg-white/60"
-                }`}
+                className={`w-1.5 h-1.5 rounded-full transition-all ${index === currentImageIndex ? "bg-white w-2" : "bg-white/60"
+                  }`}
               />
             ))}
           </div>
@@ -249,15 +247,15 @@ const RenterHomePage = () => {
     try {
       setLoading(true);
       console.log("🔍 Fetching properties from API...");
-      
+
       const { success, properties: propertiesData, error } = await PropertyAPI.getAllProperties();
-      
+
       if (!success) {
         throw new Error(error || 'Failed to fetch properties');
       }
 
       console.log(`✅ Successfully loaded ${propertiesData?.length || 0} properties`);
-      
+
       if (propertiesData && propertiesData.length > 0) {
         setProperties(propertiesData);
         setFilteredProperties(propertiesData);
@@ -286,7 +284,7 @@ const RenterHomePage = () => {
   const loadData = async () => {
     try {
       if (!user) return;
-      
+
       // Load user profile data from user_profiles table
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
@@ -352,19 +350,19 @@ const RenterHomePage = () => {
   // Group properties by location and property type
   const groupProperties = (properties) => {
     const grouped = {};
-    
+
     properties.forEach(property => {
       // Extract city from location (first part before comma)
-      const location = property.location.split(',').length > 1 
-        ? property.location.split(',')[0].trim() 
+      const location = property.location.split(',').length > 1
+        ? property.location.split(',')[0].trim()
         : property.location.trim();
-      
+
       // Get property type or default to 'other'
       const type = property.property_type?.toLowerCase() || 'other';
-      
+
       // Create a unique key for each location-type combination
       const groupKey = `${location}_${type}`;
-      
+
       if (!grouped[groupKey]) {
         grouped[groupKey] = {
           location,
@@ -372,10 +370,10 @@ const RenterHomePage = () => {
           properties: []
         };
       }
-      
+
       grouped[groupKey].properties.push(property);
     });
-    
+
     // Convert to array and sort by location name
     return Object.values(grouped).sort((a, b) => a.location.localeCompare(b.location));
   };
@@ -592,8 +590,19 @@ const RenterHomePage = () => {
         <div className="px-4 sm:px-6 lg:px-10">
           {/* Top Bar */}
           <div className="flex items-center justify-end h-16 lg:h-20">
-            {/* Desktop - Spacer */}
-            <div className="flex-1"></div>
+            {/* Logo */}
+            <div className="flex-1 flex items-center">
+              <Link to="/" className="flex items-center gap-2">
+                <img
+                  src="/images/logo.png"
+                  alt="HomeSwift"
+                  className="w-10 h-10 object-cover rounded-lg"
+                />
+                <span className="text-xl font-bold text-[#FF6B35] hidden sm:block">
+                  HomeSwift
+                </span>
+              </Link>
+            </div>
 
             {/* Right Actions */}
             <div className="flex items-center gap-5">
@@ -605,7 +614,7 @@ const RenterHomePage = () => {
               >
                 <Home className="w-5 h-5 text-gray-700" />
               </Link>
-              
+
               {user && (
                 <>
                   {/* Saved Properties */}
@@ -643,10 +652,10 @@ const RenterHomePage = () => {
                 </>
               )}
 
-              
+
               {/* Divider */}
               <div className="h-8 w-px bg-gray-200 mx-1"></div>
-              
+
               {/* Profile Menu - Avatar with Unread Indicator */}
               {user ? (
                 <div className="relative">
@@ -707,11 +716,10 @@ const RenterHomePage = () => {
                     setShowLocationDropdown(!showLocationDropdown);
                     setShowTypeDropdown(false);
                   }}
-                  className={`flex-1 px-6 py-3 rounded-l-full hover:bg-gray-100 transition-colors ${
-                    activeSearchSection === "location"
+                  className={`flex-1 px-6 py-3 rounded-l-full hover:bg-gray-100 transition-colors ${activeSearchSection === "location"
                       ? "shadow-lg bg-white"
                       : ""
-                  }`}
+                    }`}
                 >
                   <div className="text-left">
                     <div className="text-xs font-semibold text-gray-900 mb-1">
@@ -732,9 +740,8 @@ const RenterHomePage = () => {
                     setShowTypeDropdown(!showTypeDropdown);
                     setShowLocationDropdown(false);
                   }}
-                  className={`flex-1 px-6 py-3 hover:bg-gray-100 transition-colors ${
-                    activeSearchSection === "type" ? "shadow-lg bg-white" : ""
-                  }`}
+                  className={`flex-1 px-6 py-3 hover:bg-gray-100 transition-colors ${activeSearchSection === "type" ? "shadow-lg bg-white" : ""
+                    }`}
                 >
                   <div className="text-left">
                     <div className="text-xs font-semibold text-gray-900 mb-1">
@@ -743,7 +750,7 @@ const RenterHomePage = () => {
                     <div className="text-sm text-gray-600 truncate">
                       {propertyType !== "all"
                         ? propertyType.charAt(0).toUpperCase() +
-                          propertyType.slice(1)
+                        propertyType.slice(1)
                         : "All types"}
                     </div>
                   </div>
@@ -758,9 +765,8 @@ const RenterHomePage = () => {
                     setShowLocationDropdown(false);
                     setShowTypeDropdown(false);
                   }}
-                  className={`flex-1 px-6 py-3 hover:bg-gray-100 transition-colors ${
-                    activeSearchSection === "price" ? "shadow-lg bg-white" : ""
-                  }`}
+                  className={`flex-1 px-6 py-3 hover:bg-gray-100 transition-colors ${activeSearchSection === "price" ? "shadow-lg bg-white" : ""
+                    }`}
                 >
                   <div className="text-left">
                     <div className="text-xs font-semibold text-gray-900 mb-1">
@@ -858,11 +864,10 @@ const RenterHomePage = () => {
                             className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors"
                           >
                             <div
-                              className={`text-sm ${
-                                propertyType === type.value
+                              className={`text-sm ${propertyType === type.value
                                   ? "font-semibold text-gray-900"
                                   : "text-gray-700"
-                              }`}
+                                }`}
                             >
                               {type.label}
                             </div>
@@ -951,15 +956,15 @@ const RenterHomePage = () => {
               {(showLocationDropdown ||
                 showTypeDropdown ||
                 activeSearchSection === "price") && (
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => {
-                    setShowLocationDropdown(false);
-                    setShowTypeDropdown(false);
-                    setActiveSearchSection(null);
-                  }}
-                />
-              )}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => {
+                      setShowLocationDropdown(false);
+                      setShowTypeDropdown(false);
+                      setActiveSearchSection(null);
+                    }}
+                  />
+                )}
             </div>
           </div>
 
@@ -988,11 +993,10 @@ const RenterHomePage = () => {
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`flex flex-col items-center gap-2 pb-3 border-b-2 transition-colors whitespace-nowrap ${
-                  activeCategory === cat.id
+                className={`flex flex-col items-center gap-2 pb-3 border-b-2 transition-colors whitespace-nowrap ${activeCategory === cat.id
                     ? "border-gray-900 opacity-100"
                     : "border-transparent opacity-60 hover:opacity-100"
-                }`}
+                  }`}
               >
                 <span className="text-2xl">{cat.emoji}</span>
                 <span className="text-xs font-medium">{cat.label}</span>
@@ -1057,11 +1061,10 @@ const RenterHomePage = () => {
                       <button
                         key={loc}
                         onClick={() => setLocation(loc)}
-                        className={`px-4 py-2 text-sm border rounded-lg transition-colors ${
-                          location === loc
+                        className={`px-4 py-2 text-sm border rounded-lg transition-colors ${location === loc
                             ? "bg-gray-900 text-white border-gray-900"
                             : "border-gray-300 hover:border-gray-900"
-                        }`}
+                          }`}
                       >
                         {loc}
                       </button>
@@ -1113,11 +1116,10 @@ const RenterHomePage = () => {
                       <button
                         key={type}
                         onClick={() => setPropertyType(type)}
-                        className={`w-full px-4 py-3 text-left border rounded-lg transition-colors ${
-                          propertyType === type
+                        className={`w-full px-4 py-3 text-left border rounded-lg transition-colors ${propertyType === type
                             ? "bg-gray-50 border-gray-900"
                             : "border-gray-300 hover:border-gray-900"
-                        }`}
+                          }`}
                       >
                         {type.charAt(0).toUpperCase() + type.slice(1)}
                       </button>
@@ -1137,12 +1139,11 @@ const RenterHomePage = () => {
                         onClick={() =>
                           setBedrooms(num === "Any" ? "" : num.replace("+", ""))
                         }
-                        className={`px-6 py-3 border rounded-full font-medium transition-colors ${
-                          bedrooms ===
-                          (num === "Any" ? "" : num.replace("+", ""))
+                        className={`px-6 py-3 border rounded-full font-medium transition-colors ${bedrooms ===
+                            (num === "Any" ? "" : num.replace("+", ""))
                             ? "bg-gray-900 text-white border-gray-900"
                             : "border-gray-300 hover:border-gray-900"
-                        }`}
+                          }`}
                       >
                         {num}
                       </button>
@@ -1201,9 +1202,9 @@ const RenterHomePage = () => {
           <div className="space-y-12 -mx-4 sm:-mx-6 lg:-mx-10">
             {displayedGroups.map((group) => {
               const groupKey = `${group.location}_${group.type}`;
-              const typeDisplay = group.type === 'all' ? 'Properties' : 
-                                group.type.charAt(0).toUpperCase() + group.type.slice(1) + 's';
-              
+              const typeDisplay = group.type === 'all' ? 'Properties' :
+                group.type.charAt(0).toUpperCase() + group.type.slice(1) + 's';
+
               return (
                 <div key={groupKey} className="px-4 sm:px-6 lg:px-10 max-w-[1760px] mx-auto">
                   {/* Section Header */}
@@ -1255,7 +1256,7 @@ const RenterHomePage = () => {
                 </div>
               );
             })}
-            
+
             {hasMoreRows && (
               <div className="flex justify-center mt-8">
                 <button
