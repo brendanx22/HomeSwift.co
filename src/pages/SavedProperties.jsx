@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Heart, MapPin, Bed, Bath, Square, ArrowLeft, Home, ChevronLeft } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Heart, MapPin, Bed, Bath, Square, ArrowLeft, Home, ChevronLeft, ChevronRight, MessageSquare, Star, X, SlidersHorizontal } from 'lucide-react';
 import { PropertyAPI } from '../lib/propertyAPI';
 import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabaseClient';
-
+import toast from 'react-hot-toast';
+import ProfilePopup from '../components/ProfilePopup';
+import NotificationCenter from '../components/NotificationCenter';
+import { motion } from 'framer-motion';
 export default function SavedProperties() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
