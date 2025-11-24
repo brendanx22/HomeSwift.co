@@ -75,7 +75,7 @@ export default defineConfig(({ command, mode }) => {
       },
       terserOptions: isProduction ? {
         compress: {
-          drop_console: true,
+          // drop_console: true,  // Temporarily disabled for debugging
           drop_debugger: true,
         },
       } : {}

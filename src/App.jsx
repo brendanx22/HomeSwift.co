@@ -35,20 +35,14 @@ const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
 const RenterProperties = React.lazy(() => import('./pages/RenterProperties'));
 const SavedProperties = React.lazy(() => import('./pages/SavedProperties'));
 const Profile = React.lazy(() => import('./pages/Profile'));
-const MarketAnalysis = React.lazy(() => import('./pages/MarketAnalysis'));
 const NeighborhoodInfo = React.lazy(() => import('./pages/NeighborhoodInfo'));
-const PriceCalculator = React.lazy(() => import('./pages/PriceCalculator'));
 const VirtualTours = React.lazy(() => import('./pages/VirtualTours'));
 const PropertyComparison = React.lazy(() => import('./pages/PropertyComparison'));
 const ListPropertyForm = React.lazy(() => import('./pages/ListPropertyForm'));
 const PropertyAlerts = React.lazy(() => import('./pages/PropertyAlerts'));
-const AdvancedSearch = React.lazy(() => import('./pages/AdvancedSearch'));
 const PropertyAnalytics = React.lazy(() => import('./pages/PropertyAnalytics'));
 const PropertyRecommendations = React.lazy(() => import('./pages/PropertyRecommendations'));
-const MarketInsights = React.lazy(() => import('./pages/MarketInsights'));
-const AdvancedPropertyManagement = React.lazy(() => import('./pages/AdvancedPropertyManagement'));
 const ComparisonHistory = React.lazy(() => import('./pages/ComparisonHistory'));
-const MarketTrends = React.lazy(() => import('./pages/MarketTrends'));
 const LandlordProperties = React.lazy(() => import('./pages/LandlordProperties'));
 const HomeInspectionChecklist = React.lazy(() => import('./pages/HomeInspectionChecklist'));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
@@ -227,7 +221,7 @@ const AppLayout = () => {
               ease: "linear"
             }}
             className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full mx-auto mb-6"
-          />      
+          />
         </div>
       </motion.div>
     );
@@ -237,7 +231,7 @@ const AppLayout = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       <main className="flex-grow">
         <Toaster position="top-right" />
-        <Suspense 
+        <Suspense
           fallback={
             <motion.div
               initial={{ opacity: 0 }}
@@ -286,10 +280,10 @@ const AppLayout = () => {
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/user-type" element={<UserTypeSelection />} />
-            
+
             {/* Auth Routes */}
-            <Route 
-              path="/login" 
+            <Route
+              path="/login"
               element={
                 !isAuthenticated || new URLSearchParams(location.search).get('from') === 'logout' ? (
                   <LoginPage />
@@ -298,11 +292,11 @@ const AppLayout = () => {
                 ) : (
                   <Navigate to="/chat" replace />
                 )
-              } 
+              }
             />
-            
-            <Route 
-              path="/signup" 
+
+            <Route
+              path="/signup"
               element={
                 !isAuthenticated ? (
                   <SignupPage />
@@ -311,14 +305,14 @@ const AppLayout = () => {
                 ) : (
                   <Navigate to="/chat" replace />
                 )
-              } 
+              }
             />
-            
+
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/landlord/login" element={<LandlordLoginPage />} />
             <Route path="/landlord/signup" element={<LandlordSignupPage />} />
-            
+
             {/* Renter Routes */}
             <Route
               path="/renter/dashboard"
@@ -347,7 +341,7 @@ const AppLayout = () => {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/messages"
               element={
@@ -356,7 +350,7 @@ const AppLayout = () => {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/landlord/dashboard"
               element={
@@ -365,7 +359,7 @@ const AppLayout = () => {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/landlord/settings"
               element={
@@ -374,7 +368,7 @@ const AppLayout = () => {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/admin/analytics"
               element={
@@ -383,7 +377,7 @@ const AppLayout = () => {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/properties/:id"
               element={
