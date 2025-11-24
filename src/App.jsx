@@ -406,28 +406,10 @@ const AppLayout = () => {
 
             {/* AI-Powered Real Estate Pages */}
             <Route
-              path="/market-analysis"
-              element={
-                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
-                  <MarketAnalysis />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
               path="/neighborhoods"
               element={
                 <ProtectedRoute requiredRoles={['renter', 'landlord']}>
                   <NeighborhoodInfo />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/calculator"
-              element={
-                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
-                  <PriceCalculator />
                 </ProtectedRoute>
               }
             />
