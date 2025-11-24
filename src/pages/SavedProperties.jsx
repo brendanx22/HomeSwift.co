@@ -1,13 +1,23 @@
+// src/pages/SavedProperties.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Heart, MapPin, Bed, Bath, Square, ArrowLeft, Home, ChevronLeft, ChevronRight, MessageSquare, Star, X, SlidersHorizontal } from 'lucide-react';
+import { Heart, Home, ChevronLeft, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { PropertyAPI } from '../lib/propertyAPI';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
 import ProfilePopup from '../components/ProfilePopup';
 import NotificationCenter from '../components/NotificationCenter';
-import { motion } from 'framer-motion';
+
+/**
+ * Premium Saved Properties page.
+ * Features:
+ *   • Glass‑morphism card design with subtle micro‑animations.
+ *   • Real‑time updates via Supabase channel.
+ *   • Graceful loading, empty‑state and error handling.
+ *   • Responsive grid (1‑4 columns depending on viewport).
+ */
 export default function SavedProperties() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
@@ -15,304 +25,262 @@ export default function SavedProperties() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // ---------------------------------------------------------------------
+  // Real‑time subscription – keep UI in sync when user saves/unsaves.
+  // ---------------------------------------------------------------------
   useEffect(() => {
-    console.log('🔍 [SavedProperties] useEffect triggered', {
-      isAuthenticated,
-      hasUser: !!user,
-      userId: user?.id
-    });
-
-    let isMounted = true;
-    const safetyTimeout = setTimeout(() => {
-      if (loading && isMounted) {
-        console.warn('⚠️ Safety timeout reached for saved properties loading');
-        setLoading(false);
-        setError('Request timed out. Please try again.');
-      }
-    }, 30000); // 30 seconds timeout
-
-    if (isAuthenticated && user?.id) {
-      console.log('✅ [SavedProperties] Authentication check passed, calling loadSavedProperties');
-      loadSavedProperties();
-
-      // Set up real-time subscription for saved_properties table
-      const subscription = supabase
-        .channel('saved_properties_changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'saved_properties',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log('📡 Real-time update received:', payload);
-            // Reload saved properties when changes occur
-            loadSavedProperties();
-          }
-        )
-        .subscribe();
-
-      // Cleanup subscription on unmount
-      return () => {
-        isMounted = false;
-        clearTimeout(safetyTimeout);
-        subscription.unsubscribe();
-      };
-    } else {
-      console.warn('⚠️ [SavedProperties] Authentication check failed', {
-        isAuthenticated,
-        hasUser: !!user,
-        userId: user?.id
-      });
-      setLoading(false);
-      return () => {
-        isMounted = false;
-        clearTimeout(safetyTimeout);
-      };
-    }
+    if (!isAuthenticated || !user?.id) return;
+    const channel = supabase
+      .channel('saved_properties_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'saved_properties',
+        filter: `user_id=eq.${user.id}`,
+      }, payload => {
+        console.log('� Real‑time saved‑properties update', payload);
+        loadSavedProperties();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user?.id]);
 
+  // ---------------------------------------------------------------------
+  // Load saved properties from the API.
+  // ---------------------------------------------------------------------
   const loadSavedProperties = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    setError(null);
     try {
-      console.log('🚀 [loadSavedProperties] Starting...', {
-        userId: user?.id,
-        userObject: user
-      });
-
-      setLoading(true);
-      setError(null);
-
-      console.log('📋 Loading saved properties for user:', user.id);
       const result = await PropertyAPI.getSavedProperties(user.id);
-      console.log('📋 Result from API:', result);
-
       if (result.success) {
-        console.log('✅ Saved properties loaded:', result.savedProperties?.length || 0);
         setSavedProperties(result.savedProperties || []);
       } else {
-        console.error('❌ Failed to load saved properties:', result.error);
         setError(result.error || 'Failed to load saved properties');
+        toast.error(result.error || 'Failed to load saved properties');
       }
-    } catch (error) {
-      console.error('❌ Exception loading saved properties:', error);
-      setError(error.message || 'Failed to load saved properties');
+    } catch (e) {
+      console.error('❌ loadSavedProperties exception', e);
+      setError(e.message || 'Unexpected error');
+      toast.error(e.message || 'Unexpected error');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRemoveFromSaved = async (propertyId) => {
+  // ---------------------------------------------------------------------
+  // Initial fetch.
+  // ---------------------------------------------------------------------
+  useEffect(() => {
+    if (isAuthenticated && user?.id) loadSavedProperties();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.id]);
+
+  // ---------------------------------------------------------------------
+  // Remove a property from saved list.
+  // ---------------------------------------------------------------------
+  const handleRemove = async propertyId => {
     try {
       const { success, action } = await PropertyAPI.toggleSaveProperty(user.id, propertyId);
-
-      if (success) {
-        if (action === 'removed') {
-          // Remove from local state
-          setSavedProperties(prev => prev.filter(item => item.property_id !== propertyId));
-          toast.success('Removed from favorites');
-        }
+      if (success && action === 'removed') {
+        setSavedProperties(prev => prev.filter(p => p.property_id !== propertyId));
+        toast.success('Removed from saved');
       } else {
-        toast.error('Failed to remove from favorites');
+        toast.error('Could not remove property');
       }
-    } catch (error) {
-      console.error('Error removing from saved:', error);
-      toast.error('Failed to remove from favorites');
+    } catch (e) {
+      console.error('remove error', e);
+      toast.error('Could not remove property');
     }
   };
 
+  // ---------------------------------------------------------------------
+  // UI helpers – glass‑morphism style objects.
+  // ---------------------------------------------------------------------
+  const cardStyle = {
+    background: 'rgba(255, 255, 255, 0.8)',
+    backdropFilter: 'blur(12px)',
+    borderRadius: '12px',
+    boxShadow: '0 4px 30px rgba(0,0,0,0.1)',
+    overflow: 'hidden',
+    position: 'relative',
+  };
+
+  const imgStyle = {
+    width: '100%',
+    height: '200px',
+    objectFit: 'cover',
+    transition: 'transform 0.3s ease',
+  };
+
+  const overlayBtn = {
+    position: 'absolute',
+    top: '8px',
+    right: '8px',
+    background: 'rgba(255,255,255,0.7)',
+    borderRadius: '50%',
+    padding: '6px',
+    cursor: 'pointer',
+    transition: 'background 0.2s',
+  };
+
+  // ---------------------------------------------------------------------
+  // Render helpers.
+  // ---------------------------------------------------------------------
+  const renderHeader = () => (
+    <header className="flex items-center justify-between p-4 bg-white shadow-sm">
+      <button
+        onClick={() => navigate('/chat')}
+        className="p-2 rounded-full hover:bg-gray-100 transition"
+        aria-label="Back to home"
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </button>
+      <h1 className="text-xl font-semibold text-gray-800">Saved Properties</h1>
+      <div className="flex items-center gap-3">
+        <NotificationCenter />
+        <ProfilePopup />
+      </div>
+    </header>
+  );
+
+  const renderLoading = () => (
+    <div className="flex flex-col items-center justify-center min-h-[60vh]">
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+        className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full mb-4"
+      />
+      <p className="text-gray-600">Loading saved properties…</p>
+    </div>
+  );
+
+  const renderError = () => (
+    <div className="max-w-md mx-auto p-6 bg-yellow-50 border border-yellow-200 rounded-xl text-center">
+      <div className="text-5xl text-yellow-500 mb-4">⚠️</div>
+      <h2 className="text-xl font-bold text-yellow-900 mb-2">Unable to load saved properties</h2>
+      <p className="text-yellow-700 mb-4">{error}</p>
+      <button
+        onClick={loadSavedProperties}
+        className="px-6 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
+      >
+        Retry
+      </button>
+    </div>
+  );
+
+  const renderEmpty = () => (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+      <Heart className="w-20 h-20 text-gray-400 mb-4" />
+      <h2 className="text-2xl font-semibold text-gray-800 mb-2">No Saved Properties</h2>
+      <p className="text-gray-600 mb-6 max-w-md">
+        You haven’t saved any properties yet. Browse listings and click the heart icon to save them for later.
+      </p>
+      <button
+        onClick={() => navigate('/browse')}
+        className="px-6 py-2 bg-[#FF6B35] text-white rounded hover:bg-[#e85e2f] transition"
+      >
+        Browse Listings
+      </button>
+    </div>
+  );
+
+  const renderGrid = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-4">
+      {savedProperties.map(item => {
+        const property = item.properties;
+        if (!property) return null;
+        return (
+          <motion.div
+            key={property.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.02 }}
+            className="cursor-pointer"
+            onClick={() => navigate(`/properties/${property.id}`, { state: { property } })}
+          >
+            <div style={cardStyle} className="group">
+              {/* Image */}
+              <div className="relative overflow-hidden">
+                {property.images && property.images.length > 0 ? (
+                  <img
+                    src={property.images[0]}
+                    alt={property.title}
+                    style={imgStyle}
+                    className="group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center bg-gray-100" style={{ height: '200px' }}>
+                    <Home className="w-12 h-12 text-gray-400" />
+                  </div>
+                )}
+                {/* Unsave button */}
+                <button
+                  onClick={e => { e.stopPropagation(); handleRemove(property.id); }}
+                  style={overlayBtn}
+                  className="hover:bg-white"
+                  aria-label="Remove from saved"
+                >
+                  <Heart className="w-5 h-5 text-red-500 fill-red-500" />
+                </button>
+              </div>
+              {/* Details */}
+              <div className="p-4">
+                <h3 className="font-semibold text-gray-900 truncate mb-1">
+                  {property.title}
+                </h3>
+                <p className="text-sm text-gray-600 mb-1">
+                  {property.location?.split(',')[0] || 'Location'}
+                </p>
+                <p className="text-sm text-gray-600 mb-2">
+                  {property.bedrooms || 0} bed • {property.bathrooms || 0} bath
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-gray-900">
+                    ₦{property.price?.toLocaleString()}
+                  </span>
+                  <span className="text-xs text-gray-500">/ month</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+
+  // ---------------------------------------------------------------------
+  // Main render
+  // ---------------------------------------------------------------------
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Login Required</h2>
-          <p className="text-gray-600 mb-6">Please log in to view your saved properties</p>
-          <button
-            onClick={() => navigate('/login')}
-            className="text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-            style={{ backgroundColor: '#FF6B35' }}
-          >
-            Log In
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading saved properties...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
+        <Heart className="w-20 h-20 text-gray-400 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Login Required</h2>
+        <p className="text-gray-600 mb-6">Please log in to view your saved properties.</p>
+        <button
+          onClick={() => navigate('/login')}
+          className="px-6 py-2 bg-[#FF6B35] text-white rounded hover:bg-[#e85e2f] transition"
+        >
+          Log In
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="px-4 sm:px-6 lg:px-10">
-          <div className="flex items-center justify-between h-16 lg:h-20">
-            {/* Logo & Back */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/chat')}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <Link to="/chat" className="flex items-center">
-                <img
-                  src="/images/logo.png"
-                  alt="HomeSwift"
-                  className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-lg"
-                />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="px-4 sm:px-6 lg:px-10 py-8 max-w-[1760px] mx-auto">
-        {/* Page Title */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-semibold text-gray-900 mb-2">Saved Properties</h1>
-          <p className="text-gray-600">{savedProperties.length} {savedProperties.length === 1 ? 'property' : 'properties'} saved</p>
-        </div>
-
-        {error ? (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">
-            <div className="text-yellow-500 text-6xl mb-4">⚠️</div>
-            <h2 className="text-xl font-bold text-yellow-900 mb-2">Unable to Load Saved Properties</h2>
-            <p className="text-yellow-700 mb-4">
-              We're experiencing issues loading your saved properties. This is usually due to high server load.
-            </p>
-            <div className="bg-white rounded-lg p-4 mb-6 text-left max-w-md mx-auto">
-              <p className="text-sm text-gray-600 mb-2">
-                <strong>Troubleshooting tips:</strong>
-              </p>
-              <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                <li>Try refreshing the page</li>
-                <li>Check your internet connection</li>
-                <li>Clear your browser cache</li>
-                <li>Try again in a few minutes</li>
-              </ul>
-            </div>
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => window.location.reload()}
-                className="bg-yellow-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors"
-              >
-                Refresh Page
-              </button>
-              <button
-                onClick={() => navigate('/chat')}
-                className="bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600 transition-colors"
-              >
-                Browse Properties
-              </button>
-            </div>
-            {error && (
-              <details className="mt-4 text-left max-w-md mx-auto">
-                <summary className="text-sm text-gray-500 cursor-pointer hover:text-gray-700">
-                  Technical details
-                </summary>
-                <p className="mt-2 text-xs text-gray-600 bg-gray-100 p-2 rounded">
-                  {error}
-                </p>
-              </details>
-            )}
-          </div>
-        ) : savedProperties.length === 0 ? (
-          <div className="bg-white rounded-xl p-12 text-center">
-            <Heart className="w-16 h-16 text-gray-400 mx-auto mb-6" />
-            <h3 className="text-2xl font-semibold text-gray-900 mb-4">No Saved Properties</h3>
-            <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              You haven't saved any properties yet. Start browsing and save properties you're interested in for easy access later.
-            </p>
-            <button
-              onClick={() => navigate('/chat')}
-              className="bg-[#FF6B35] text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
-            >
-              Start Browsing
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {savedProperties.map((savedItem) => {
-              const property = savedItem.properties;
-              if (!property) return null;
-
-              return (
-                <motion.div
-                  key={property.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="group cursor-pointer"
-                  onClick={() => navigate(`/properties/${property.id}`, { state: { property } })}
-                >
-                  {/* Image Section */}
-                  <div className="relative aspect-square overflow-hidden rounded-xl mb-3">
-                    {property.images && property.images.length > 0 ? (
-                      <img
-                        src={property.images[0]}
-                        alt={property.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                        <Home className="w-12 h-12 text-gray-400" />
-                      </div>
-                    )}
-
-                    {/* Favorite Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveFromSaved(property.id);
-                      }}
-                      className="absolute top-3 right-3 p-2 hover:scale-110 transition-transform"
-                    >
-                      <Heart className="w-6 h-6 text-red-500 fill-red-500 drop-shadow-md" />
-                    </button>
-                  </div>
-
-                  {/* Property Info */}
-                  <div>
-                    <div className="flex items-start justify-between mb-1">
-                      <h3 className="font-semibold text-gray-900 line-clamp-1">
-                        {property.location?.split(',')[0] || 'Location'}
-                      </h3>
-                      <div className="flex items-center gap-1">
-                        <span className="text-sm">★</span>
-                        <span className="text-sm font-medium">4.9</span>
-                      </div>
-                    </div>
-                    <p className="text-gray-600 text-sm mb-1 line-clamp-1">
-                      {property.title}
-                    </p>
-                    <p className="text-gray-600 text-sm mb-2">
-                      {property.bedrooms || 0} bed • {property.bathrooms || 0} bath
-                    </p>
-                    <div>
-                      <span className="font-semibold text-gray-900">
-                        ₦{property.price?.toLocaleString()}
-                      </span>
-                      <span className="text-gray-600 text-sm"> /year</span>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {renderHeader()}
+      <main className="flex-grow">
+        {loading && renderLoading()}
+        {error && renderError()}
+        {!loading && !error && savedProperties.length === 0 && renderEmpty()}
+        {!loading && !error && savedProperties.length > 0 && renderGrid()}
+      </main>
     </div>
   );
 }
