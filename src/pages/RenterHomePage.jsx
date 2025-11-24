@@ -231,7 +231,6 @@ const RenterHomePage = () => {
   const [propertyType, setPropertyType] = useState("all");
   const [bedrooms, setBedrooms] = useState("");
   const [savedProperties, setSavedProperties] = useState(new Set());
-  const [loadingSaved, setLoadingSaved] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
   const [unreadCount, setUnreadCount] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
@@ -247,50 +246,31 @@ const RenterHomePage = () => {
   const loadProperties = async () => {
     try {
       setLoading(true);
-      console.log('🔍 [RenterHomePage] Fetching properties...');
+      console.log("🔍 Fetching properties from API...");
 
-      let query = supabase
-        .from('properties')
-        .select('*');
+      const { success, properties: propertiesData, error } = await PropertyAPI.getAllProperties();
 
-      // Apply filters
-      // Note: searchTerm is not defined in this context, assuming it's a placeholder or needs to be added to state.
-      // For now, commenting out to avoid syntax error.
-      // if (searchTerm) {
-      //   query = query.or(`location.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%`);
-      // }
-
-      if (activeCategory !== 'all') {
-        query = query.eq('property_type', activeCategory);
+      if (!success) {
+        throw new Error(error || 'Failed to fetch properties');
       }
 
-      // Note: priceRange is an object {min, max} in the current state, not a string like 'all' or 'min-max'.
-      // Adjusting logic to match existing state structure.
-      if (priceRange.min) {
-        query = query.gte('price', parseInt(priceRange.min));
+      console.log(`✅ Successfully loaded ${propertiesData?.length || 0} properties`);
+
+      if (propertiesData && propertiesData.length > 0) {
+        setProperties(propertiesData);
+        setFilteredProperties(propertiesData);
+        const grouped = groupProperties(propertiesData);
+        console.log('📦 Grouped properties:', grouped.length, 'groups');
+        setGroupedProperties(grouped);
+        setVisibleRows(5);
+      } else {
+        setProperties([]);
+        setFilteredProperties([]);
+        setGroupedProperties([]);
       }
-      if (priceRange.max) {
-        query = query.lte('price', parseInt(priceRange.max));
-      }
-
-      const { data, error } = await query;
-
-      console.log('📊 [RenterHomePage] Properties query result:', {
-        count: data?.length,
-        error,
-        firstItem: data?.[0]
-      });
-
-      if (error) throw error;
-      setProperties(data || []);
-      setFilteredProperties(data || []); // Keep filtered properties in sync
-      const grouped = groupProperties(data || []);
-      console.log('📦 Grouped properties:', grouped.length, 'groups');
-      setGroupedProperties(grouped);
-      setVisibleRows(5); // Reset visible rows on new data
     } catch (error) {
-      console.error('❌ [RenterHomePage] Error fetching properties:', error);
-      toast.error('Failed to load properties');
+      console.error('❌ Error loading properties:', error);
+      toast.error('Failed to load properties. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -305,36 +285,21 @@ const RenterHomePage = () => {
     try {
       if (!user) return;
 
-      setLoadingSaved(true);
+      // Load user profile data from user_profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('full_name, profile_image')
+        .eq('id', user.id)
+        .single();
 
-      // Create a timeout promise
-      const timeout = (ms) => new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timed out')), ms)
-      );
-
-      // Load user profile data with timeout
-      let profile = null;
-      try {
-        const profilePromise = supabase
-          .from('user_profiles')
-          .select('full_name, profile_image')
-          .eq('id', user.id)
-          .single();
-
-        const result = await Promise.race([profilePromise, timeout(5000)]);
-
-        if (result.error) {
-          if (result.error.code !== 'PGRST116') {
-            throw result.error;
-          }
-        } else if (result.data) {
-          profile = result.data;
+      if (profileError) {
+        console.log('Profile error:', profileError);
+        // If no profile exists, that's okay - use defaults
+        if (profileError.code !== 'PGRST116') {
+          throw profileError;
         }
-      } catch (profileError) {
-        console.warn('Profile loading failed:', profileError.message);
       }
 
-      // Update user profile data
       if (profile) {
         const firstName = profile.full_name?.split(' ')[0] || '';
         setUserFirstName(firstName);
@@ -347,30 +312,20 @@ const RenterHomePage = () => {
         }
       }
 
-      // Load saved properties with timeout
-      try {
-        const savedPromise = supabase
-          .from('saved_properties')
-          .select('property_id')
-          .eq('user_id', user.id);
+      // Load saved properties
+      const { data: saved, error: savedError } = await supabase
+        .from('saved_properties')
+        .select('property_id')
+        .eq('user_id', user.id);
 
-        const result = await Promise.race([savedPromise, timeout(5000)]);
+      if (savedError) throw savedError;
 
-        if (result.error) throw result.error;
-
-        if (result.data) {
-          const savedIds = new Set(result.data.map(item => item.property_id));
-          setSavedProperties(savedIds);
-        }
-      } catch (savedError) {
-        console.warn('Saved properties loading failed:', savedError.message);
-        // Don't throw error, just continue without saved properties
+      if (saved) {
+        const savedIds = new Set(saved.map(item => item.property_id));
+        setSavedProperties(savedIds);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
-      // Continue even if some data fails to load
-    } finally {
-      setLoadingSaved(false);
     }
   };
 
@@ -762,8 +717,8 @@ const RenterHomePage = () => {
                     setShowTypeDropdown(false);
                   }}
                   className={`flex-1 px-6 py-3 rounded-l-full hover:bg-gray-100 transition-colors ${activeSearchSection === "location"
-                    ? "shadow-lg bg-white"
-                    : ""
+                      ? "shadow-lg bg-white"
+                      : ""
                     }`}
                 >
                   <div className="text-left">
@@ -910,8 +865,8 @@ const RenterHomePage = () => {
                           >
                             <div
                               className={`text-sm ${propertyType === type.value
-                                ? "font-semibold text-gray-900"
-                                : "text-gray-700"
+                                  ? "font-semibold text-gray-900"
+                                  : "text-gray-700"
                                 }`}
                             >
                               {type.label}
@@ -1039,8 +994,8 @@ const RenterHomePage = () => {
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
                 className={`flex flex-col items-center gap-2 pb-3 border-b-2 transition-colors whitespace-nowrap ${activeCategory === cat.id
-                  ? "border-gray-900 opacity-100"
-                  : "border-transparent opacity-60 hover:opacity-100"
+                    ? "border-gray-900 opacity-100"
+                    : "border-transparent opacity-60 hover:opacity-100"
                   }`}
               >
                 <span className="text-2xl">{cat.emoji}</span>
@@ -1107,8 +1062,8 @@ const RenterHomePage = () => {
                         key={loc}
                         onClick={() => setLocation(loc)}
                         className={`px-4 py-2 text-sm border rounded-lg transition-colors ${location === loc
-                          ? "bg-gray-900 text-white border-gray-900"
-                          : "border-gray-300 hover:border-gray-900"
+                            ? "bg-gray-900 text-white border-gray-900"
+                            : "border-gray-300 hover:border-gray-900"
                           }`}
                       >
                         {loc}
@@ -1162,8 +1117,8 @@ const RenterHomePage = () => {
                         key={type}
                         onClick={() => setPropertyType(type)}
                         className={`w-full px-4 py-3 text-left border rounded-lg transition-colors ${propertyType === type
-                          ? "bg-gray-50 border-gray-900"
-                          : "border-gray-300 hover:border-gray-900"
+                            ? "bg-gray-50 border-gray-900"
+                            : "border-gray-300 hover:border-gray-900"
                           }`}
                       >
                         {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -1185,9 +1140,9 @@ const RenterHomePage = () => {
                           setBedrooms(num === "Any" ? "" : num.replace("+", ""))
                         }
                         className={`px-6 py-3 border rounded-full font-medium transition-colors ${bedrooms ===
-                          (num === "Any" ? "" : num.replace("+", ""))
-                          ? "bg-gray-900 text-white border-gray-900"
-                          : "border-gray-300 hover:border-gray-900"
+                            (num === "Any" ? "" : num.replace("+", ""))
+                            ? "bg-gray-900 text-white border-gray-900"
+                            : "border-gray-300 hover:border-gray-900"
                           }`}
                       >
                         {num}
@@ -1227,15 +1182,6 @@ const RenterHomePage = () => {
 
       {/* Main Content */}
       <main className="py-6 lg:py-8">
-        {/* Temporary Debug Banner */}
-        <div className="bg-gray-900 text-white p-2 text-xs font-mono overflow-x-auto">
-          <p><strong>DEBUG INFO:</strong></p>
-          <p>VITE_SUPABASE_URL: {import.meta.env.VITE_SUPABASE_URL ? '✅ Loaded' : '❌ MISSING'}</p>
-          <p>VITE_SUPABASE_ANON_KEY: {import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅ Loaded' : '❌ MISSING'}</p>
-          <p>Supabase Client: {supabase ? '✅ Initialized' : '❌ Failed'}</p>
-          <p>Auth User: {user ? `✅ ${user.email}` : '❌ Not Logged In'}</p>
-        </div>
-
         {/* Properties Sections */}
         {loading ? (
           <div className="px-4 sm:px-6 lg:px-10 max-w-[1760px] mx-auto">

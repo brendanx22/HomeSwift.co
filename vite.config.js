@@ -13,8 +13,14 @@ export default defineConfig(({ command, mode }) => {
     // Base path for production deployment
     base: '/',
 
-    // Note: VITE_ prefixed environment variables are automatically loaded from .env files
-    // No need to define them here - removing the 'define' block to let Vite handle it
+    // Environment variables that will be available in the client
+    define: {
+      'import.meta.env.VITE_API_URL': JSON.stringify(apiUrl),
+      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL),
+      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY),
+      'import.meta.env.VITE_POSTHOG_KEY': JSON.stringify(process.env.VITE_POSTHOG_KEY),
+      'import.meta.env.VITE_POSTHOG_HOST': JSON.stringify(process.env.VITE_POSTHOG_HOST),
+    },
 
     // Development server configuration
     server: {
