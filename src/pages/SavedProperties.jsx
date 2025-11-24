@@ -169,16 +169,47 @@ export default function SavedProperties() {
         </div>
 
         {error ? (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
-            <div className="text-red-500 text-6xl mb-4">⚠</div>
-            <h2 className="text-xl font-bold text-red-900 mb-2">Error Loading Saved Properties</h2>
-            <p className="text-red-600 mb-4">{error}</p>
-            <button
-              onClick={loadSavedProperties}
-              className="bg-[#FF6B35] text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
-            >
-              Try Again
-            </button>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">
+            <div className="text-yellow-500 text-6xl mb-4">⚠️</div>
+            <h2 className="text-xl font-bold text-yellow-900 mb-2">Unable to Load Saved Properties</h2>
+            <p className="text-yellow-700 mb-4">
+              We're experiencing issues loading your saved properties. This is usually due to high server load.
+            </p>
+            <div className="bg-white rounded-lg p-4 mb-6 text-left max-w-md mx-auto">
+              <p className="text-sm text-gray-600 mb-2">
+                <strong>Troubleshooting tips:</strong>
+              </p>
+              <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                <li>Try refreshing the page</li>
+                <li>Check your internet connection</li>
+                <li>Clear your browser cache</li>
+                <li>Try again in a few minutes</li>
+              </ul>
+            </div>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-yellow-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors"
+              >
+                Refresh Page
+              </button>
+              <button
+                onClick={() => navigate('/chat')}
+                className="bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600 transition-colors"
+              >
+                Browse Properties
+              </button>
+            </div>
+            {error && (
+              <details className="mt-4 text-left max-w-md mx-auto">
+                <summary className="text-sm text-gray-500 cursor-pointer hover:text-gray-700">
+                  Technical details
+                </summary>
+                <p className="mt-2 text-xs text-gray-600 bg-gray-100 p-2 rounded">
+                  {error}
+                </p>
+              </details>
+            )}
           </div>
         ) : savedProperties.length === 0 ? (
           <div className="bg-white rounded-xl p-12 text-center">
