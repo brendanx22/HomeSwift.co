@@ -195,30 +195,6 @@ export class PropertyAPI {
     try {
       console.log('🔍 [getSavedProperties] Starting fetch for user:', userId);
 
-      // Pre-flight check: Verify authentication
-      console.log('🔐 [Pre-flight] Checking authentication...');
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError) {
-        console.error('❌ [Pre-flight] Session error:', sessionError);
-        throw new Error('Authentication check failed: ' + sessionError.message);
-      }
-
-      if (!session) {
-        console.error('❌ [Pre-flight] No active session');
-        throw new Error('No active session - user not authenticated');
-      }
-
-      console.log('✅ [Pre-flight] Session valid:', {
-        userId: session.user.id,
-        matchesRequestedUser: session.user.id === userId
-      });
-
-      if (session.user.id !== userId) {
-        console.warn('⚠️ [Pre-flight] Session user ID does not match requested user ID');
-        throw new Error('User ID mismatch - security violation');
-      }
-
       // Step 1: Get saved property IDs with timeout
       console.log('📋 [Step 1] Fetching saved property IDs...');
       const savedPromise = supabase
