@@ -442,10 +442,7 @@ const AppLayout = () => {
               }
             />
 
-            <Route
-              path="/search"
-              element={<AdvancedSearch />}
-            />
+
 
             <Route
               path="/analytics"
@@ -465,19 +462,9 @@ const AppLayout = () => {
               }
             />
 
-            <Route
-              path="/insights"
-              element={<MarketInsights />}
-            />
 
-            <Route
-              path="/manage"
-              element={
-                <ProtectedRoute requiredRoles={['landlord']}>
-                  <AdvancedPropertyManagement />
-                </ProtectedRoute>
-              }
-            />
+
+
 
             <Route
               path="/history"
@@ -488,10 +475,7 @@ const AppLayout = () => {
               }
             />
 
-            <Route
-              path="/market-trends"
-              element={<MarketTrends />}
-            />
+
 
             <Route
               path="/alerts"
