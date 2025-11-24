@@ -247,31 +247,50 @@ const RenterHomePage = () => {
   const loadProperties = async () => {
     try {
       setLoading(true);
-      console.log("🔍 Fetching properties from API...");
+      console.log('🔍 [RenterHomePage] Fetching properties...');
 
-      const { success, properties: propertiesData, error } = await PropertyAPI.getAllProperties();
+      let query = supabase
+        .from('properties')
+        .select('*');
 
-      if (!success) {
-        throw new Error(error || 'Failed to fetch properties');
+      // Apply filters
+      // Note: searchTerm is not defined in this context, assuming it's a placeholder or needs to be added to state.
+      // For now, commenting out to avoid syntax error.
+      // if (searchTerm) {
+      //   query = query.or(`location.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%`);
+      // }
+
+      if (activeCategory !== 'all') {
+        query = query.eq('property_type', activeCategory);
       }
 
-      console.log(`✅ Successfully loaded ${propertiesData?.length || 0} properties`);
-
-      if (propertiesData && propertiesData.length > 0) {
-        setProperties(propertiesData);
-        setFilteredProperties(propertiesData);
-        const grouped = groupProperties(propertiesData);
-        console.log('📦 Grouped properties:', grouped.length, 'groups');
-        setGroupedProperties(grouped);
-        setVisibleRows(5);
-      } else {
-        setProperties([]);
-        setFilteredProperties([]);
-        setGroupedProperties([]);
+      // Note: priceRange is an object {min, max} in the current state, not a string like 'all' or 'min-max'.
+      // Adjusting logic to match existing state structure.
+      if (priceRange.min) {
+        query = query.gte('price', parseInt(priceRange.min));
       }
+      if (priceRange.max) {
+        query = query.lte('price', parseInt(priceRange.max));
+      }
+
+      const { data, error } = await query;
+
+      console.log('📊 [RenterHomePage] Properties query result:', {
+        count: data?.length,
+        error,
+        firstItem: data?.[0]
+      });
+
+      if (error) throw error;
+      setProperties(data || []);
+      setFilteredProperties(data || []); // Keep filtered properties in sync
+      const grouped = groupProperties(data || []);
+      console.log('📦 Grouped properties:', grouped.length, 'groups');
+      setGroupedProperties(grouped);
+      setVisibleRows(5); // Reset visible rows on new data
     } catch (error) {
-      console.error('❌ Error loading properties:', error);
-      toast.error('Failed to load properties. Please try again.');
+      console.error('❌ [RenterHomePage] Error fetching properties:', error);
+      toast.error('Failed to load properties');
     } finally {
       setLoading(false);
     }
