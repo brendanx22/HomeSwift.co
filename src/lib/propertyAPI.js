@@ -17,7 +17,7 @@ export class PropertyAPI {
     try {
       const response = await fetch(`${API_BASE_URL}/properties`);
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.error || 'Failed to fetch properties');
       }
@@ -87,7 +87,7 @@ export class PropertyAPI {
         landlord_name: data.landlord?.full_name || 'Property Owner',
         landlord_profile_image: data.landlord?.profile_image || null
       };
-      
+
       // Remove the nested landlord object
       delete property.landlord;
 
@@ -193,49 +193,42 @@ export class PropertyAPI {
   static async getSavedProperties(userId) {
     try {
       console.log('🔍 Fetching saved properties for user:', userId);
-      
-      // First, get the saved property IDs for the user
-      const { data: savedData, error: savedError } = await supabase
+
+      // Use a single query with a join to fetch saved properties and their details
+      const { data, error } = await supabase
         .from("saved_properties")
-        .select('property_id, created_at')
+        .select(`
+          property_id,
+          created_at,
+          properties:property_id (*)
+        `)
         .eq("user_id", userId);
 
-      if (savedError) {
-        console.error('❌ Error fetching saved properties:', savedError);
-        throw savedError;
+      if (error) {
+        console.error('❌ Error fetching saved properties:', error);
+        throw error;
       }
 
-      if (!savedData || savedData.length === 0) {
+      if (!data || data.length === 0) {
         console.log('ℹ️ No saved properties found for user');
         return { success: true, savedProperties: [] };
       }
 
-      // Extract property IDs
-      const propertyIds = savedData.map(item => item.property_id);
-      
-      // Then fetch the complete property details
-      const { data: properties, error: propertiesError } = await supabase
-        .from('properties')
-        .select('*')
-        .in('id', propertyIds);
-
-      if (propertiesError) {
-        console.error('❌ Error fetching property details:', propertiesError);
-        throw propertiesError;
-      }
-
-      // Combine the saved properties with their details
-      const savedProperties = savedData.map(savedItem => ({
-        ...savedItem,
-        properties: properties.find(p => p.id === savedItem.property_id) || null
-      })).filter(item => item.properties !== null); // Filter out any properties that weren't found
+      // Transform the data to match the expected format
+      const savedProperties = data
+        .filter(item => item.properties) // Filter out items where property might be null (e.g. deleted)
+        .map(item => ({
+          property_id: item.property_id,
+          created_at: item.created_at,
+          properties: item.properties
+        }));
 
       console.log(`✅ Loaded ${savedProperties.length} saved properties`);
       return { success: true, savedProperties };
     } catch (error) {
       console.error("Error in getSavedProperties:", error);
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: error.message || 'Failed to load saved properties',
         details: error
       };
