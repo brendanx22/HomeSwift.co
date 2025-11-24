@@ -195,21 +195,13 @@ export class PropertyAPI {
     try {
       console.log('🔍 [getSavedProperties] Starting fetch for user:', userId);
 
-      // Step 1: Get saved property IDs with timeout
+      // Step 1: Get saved property IDs
       console.log('📋 [Step 1] Fetching saved property IDs...');
-      const savedPromise = supabase
+      const { data: savedData, error: savedError } = await supabase
         .from("saved_properties")
         .select('property_id, created_at')
         .eq("user_id", userId);
 
-      const savedResult = await Promise.race([
-        savedPromise,
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Step 1 timeout: Fetching saved property IDs took too long')), 15000)
-        )
-      ]);
-
-      const { data: savedData, error: savedError } = savedResult;
       console.log(`✅ [Step 1] Completed in ${Date.now() - startTime}ms`);
 
       if (savedError) {
@@ -230,23 +222,15 @@ export class PropertyAPI {
 
       console.log(`📊 [Step 1] Found ${savedData.length} saved property IDs:`, savedData.map(s => s.property_id));
 
-      // Step 2: Get property details with timeout
+      // Step 2: Get property details
       const propertyIds = savedData.map(item => item.property_id);
       console.log('📋 [Step 2] Fetching property details for IDs:', propertyIds);
 
-      const propertiesPromise = supabase
+      const { data: properties, error: propertiesError } = await supabase
         .from('properties')
         .select('*')
         .in('id', propertyIds);
 
-      const propertiesResult = await Promise.race([
-        propertiesPromise,
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Step 2 timeout: Fetching property details took too long')), 15000)
-        )
-      ]);
-
-      const { data: properties, error: propertiesError } = propertiesResult;
       console.log(`✅ [Step 2] Completed in ${Date.now() - startTime}ms`);
 
       if (propertiesError) {
