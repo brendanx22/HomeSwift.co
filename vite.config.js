@@ -5,23 +5,17 @@ import { VitePWA } from "vite-plugin-pwa";
 export default defineConfig(({ command, mode }) => {
   // Environment variables
   const isProduction = mode === 'production';
-  const apiUrl = isProduction 
-    ? 'https://api.homeswift.co' 
+  const apiUrl = isProduction
+    ? 'https://api.homeswift.co'
     : 'http://localhost:5000';
 
   return {
     // Base path for production deployment
     base: '/',
-    
-    // Environment variables that will be available in the client
-    define: {
-      'import.meta.env.VITE_API_URL': JSON.stringify(apiUrl),
-      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL),
-      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY),
-      'import.meta.env.VITE_POSTHOG_KEY': JSON.stringify(process.env.VITE_POSTHOG_KEY),
-      'import.meta.env.VITE_POSTHOG_HOST': JSON.stringify(process.env.VITE_POSTHOG_HOST),
-    },
-    
+
+    // Note: VITE_ prefixed environment variables are automatically loaded from .env files
+    // No need to define them here - removing the 'define' block to let Vite handle it
+
     // Development server configuration
     server: {
       port: 3000,
@@ -53,7 +47,7 @@ export default defineConfig(({ command, mode }) => {
         },
       },
     },
-    
+
     // Build configuration
     build: {
       outDir: 'dist',
@@ -80,7 +74,7 @@ export default defineConfig(({ command, mode }) => {
         },
       } : {}
     },
-    
+
     // Optimize dependencies
     optimizeDeps: {
       exclude: ["@supabase/supabase-js"],
@@ -92,7 +86,7 @@ export default defineConfig(({ command, mode }) => {
         '@supabase/storage-js'
       ],
     },
-    
+
     // Resolve configuration
     resolve: {
       alias: {
@@ -100,7 +94,7 @@ export default defineConfig(({ command, mode }) => {
       },
       conditions: ["module", "browser", "default"],
     },
-    
+
     // Plugins
     plugins: [
       react(),
