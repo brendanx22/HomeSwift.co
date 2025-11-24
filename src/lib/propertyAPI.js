@@ -1,4 +1,5 @@
 // src/lib/propertyAPI.js
+import { supabase } from './supabaseClient';
 
 // Ensure the API base URL includes the /api prefix
 const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api` || 'http://localhost:5000/api';
