@@ -1208,6 +1208,15 @@ const RenterHomePage = () => {
 
       {/* Main Content */}
       <main className="py-6 lg:py-8">
+        {/* Temporary Debug Banner */}
+        <div className="bg-gray-900 text-white p-2 text-xs font-mono overflow-x-auto">
+          <p><strong>DEBUG INFO:</strong></p>
+          <p>VITE_SUPABASE_URL: {import.meta.env.VITE_SUPABASE_URL ? '✅ Loaded' : '❌ MISSING'}</p>
+          <p>VITE_SUPABASE_ANON_KEY: {import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅ Loaded' : '❌ MISSING'}</p>
+          <p>Supabase Client: {supabase ? '✅ Initialized' : '❌ Failed'}</p>
+          <p>Auth User: {user ? `✅ ${user.email}` : '❌ Not Logged In'}</p>
+        </div>
+
         {/* Properties Sections */}
         {loading ? (
           <div className="px-4 sm:px-6 lg:px-10 max-w-[1760px] mx-auto">
