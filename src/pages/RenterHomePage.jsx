@@ -286,8 +286,7 @@ const RenterHomePage = () => {
     try {
       console.log('🚀 [RenterHomePage] loadData called', {
         hasUser: !!user,
-        userId: user?.id,
-        isAuthenticated
+        userId: user?.id
       });
 
       if (!user) {
