@@ -195,6 +195,30 @@ export class PropertyAPI {
     try {
       console.log('🔍 [getSavedProperties] Starting fetch for user:', userId);
 
+      // Pre-flight check: Verify authentication
+      console.log('🔐 [Pre-flight] Checking authentication...');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error('❌ [Pre-flight] Session error:', sessionError);
+        throw new Error('Authentication check failed: ' + sessionError.message);
+      }
+
+      if (!session) {
+        console.error('❌ [Pre-flight] No active session');
+        throw new Error('No active session - user not authenticated');
+      }
+
+      console.log('✅ [Pre-flight] Session valid:', {
+        userId: session.user.id,
+        matchesRequestedUser: session.user.id === userId
+      });
+
+      if (session.user.id !== userId) {
+        console.warn('⚠️ [Pre-flight] Session user ID does not match requested user ID');
+        throw new Error('User ID mismatch - security violation');
+      }
+
       // Step 1: Get saved property IDs with timeout
       console.log('📋 [Step 1] Fetching saved property IDs...');
       const savedPromise = supabase
@@ -205,7 +229,7 @@ export class PropertyAPI {
       const savedResult = await Promise.race([
         savedPromise,
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Step 1 timeout: Fetching saved property IDs took too long')), 10000)
+          setTimeout(() => reject(new Error('Step 1 timeout: Fetching saved property IDs took too long')), 15000)
         )
       ]);
 
@@ -214,6 +238,12 @@ export class PropertyAPI {
 
       if (savedError) {
         console.error('❌ [Step 1] Error:', savedError);
+        console.error('❌ [Step 1] Error details:', {
+          code: savedError.code,
+          message: savedError.message,
+          details: savedError.details,
+          hint: savedError.hint
+        });
         throw savedError;
       }
 
@@ -236,7 +266,7 @@ export class PropertyAPI {
       const propertiesResult = await Promise.race([
         propertiesPromise,
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Step 2 timeout: Fetching property details took too long')), 10000)
+          setTimeout(() => reject(new Error('Step 2 timeout: Fetching property details took too long')), 15000)
         )
       ]);
 
