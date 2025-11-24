@@ -194,34 +194,41 @@ export class PropertyAPI {
     try {
       console.log('🔍 Fetching saved properties for user:', userId);
 
-      // Use a single query with a join to fetch saved properties and their details
-      const { data, error } = await supabase
+      // Step 1: Get saved property IDs
+      const { data: savedData, error: savedError } = await supabase
         .from("saved_properties")
-        .select(`
-          property_id,
-          created_at,
-          properties:property_id (*)
-        `)
+        .select('property_id, created_at')
         .eq("user_id", userId);
 
-      if (error) {
-        console.error('❌ Error fetching saved properties:', error);
-        throw error;
+      if (savedError) {
+        console.error('❌ Error fetching saved properties:', savedError);
+        throw savedError;
       }
 
-      if (!data || data.length === 0) {
+      if (!savedData || savedData.length === 0) {
         console.log('ℹ️ No saved properties found for user');
         return { success: true, savedProperties: [] };
       }
 
-      // Transform the data to match the expected format
-      const savedProperties = data
-        .filter(item => item.properties) // Filter out items where property might be null (e.g. deleted)
-        .map(item => ({
-          property_id: item.property_id,
-          created_at: item.created_at,
-          properties: item.properties
-        }));
+      // Step 2: Get property details
+      const propertyIds = savedData.map(item => item.property_id);
+      console.log('🔍 Fetching details for properties:', propertyIds);
+
+      const { data: properties, error: propertiesError } = await supabase
+        .from('properties')
+        .select('*')
+        .in('id', propertyIds);
+
+      if (propertiesError) {
+        console.error('❌ Error fetching property details:', propertiesError);
+        throw propertiesError;
+      }
+
+      // Combine data
+      const savedProperties = savedData.map(savedItem => ({
+        ...savedItem,
+        properties: properties.find(p => p.id === savedItem.property_id) || null
+      })).filter(item => item.properties !== null);
 
       console.log(`✅ Loaded ${savedProperties.length} saved properties`);
       return { success: true, savedProperties };

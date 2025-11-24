@@ -22,7 +22,7 @@ export default function SavedProperties() {
         setLoading(false);
         setError('Request timed out. Please try again.');
       }
-    }, 10000); // 10 seconds timeout
+    }, 30000); // 30 seconds timeout
 
     if (isAuthenticated && user?.id) {
       loadSavedProperties();
