@@ -541,15 +541,6 @@ const AppLayout = () => {
               path="/faq"
               element={<FAQ />}
             />
-
-            <Route
-              path="/inspection-checklist"
-              element={
-                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
-                  <HomeInspectionChecklist />
-                </ProtectedRoute>
-              }
-            />
           </Routes>
         </Suspense>
       </main>
