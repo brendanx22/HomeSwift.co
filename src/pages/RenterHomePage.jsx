@@ -284,12 +284,21 @@ const RenterHomePage = () => {
 
   const loadData = async () => {
     try {
-      if (!user) return;
-      
+      console.log('🚀 [RenterHomePage] loadData called', {
+        hasUser: !!user,
+        userId: user?.id,
+        isAuthenticated
+      });
+
+      if (!user) {
+        console.warn('⚠️ [RenterHomePage] No user found, skipping data load');
+        return;
+      }
+
       setLoadingSaved(true);
 
       // Create a timeout promise
-      const timeout = (ms) => new Promise((_, reject) => 
+      const timeout = (ms) => new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Request timed out')), ms)
       );
 
@@ -301,9 +310,9 @@ const RenterHomePage = () => {
           .select('full_name, profile_image')
           .eq('id', user.id)
           .single();
-        
+
         const result = await Promise.race([profilePromise, timeout(5000)]);
-        
+
         if (result.error) {
           if (result.error.code !== 'PGRST116') {
             throw result.error;
@@ -334,9 +343,9 @@ const RenterHomePage = () => {
           .from('saved_properties')
           .select('property_id')
           .eq('user_id', user.id);
-        
+
         const result = await Promise.race([savedPromise, timeout(5000)]);
-        
+
         if (result.error) throw result.error;
 
         if (result.data) {
@@ -617,7 +626,7 @@ const RenterHomePage = () => {
           {/* Top Bar */}
           <div className="flex items-center justify-end h-16 lg:h-20">
             {/* Logo */}
-            <div className="flex-1 flex items-center">
+            <div className="flex-1 flex items-center gap-4">
               <Link to="/" className="flex items-center gap-2">
                 <img
                   src="/images/logo.png"
@@ -628,6 +637,29 @@ const RenterHomePage = () => {
                   HomeSwift
                 </span>
               </Link>
+
+              {/* Temporary Debug Button */}
+              <button
+                onClick={async () => {
+                  try {
+                    console.log('🧪 Testing database connection...');
+                    const { data, error } = await supabase.from('properties').select('count').limit(1);
+                    if (error) {
+                      console.error('❌ Database test failed:', error);
+                      alert('Database Error: ' + error.message);
+                    } else {
+                      console.log('✅ Database test passed:', data);
+                      alert('Database Connection Successful! Check console for details.');
+                    }
+                  } catch (err) {
+                    console.error('❌ Exception during test:', err);
+                    alert('Exception: ' + err.message);
+                  }
+                }}
+                className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"
+              >
+                Test DB
+              </button>
             </div>
 
             {/* Right Actions */}
@@ -743,8 +775,8 @@ const RenterHomePage = () => {
                     setShowTypeDropdown(false);
                   }}
                   className={`flex-1 px-6 py-3 rounded-l-full hover:bg-gray-100 transition-colors ${activeSearchSection === "location"
-                      ? "shadow-lg bg-white"
-                      : ""
+                    ? "shadow-lg bg-white"
+                    : ""
                     }`}
                 >
                   <div className="text-left">
@@ -891,8 +923,8 @@ const RenterHomePage = () => {
                           >
                             <div
                               className={`text-sm ${propertyType === type.value
-                                  ? "font-semibold text-gray-900"
-                                  : "text-gray-700"
+                                ? "font-semibold text-gray-900"
+                                : "text-gray-700"
                                 }`}
                             >
                               {type.label}
@@ -1020,8 +1052,8 @@ const RenterHomePage = () => {
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
                 className={`flex flex-col items-center gap-2 pb-3 border-b-2 transition-colors whitespace-nowrap ${activeCategory === cat.id
-                    ? "border-gray-900 opacity-100"
-                    : "border-transparent opacity-60 hover:opacity-100"
+                  ? "border-gray-900 opacity-100"
+                  : "border-transparent opacity-60 hover:opacity-100"
                   }`}
               >
                 <span className="text-2xl">{cat.emoji}</span>
@@ -1088,8 +1120,8 @@ const RenterHomePage = () => {
                         key={loc}
                         onClick={() => setLocation(loc)}
                         className={`px-4 py-2 text-sm border rounded-lg transition-colors ${location === loc
-                            ? "bg-gray-900 text-white border-gray-900"
-                            : "border-gray-300 hover:border-gray-900"
+                          ? "bg-gray-900 text-white border-gray-900"
+                          : "border-gray-300 hover:border-gray-900"
                           }`}
                       >
                         {loc}
@@ -1143,8 +1175,8 @@ const RenterHomePage = () => {
                         key={type}
                         onClick={() => setPropertyType(type)}
                         className={`w-full px-4 py-3 text-left border rounded-lg transition-colors ${propertyType === type
-                            ? "bg-gray-50 border-gray-900"
-                            : "border-gray-300 hover:border-gray-900"
+                          ? "bg-gray-50 border-gray-900"
+                          : "border-gray-300 hover:border-gray-900"
                           }`}
                       >
                         {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -1166,9 +1198,9 @@ const RenterHomePage = () => {
                           setBedrooms(num === "Any" ? "" : num.replace("+", ""))
                         }
                         className={`px-6 py-3 border rounded-full font-medium transition-colors ${bedrooms ===
-                            (num === "Any" ? "" : num.replace("+", ""))
-                            ? "bg-gray-900 text-white border-gray-900"
-                            : "border-gray-300 hover:border-gray-900"
+                          (num === "Any" ? "" : num.replace("+", ""))
+                          ? "bg-gray-900 text-white border-gray-900"
+                          : "border-gray-300 hover:border-gray-900"
                           }`}
                       >
                         {num}
