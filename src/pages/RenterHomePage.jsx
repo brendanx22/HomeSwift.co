@@ -590,19 +590,6 @@ const RenterHomePage = () => {
         <div className="px-4 sm:px-6 lg:px-10">
           {/* Top Bar */}
           <div className="flex items-center justify-end h-16 lg:h-20">
-            {/* Logo */}
-            <div className="flex-1 flex items-center">
-              <Link to="/" className="flex items-center gap-2">
-                <img
-                  src="/images/logo.png"
-                  alt="HomeSwift"
-                  className="w-10 h-10 object-cover rounded-lg"
-                />
-                <span className="text-xl font-bold text-[#FF6B35] hidden sm:block">
-                  HomeSwift
-                </span>
-              </Link>
-            </div>
 
             {/* Right Actions */}
             <div className="flex items-center gap-5">
