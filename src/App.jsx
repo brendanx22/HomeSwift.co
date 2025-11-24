@@ -44,7 +44,6 @@ const PropertyAnalytics = React.lazy(() => import('./pages/PropertyAnalytics'));
 const PropertyRecommendations = React.lazy(() => import('./pages/PropertyRecommendations'));
 const ComparisonHistory = React.lazy(() => import('./pages/ComparisonHistory'));
 const LandlordProperties = React.lazy(() => import('./pages/LandlordProperties'));
-const HomeInspectionChecklist = React.lazy(() => import('./pages/HomeInspectionChecklist'));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
 const RenterHomePage = React.lazy(() => import('./pages/RenterHomePage'));
 
