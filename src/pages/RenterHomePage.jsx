@@ -231,6 +231,7 @@ const RenterHomePage = () => {
   const [propertyType, setPropertyType] = useState("all");
   const [bedrooms, setBedrooms] = useState("");
   const [savedProperties, setSavedProperties] = useState(new Set());
+  const [loadingSaved, setLoadingSaved] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
   const [unreadCount, setUnreadCount] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
@@ -284,22 +285,37 @@ const RenterHomePage = () => {
   const loadData = async () => {
     try {
       if (!user) return;
+      
+      setLoadingSaved(true);
 
-      // Load user profile data from user_profiles table
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('full_name, profile_image')
-        .eq('id', user.id)
-        .single();
+      // Create a timeout promise
+      const timeout = (ms) => new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timed out')), ms)
+      );
 
-      if (profileError) {
-        console.log('Profile error:', profileError);
-        // If no profile exists, that's okay - use defaults
-        if (profileError.code !== 'PGRST116') {
-          throw profileError;
+      // Load user profile data with timeout
+      let profile = null;
+      try {
+        const profilePromise = supabase
+          .from('user_profiles')
+          .select('full_name, profile_image')
+          .eq('id', user.id)
+          .single();
+        
+        const result = await Promise.race([profilePromise, timeout(5000)]);
+        
+        if (result.error) {
+          if (result.error.code !== 'PGRST116') {
+            throw result.error;
+          }
+        } else if (result.data) {
+          profile = result.data;
         }
+      } catch (profileError) {
+        console.warn('Profile loading failed:', profileError.message);
       }
 
+      // Update user profile data
       if (profile) {
         const firstName = profile.full_name?.split(' ')[0] || '';
         setUserFirstName(firstName);
@@ -312,20 +328,30 @@ const RenterHomePage = () => {
         }
       }
 
-      // Load saved properties
-      const { data: saved, error: savedError } = await supabase
-        .from('saved_properties')
-        .select('property_id')
-        .eq('user_id', user.id);
+      // Load saved properties with timeout
+      try {
+        const savedPromise = supabase
+          .from('saved_properties')
+          .select('property_id')
+          .eq('user_id', user.id);
+        
+        const result = await Promise.race([savedPromise, timeout(5000)]);
+        
+        if (result.error) throw result.error;
 
-      if (savedError) throw savedError;
-
-      if (saved) {
-        const savedIds = new Set(saved.map(item => item.property_id));
-        setSavedProperties(savedIds);
+        if (result.data) {
+          const savedIds = new Set(result.data.map(item => item.property_id));
+          setSavedProperties(savedIds);
+        }
+      } catch (savedError) {
+        console.warn('Saved properties loading failed:', savedError.message);
+        // Don't throw error, just continue without saved properties
       }
     } catch (error) {
       console.error('Error loading user data:', error);
+      // Continue even if some data fails to load
+    } finally {
+      setLoadingSaved(false);
     }
   };
 
