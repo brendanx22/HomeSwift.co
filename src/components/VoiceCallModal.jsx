@@ -39,6 +39,13 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
     }
   }, [isOpen, targetUserId]);
 
+  // Automatically start the voice call when connection is initiated
+  useEffect(() => {
+    if (isCallInitiated && !isConnected && !isConnecting) {
+      handleStartVoiceCall();
+    }
+  }, [isCallInitiated, isConnected, isConnecting]);
+
   useEffect(() => {
     let interval;
     if (isConnected) {
@@ -154,9 +161,8 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className={`bg-white rounded-3xl overflow-hidden shadow-2xl ${
-            isFullscreen ? 'w-full h-full' : 'w-full max-w-md h-[600px]'
-          }`}
+          className={`bg-white rounded-3xl overflow-hidden shadow-2xl ${isFullscreen ? 'w-full h-full' : 'w-full max-w-md h-[600px]'
+            }`}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[#FF6B35] to-orange-500 text-white">
@@ -208,6 +214,14 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
 
           {/* Call Area */}
           <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+            {/* Hidden audio element for remote stream */}
+            <audio
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              className="hidden"
+            />
+
             <div className="text-center">
               {/* Large Avatar */}
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-white to-gray-100 flex items-center justify-center overflow-hidden mx-auto mb-8 shadow-2xl border-4 border-white">
@@ -237,20 +251,8 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
                 </span>
               </div>
 
-              {/* Connection Status */}
-              {!isConnected && !isConnecting && isCallInitiated && (
-                <div className="mb-8">
-                  <button
-                    onClick={handleStartVoiceCall}
-                    className="px-8 py-3 bg-[#FF6B35] text-white rounded-full font-semibold hover:bg-[#e85e2f] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                  >
-                    Start Voice Call
-                  </button>
-                </div>
-              )}
-
               {/* Connecting Animation */}
-              {!isConnected && isConnecting && (
+              {(isConnecting || (isCallInitiated && !isConnected)) && (
                 <div className="flex items-center justify-center space-x-3 mb-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-[#FF6B35]"></div>
                   <span className="text-gray-700 font-medium">Connecting...</span>
@@ -277,11 +279,10 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
             {/* Audio Toggle */}
             <button
               onClick={handleToggleAudio}
-              className={`p-4 rounded-full transition-all duration-200 ${
-                isAudioOn
-                  ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
-                  : 'bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
-              }`}
+              className={`p-4 rounded-full transition-all duration-200 ${isAudioOn
+                ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                : 'bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                }`}
             >
               {isAudioOn ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
             </button>

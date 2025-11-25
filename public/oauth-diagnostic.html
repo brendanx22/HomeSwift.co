@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google OAuth Diagnostic</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #FF6B35;
+            padding-bottom: 10px;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .error-box {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .success-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        button {
+            background: #FF6B35;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #e85e2f;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            background: #fafafa;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Google OAuth Diagnostic Tool</h1>
+        
+        <div class="info-box">
+            <strong>Purpose:</strong> This tool will show you exactly which OAuth Client ID is being used and help diagnose why "HomeSwift" isn't showing.
+        </div>
+
+        <div class="step">
+            <h2>Step 1: Check Supabase Configuration</h2>
+            <button onclick="checkSupabaseConfig()">Check Supabase Config</button>
+            <div id="supabase-result"></div>
+        </div>
+
+        <div class="step">
+            <h2>Step 2: Initiate Google OAuth</h2>
+            <button onclick="initiateGoogleOAuth()">Start Google Sign-In</button>
+            <div id="oauth-result"></div>
+        </div>
+
+        <div class="step">
+            <h2>Step 3: Check OAuth URL</h2>
+            <p>When you click "Start Google Sign-In", a new window will open. <strong>Don't sign in yet!</strong></p>
+            <p>Instead, look at the URL in the address bar and copy it here:</p>
+            <textarea id="oauth-url" rows="4" style="width: 100%; padding: 10px; font-family: monospace;"></textarea>
+            <button onclick="analyzeOAuthURL()">Analyze URL</button>
+            <div id="url-analysis"></div>
+        </div>
+
+        <div class="step">
+            <h2>Step 4: Verify Google Cloud Console</h2>
+            <div class="info-box">
+                <p><strong>Go to Google Cloud Console:</strong></p>
+                <ol>
+                    <li>Open: <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank">OAuth Consent Screen</a></li>
+                    <li>Check the "App name" field</li>
+                    <li>It MUST be exactly: <code>HomeSwift</code></li>
+                    <li>If it's not, click "Edit App" and change it</li>
+                    <li>Save and wait 10 minutes</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="step">
+            <h2>Diagnostic Results</h2>
+            <div id="diagnostic-results"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Initialize Supabase
+        const supabaseUrl = 'https://tproalqyxohnjmkgxt.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwcm9haXF2a29ocmx4am1rZ3h0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MjUwNDksImV4cCI6MjA3MzAwMTA0OX0.RoOBMaKyPXi0BXfWOhLpAAj89sKYxWEE-Zz5iu3kTEI';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        function checkSupabaseConfig() {
+            const result = document.getElementById('supabase-result');
+            result.innerHTML = `
+                <div class="info-box">
+                    <p><strong>Supabase URL:</strong> <code>${supabaseUrl}</code></p>
+                    <p><strong>Status:</strong> Connected ✓</p>
+                    <p><strong>Note:</strong> The actual Google Client ID is configured in Supabase Dashboard, not visible from client code.</p>
+                </div>
+            `;
+        }
+
+        async function initiateGoogleOAuth() {
+            const result = document.getElementById('oauth-result');
+            result.innerHTML = '<p>Initiating OAuth flow...</p>';
+
+            try {
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin + '/auth/callback',
+                        queryParams: {
+                            access_type: 'offline',
+                            prompt: 'select_account',
+                        },
+                    }
+                });
+
+                if (error) {
+                    result.innerHTML = `
+                        <div class="error-box">
+                            <strong>Error:</strong> ${error.message}
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = `
+                        <div class="success-box">
+                            <p><strong>OAuth initiated successfully!</strong></p>
+                            <p>A new window should have opened. Look at the URL in that window.</p>
+                            <p>The URL should contain <code>client_id=...</code></p>
+                            <p>Copy the ENTIRE URL and paste it in Step 3 above.</p>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                result.innerHTML = `
+                    <div class="error-box">
+                        <strong>Error:</strong> ${err.message}
+                    </div>
+                `;
+            }
+        }
+
+        function analyzeOAuthURL() {
+            const url = document.getElementById('oauth-url').value;
+            const analysis = document.getElementById('url-analysis');
+
+            if (!url) {
+                analysis.innerHTML = '<div class="error-box">Please paste the OAuth URL first!</div>';
+                return;
+            }
+
+            try {
+                const urlObj = new URL(url);
+                const params = new URLSearchParams(urlObj.search);
+                
+                const clientId = params.get('client_id');
+                const redirectUri = params.get('redirect_uri');
+                const scope = params.get('scope');
+
+                let html = '<div class="info-box"><h3>URL Analysis:</h3>';
+                
+                html += `<p><strong>Client ID:</strong> <code>${clientId || 'Not found'}</code></p>`;
+                
+                if (clientId) {
+                    if (clientId.startsWith('1067853597134-')) {
+                        html += '<div class="success-box">✅ This is YOUR Client ID! Good!</div>';
+                    } else {
+                        html += '<div class="error-box">❌ This is NOT your Client ID! Supabase is using the wrong credentials.</div>';
+                        html += '<p><strong>Your Client ID should start with:</strong> <code>1067853597134-</code></p>';
+                    }
+                }
+
+                html += `<p><strong>Redirect URI:</strong> <code>${redirectUri || 'Not found'}</code></p>`;
+                html += `<p><strong>Scope:</strong> <code>${scope || 'Not found'}</code></p>`;
+                html += '</div>';
+
+                // Add diagnostic results
+                const diagnostic = document.getElementById('diagnostic-results');
+                if (clientId && clientId.startsWith('1067853597134-')) {
+                    diagnostic.innerHTML = `
+                        <div class="success-box">
+                            <h3>✅ Diagnosis: Client ID is Correct</h3>
+                            <p>Supabase is using YOUR Google OAuth credentials.</p>
+                            <p><strong>The issue is in Google Cloud Console:</strong></p>
+                            <ol>
+                                <li>Go to <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank">OAuth Consent Screen</a></li>
+                                <li>Check the "App name" field</li>
+                                <li>If it's NOT "HomeSwift", click "Edit App"</li>
+                                <li>Change "App name" to: <code>HomeSwift</code></li>
+                                <li>Click "Save and Continue"</li>
+                                <li>Wait 10-15 minutes for Google to propagate</li>
+                                <li>Clear browser cache</li>
+                                <li>Test again</li>
+                            </ol>
+                        </div>
+                    `;
+                } else if (clientId) {
+                    diagnostic.innerHTML = `
+                        <div class="error-box">
+                            <h3>❌ Diagnosis: Wrong Client ID</h3>
+                            <p>Supabase is NOT using your Google OAuth credentials.</p>
+                            <p><strong>Current Client ID:</strong> <code>${clientId}</code></p>
+                            <p><strong>Expected Client ID:</strong> <code>1067853597134-52q9qfuu1t1epa6av8lg4c6v6udcpd2c.apps.googleusercontent.com</code></p>
+                            <p><strong>Fix:</strong></p>
+                            <ol>
+                                <li>Go to <a href="https://supabase.com/dashboard/project/tproalqyxohnjmkgxt/auth/providers" target="_blank">Supabase Providers</a></li>
+                                <li>Click on "Google"</li>
+                                <li>Replace Client ID with: <code>1067853597134-52q9qfuu1t1epa6av8lg4c6v6udcpd2c.apps.googleusercontent.com</code></li>
+                                <li>Replace Client Secret with: <code>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</code></li>
+                                <li>Click "Save"</li>
+                                <li>Wait 5 minutes</li>
+                                <li>Test again</li>
+                            </ol>
+                        </div>
+                    `;
+                } else {
+                    diagnostic.innerHTML = `
+                        <div class="error-box">
+                            <h3>❌ Could not find Client ID in URL</h3>
+                            <p>Please make sure you copied the entire URL from the Google sign-in window.</p>
+                        </div>
+                    `;
+                }
+
+                analysis.innerHTML = html;
+            } catch (err) {
+                analysis.innerHTML = `
+                    <div class="error-box">
+                        <strong>Error parsing URL:</strong> ${err.message}
+                        <p>Make sure you copied the entire URL including <code>https://</code></p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

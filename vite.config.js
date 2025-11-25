@@ -105,7 +105,11 @@ export default defineConfig(({ command, mode }) => {
     plugins: [
       react(),
       VitePWA({
-        registerType: "autoUpdate",
+        registerType: "prompt",  // Changed from autoUpdate to prompt users for updates
+        injectRegister: 'auto',
+        devOptions: {
+          enabled: false  // Disable PWA in development
+        },
         manifest: {
           name: "HomeSwift",
           short_name: "HomeSwift",
@@ -127,19 +131,45 @@ export default defineConfig(({ command, mode }) => {
           ],
         },
         workbox: {
-          // Don't cache JS files to prevent issues with React and Supabase
-          globPatterns: ["**/*.{css,html,ico,png,svg,woff2}"],
-          navigateFallbackDenylist: [/react/i, /vendor/i, /supabase/i],
+          // Aggressive cache cleanup
+          cleanupOutdatedCaches: true,
+          skipWaiting: true,
+          clientsClaim: true,
+
+          // Only cache static assets, NOT JavaScript files
+          globPatterns: ["**/*.{css,html,ico,png,svg,jpg,jpeg,gif,woff,woff2,ttf,eot}"],
+
+          // Explicitly exclude JS files from caching
+          globIgnores: ["**/*.js", "**/*.jsx", "**/node_modules/**"],
+
+          // Don't cache these routes
+          navigateFallbackDenylist: [/^\/api/, /^\/socket\.io/],
+
           runtimeCaching: [
             {
+              // Network-first for API calls
+              urlPattern: /^https:\/\/api\.homeswift\.co\//,
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "api-cache",
+                expiration: {
+                  maxEntries: 10,
+                  maxAgeSeconds: 300, // 5 minutes
+                },
+                networkTimeoutSeconds: 10,
+              },
+            },
+            {
+              // Network-first for Supabase
               urlPattern: /^https:\/\/[^/]+\.supabase\.co\//,
               handler: "NetworkFirst",
               options: {
                 cacheName: "supabase-api-cache",
                 expiration: {
                   maxEntries: 50,
-                  maxAgeSeconds: 86400,
+                  maxAgeSeconds: 300, // 5 minutes only
                 },
+                networkTimeoutSeconds: 10,
               },
             },
           ],

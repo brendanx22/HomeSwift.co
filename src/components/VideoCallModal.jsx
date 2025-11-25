@@ -44,6 +44,13 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
     }
   }, [isOpen, targetUserId]);
 
+  // Automatically start the video call when connection is initiated
+  useEffect(() => {
+    if (isCallInitiated && !isConnected && !isConnecting) {
+      handleStartVideoCall();
+    }
+  }, [isCallInitiated, isConnected, isConnecting]);
+
   useEffect(() => {
     let interval;
     if (isConnected) {
@@ -166,9 +173,8 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className={`bg-white rounded-3xl overflow-hidden shadow-2xl ${
-            isFullscreen ? 'w-full h-full' : 'w-full max-w-4xl h-[700px]'
-          }`}
+          className={`bg-white rounded-3xl overflow-hidden shadow-2xl ${isFullscreen ? 'w-full h-full' : 'w-full max-w-4xl h-[700px]'
+            }`}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[#FF6B35] to-orange-500 text-white">
@@ -247,27 +253,15 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
             </div>
 
             {/* Connection Status */}
-            {!isConnected && (
+            {(!isConnected || isConnecting || isCallInitiated) && (
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 rounded-2xl">
                 <div className="text-center text-white">
                   <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/30 border-t-[#FF6B35] mx-auto mb-4"></div>
                   <p className="text-lg font-semibold">
-                    {isConnecting ? 'Connecting...' : 'Starting video call...'}
+                    {isConnecting || isCallInitiated ? 'Connecting...' : 'Starting video call...'}
                   </p>
                   <p className="text-white/70 mt-2">Please wait</p>
                 </div>
-              </div>
-            )}
-
-            {/* Start Call Button */}
-            {!isConnected && !isConnecting && isCallInitiated && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <button
-                  onClick={handleStartVideoCall}
-                  className="px-8 py-3 bg-[#FF6B35] text-white rounded-full font-semibold hover:bg-[#e85e2f] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  Start Video Call
-                </button>
               </div>
             )}
 
@@ -290,11 +284,10 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
             {/* Video Toggle */}
             <button
               onClick={handleToggleVideo}
-              className={`p-4 rounded-full transition-all duration-200 ${
-                isVideoOn
-                  ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
-                  : 'bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
-              }`}
+              className={`p-4 rounded-full transition-all duration-200 ${isVideoOn
+                ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                : 'bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                }`}
             >
               {isVideoOn ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
             </button>
@@ -302,11 +295,10 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
             {/* Audio Toggle */}
             <button
               onClick={handleToggleAudio}
-              className={`p-4 rounded-full transition-all duration-200 ${
-                isAudioOn
-                  ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
-                  : 'bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
-              }`}
+              className={`p-4 rounded-full transition-all duration-200 ${isAudioOn
+                ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                : 'bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                }`}
             >
               {isAudioOn ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
             </button>
