@@ -1,8 +1,10 @@
 // src/lib/propertyAPI.js
-import { supabase } from './supabaseClient';
+import { supabase } from "./supabaseClient";
 
-// Ensure the API base URL includes the /api prefix
-const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api` || 'http://localhost:5000/api';
+// Ensure the API base URL includes the /api prefix and uses HTTPS
+const API_BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : "https://api.homeswift.co/api";
 
 /**
  * Property Management API
@@ -13,13 +15,22 @@ export class PropertyAPI {
   /**
    * Get all properties (for browsing)
    */
-  static async getAllProperties() {
+  static async getAllProperties(queryParams = "") {
     try {
-      const response = await fetch(`${API_BASE_URL}/properties`);
+      const url = queryParams
+        ? `${API_BASE_URL}/properties${queryParams}`
+        : `${API_BASE_URL}/properties`;
+      const response = await fetch(url, {
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch properties');
+        throw new Error(result.error || "Failed to fetch properties");
       }
 
       return {
@@ -63,29 +74,31 @@ export class PropertyAPI {
     try {
       const { data, error } = await supabase
         .from("properties")
-        .select(`
+        .select(
+          `
           *,
           landlord:user_profiles!landlord_id (
             full_name,
             profile_image
           )
-        `)
+        `
+        )
         .eq("id", propertyId)
         .single();
 
       if (error) throw error;
 
-      console.log('🏠 Property data from DB:', {
+      console.log("🏠 Property data from DB:", {
         hasLandlordData: !!data.landlord,
         landlordName: data.landlord?.full_name,
-        landlordImage: data.landlord?.profile_image
+        landlordImage: data.landlord?.profile_image,
       });
 
       // Flatten the landlord data
       const property = {
         ...data,
-        landlord_name: data.landlord?.full_name || 'Property Owner',
-        landlord_profile_image: data.landlord?.profile_image || null
+        landlord_name: data.landlord?.full_name || "Property Owner",
+        landlord_profile_image: data.landlord?.profile_image || null,
       };
 
       // Remove the nested landlord object
@@ -193,89 +206,110 @@ export class PropertyAPI {
   static async getSavedProperties(userId) {
     const startTime = Date.now();
     try {
-      console.log('🔍 [getSavedProperties] Starting fetch for user:', userId);
+      console.log("🔍 [getSavedProperties] Starting fetch for user:", userId);
 
       // Step 1: Get saved property IDs
-      console.log('📋 [Step 1] Fetching saved property IDs...');
+      console.log("📋 [Step 1] Fetching saved property IDs...");
       const { data: savedData, error: savedError } = await supabase
         .from("saved_properties")
-        .select('property_id, created_at')
+        .select("property_id, created_at")
         .eq("user_id", userId);
 
       console.log(`✅ [Step 1] Completed in ${Date.now() - startTime}ms`);
 
       if (savedError) {
-        console.error('❌ [Step 1] Error:', savedError);
-        console.error('❌ [Step 1] Error details:', {
+        console.error("❌ [Step 1] Error:", savedError);
+        console.error("❌ [Step 1] Error details:", {
           code: savedError.code,
           message: savedError.message,
           details: savedError.details,
-          hint: savedError.hint
+          hint: savedError.hint,
         });
         throw savedError;
       }
 
       if (!savedData || savedData.length === 0) {
-        console.log('ℹ️ [Step 1] No saved properties found');
+        console.log("ℹ️ [Step 1] No saved properties found");
         return { success: true, savedProperties: [] };
       }
 
-      console.log(`📊 [Step 1] Found ${savedData.length} saved property IDs:`, savedData.map(s => s.property_id));
+      console.log(
+        `📊 [Step 1] Found ${savedData.length} saved property IDs:`,
+        savedData.map((s) => s.property_id)
+      );
 
       // Step 2: Get property details
-      const propertyIds = savedData.map(item => item.property_id);
-      console.log('📋 [Step 2] Fetching property details for IDs:', propertyIds);
+      const propertyIds = savedData.map((item) => item.property_id);
+      console.log(
+        "📋 [Step 2] Fetching property details for IDs:",
+        propertyIds
+      );
 
       const { data: properties, error: propertiesError } = await supabase
-        .from('properties')
-        .select('*')
-        .in('id', propertyIds);
+        .from("properties")
+        .select("*")
+        .in("id", propertyIds);
 
       console.log(`✅ [Step 2] Completed in ${Date.now() - startTime}ms`);
 
       if (propertiesError) {
-        console.error('❌ [Step 2] Error:', propertiesError);
+        console.error("❌ [Step 2] Error:", propertiesError);
         throw propertiesError;
       }
 
       if (!properties || properties.length === 0) {
-        console.warn('⚠️ [Step 2] No properties found for saved IDs. This might indicate deleted properties or RLS issues.');
+        console.warn(
+          "⚠️ [Step 2] No properties found for saved IDs. This might indicate deleted properties or RLS issues."
+        );
         return { success: true, savedProperties: [] };
       }
 
-      console.log(`📊 [Step 2] Found ${properties.length} properties out of ${propertyIds.length} IDs`);
+      console.log(
+        `📊 [Step 2] Found ${properties.length} properties out of ${propertyIds.length} IDs`
+      );
 
       // Step 3: Combine data
-      console.log('📋 [Step 3] Combining saved properties with details...');
-      const savedProperties = savedData.map(savedItem => {
-        const property = properties.find(p => p.id === savedItem.property_id);
-        if (!property) {
-          console.warn(`⚠️ Property ${savedItem.property_id} not found in results`);
-        }
-        return {
-          ...savedItem,
-          properties: property || null
-        };
-      }).filter(item => item.properties !== null);
+      console.log("📋 [Step 3] Combining saved properties with details...");
+      const savedProperties = savedData
+        .map((savedItem) => {
+          const property = properties.find(
+            (p) => p.id === savedItem.property_id
+          );
+          if (!property) {
+            console.warn(
+              `⚠️ Property ${savedItem.property_id} not found in results`
+            );
+          }
+          return {
+            ...savedItem,
+            properties: property || null,
+          };
+        })
+        .filter((item) => item.properties !== null);
 
       const totalTime = Date.now() - startTime;
-      console.log(`✅ [Complete] Loaded ${savedProperties.length} saved properties in ${totalTime}ms`);
+      console.log(
+        `✅ [Complete] Loaded ${savedProperties.length} saved properties in ${totalTime}ms`
+      );
 
       return { success: true, savedProperties };
     } catch (error) {
       const totalTime = Date.now() - startTime;
-      console.error(`❌ [Error] getSavedProperties failed after ${totalTime}ms:`, error);
-      console.error('Error details:', {
+      console.error(
+        `❌ [Error] getSavedProperties failed after ${totalTime}ms:`,
+        error
+      );
+      console.error("Error details:", {
         message: error.message,
         code: error.code,
         details: error.details,
-        hint: error.hint
+        hint: error.hint,
       });
 
       return {
         success: false,
-        error: error.message || 'Failed to load saved properties',
-        details: error
+        error: error.message || "Failed to load saved properties",
+        details: error,
       };
     }
   }
@@ -354,7 +388,7 @@ export class PropertyAPI {
 
       if (searchParams.query) {
         query = query.or(
-          `title.ilike.%${searchParams.query}%,description.ilike.%${searchParams.query}%,location.ilike.%${searchParams.query}%`,
+          `title.ilike.%${searchParams.query}%,description.ilike.%${searchParams.query}%,location.ilike.%${searchParams.query}%`
         );
       }
 
@@ -426,7 +460,7 @@ export class PropertyAPI {
         "increment_property_inquiries",
         {
           property_id: propertyId,
-        },
+        }
       );
 
       if (error) throw error;
@@ -502,7 +536,7 @@ export class PropertyAPI {
         .eq("status", "active")
         .neq("id", propertyId)
         .or(
-          `location.ilike.%${property.location}%,property_type.eq.${property.property_type}`,
+          `location.ilike.%${property.location}%,property_type.eq.${property.property_type}`
         )
         .gte("price", property.price - priceRange)
         .lte("price", property.price + priceRange)

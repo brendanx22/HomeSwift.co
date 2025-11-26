@@ -260,9 +260,10 @@ const RenterHomePage = () => {
       setLoading(true);
       console.log("🔍 Fetching properties from API...");
 
-      // Add cache-busting timestamp
+      // Add cache-busting timestamp and random parameter
       const timestamp = Date.now();
-      const { success, properties: propertiesData, error } = await PropertyAPI.getAllProperties(`?_t=${timestamp}`);
+      const random = Math.random().toString(36).substring(7);
+      const { success, properties: propertiesData, error } = await PropertyAPI.getAllProperties(`?_t=${timestamp}&_r=${random}`);
 
       if (!success) {
         throw new Error(error || 'Failed to fetch properties');
@@ -294,6 +295,27 @@ const RenterHomePage = () => {
     console.log("🚀 Component mounted, loading properties...");
     loadProperties();
   }, []);
+
+  // Force refresh on every navigation to this page
+  useEffect(() => {
+    if (user) {
+      console.log('🔄 Navigation detected, forcing refresh...');
+      // Clear all navigation cache
+      setUserAvatar(null);
+      setUnreadCount(0);
+      setProperties([]);
+      setFilteredProperties([]);
+      setGroupedProperties([]);
+      // Clear localStorage cache
+      localStorage.removeItem('user_avatar_cache');
+      localStorage.removeItem('unread_count_cache');
+      localStorage.removeItem('properties_cache');
+      // Reload everything
+      loadData();
+      loadConversations();
+      loadProperties();
+    }
+  }, [user]);
 
   // Force refresh data when page becomes visible (user returns to tab)
   useEffect(() => {
@@ -364,7 +386,8 @@ const RenterHomePage = () => {
         .from('user_profiles')
         .select('full_name, profile_image')
         .eq('id', user.id)
-        .single();
+        .single()
+        .abortSignal(new AbortController().signal); // Force fresh request
 
       if (profileError) {
         console.log('Profile error:', profileError);
@@ -395,7 +418,8 @@ const RenterHomePage = () => {
         .from('saved_properties')
         .select('property_id')
         .eq('user_id', user.id)
-        .order('updated_at', { ascending: false }); // Force fresh data
+        .order('updated_at', { ascending: false })
+        .abortSignal(new AbortController().signal); // Force fresh request
 
       if (savedError) throw savedError;
 
