@@ -28,6 +28,7 @@ export default defineConfig(({ command, mode }) => {
       "import.meta.env.VITE_POSTHOG_HOST": JSON.stringify(
         process.env.VITE_POSTHOG_HOST
       ),
+      "import.meta.env.VITE_BUILD_TIME": JSON.stringify(Date.now().toString()),
     },
 
     // Development server configuration
@@ -91,11 +92,11 @@ export default defineConfig(({ command, mode }) => {
       },
       terserOptions: isProduction
         ? {
-            compress: {
-              // drop_console: true,  // Temporarily disabled for debugging
-              drop_debugger: true,
-            },
-          }
+          compress: {
+            // drop_console: true,  // Temporarily disabled for debugging
+            drop_debugger: true,
+          },
+        }
         : {},
     },
 

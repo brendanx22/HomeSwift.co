@@ -1,5 +1,6 @@
-// Version-based cache management
-const APP_VERSION = "2.1.1"; // Increment this when you deploy changes
+// Dynamic version-based cache management
+// Using build timestamp ensures cache clears on every deployment
+const APP_VERSION = import.meta.env.VITE_BUILD_TIME || `${Date.now()}`;
 const VERSION_KEY = "homeswift_app_version";
 const CACHE_BUST_KEY = "homeswift_cache_bust";
 

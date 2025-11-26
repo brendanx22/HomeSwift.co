@@ -260,10 +260,9 @@ const RenterHomePage = () => {
       setLoading(true);
       console.log("🔍 Fetching properties from API...");
 
-      // Add cache-busting timestamp and random parameter
+      // Add cache-busting timestamp
       const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(7);
-      const { success, properties: propertiesData, error } = await PropertyAPI.getAllProperties(`?_t=${timestamp}&_r=${random}`);
+      const { success, properties: propertiesData, error } = await PropertyAPI.getAllProperties(`?_t=${timestamp}`);
 
       if (!success) {
         throw new Error(error || 'Failed to fetch properties');
@@ -296,39 +295,11 @@ const RenterHomePage = () => {
     loadProperties();
   }, []);
 
-  // Force refresh on every navigation to this page
-  useEffect(() => {
-    if (user) {
-      console.log('🔄 Navigation detected, forcing refresh...');
-      // Clear all navigation cache
-      setUserAvatar(null);
-      setUnreadCount(0);
-      setProperties([]);
-      setFilteredProperties([]);
-      setGroupedProperties([]);
-      // Clear localStorage cache
-      localStorage.removeItem('user_avatar_cache');
-      localStorage.removeItem('unread_count_cache');
-      localStorage.removeItem('properties_cache');
-      // Reload everything
-      loadData();
-      loadConversations();
-      loadProperties();
-    }
-  }, [user]);
-
   // Force refresh data when page becomes visible (user returns to tab)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && user) {
         console.log('🔄 Page became visible, refreshing data...');
-        // Force navigation refresh
-        setUserAvatar(null);
-        setUnreadCount(0);
-        // Clear any cached navigation data
-        localStorage.removeItem('user_avatar_cache');
-        localStorage.removeItem('unread_count_cache');
-        // Reload all data
         loadData();
         loadConversations();
         loadProperties();
@@ -344,13 +315,6 @@ const RenterHomePage = () => {
     const handleFocus = () => {
       if (user) {
         console.log('🔄 Window focused, refreshing data...');
-        // Force navigation refresh
-        setUserAvatar(null);
-        setUnreadCount(0);
-        // Clear any cached navigation data
-        localStorage.removeItem('user_avatar_cache');
-        localStorage.removeItem('unread_count_cache');
-        // Reload all data
         loadData();
         loadConversations();
         loadProperties();
@@ -361,19 +325,6 @@ const RenterHomePage = () => {
     return () => window.removeEventListener('focus', handleFocus);
   }, [user]);
 
-  // Also refresh on component mount
-  useEffect(() => {
-    if (user) {
-      console.log('🔄 Component mounted with user, clearing navigation cache...');
-      // Force navigation refresh on mount
-      setUserAvatar(null);
-      setUnreadCount(0);
-      // Clear any cached navigation data
-      localStorage.removeItem('user_avatar_cache');
-      localStorage.removeItem('unread_count_cache');
-    }
-  }, [user]);
-
   const loadData = async () => {
     try {
       if (!user) return;
@@ -381,13 +332,12 @@ const RenterHomePage = () => {
       // Add cache-busting timestamp
       const timestamp = Date.now();
 
-      // Load user profile data from user_profiles table with cache-busting
+      // Load user profile data from user_profiles table
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('full_name, profile_image')
         .eq('id', user.id)
-        .single()
-        .abortSignal(new AbortController().signal); // Force fresh request
+        .single();
 
       if (profileError) {
         console.log('Profile error:', profileError);
@@ -417,9 +367,7 @@ const RenterHomePage = () => {
       const { data: saved, error: savedError } = await supabase
         .from('saved_properties')
         .select('property_id')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
-        .abortSignal(new AbortController().signal); // Force fresh request
+        .eq('user_id', user.id);
 
       if (savedError) throw savedError;
 
