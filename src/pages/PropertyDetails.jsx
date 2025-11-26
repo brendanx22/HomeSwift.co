@@ -84,7 +84,7 @@ export default function PropertyDetails() {
         
         // Add timeout to prevent infinite loading
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Loading timeout')), 10000)
+          setTimeout(() => reject(new Error('Loading timeout')), 30000) // Increased to 30 seconds
         );
         
         const propertyPromise = PropertyAPI.getProperty(id, user);
