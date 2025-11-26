@@ -33,6 +33,7 @@ import toast from "react-hot-toast";
 import ProfilePopup from "../components/ProfilePopup";
 import NotificationCenter from "../components/NotificationCenter";
 import PropertyMap from "../components/PropertyMap";
+import ForceUpdateButton from "../components/ForceUpdateButton";
 import { Map as MapIcon, List as ListIcon } from "lucide-react";
 
 // Nigerian cities and locations
@@ -1229,6 +1230,9 @@ const RenterHomePage = () => {
         position="navbar"
         onAvatarUpdate={(newAvatarUrl) => setUserAvatar(newAvatarUrl)}
       />
+
+      {/* Force Update Button - Only visible in production */}
+      <ForceUpdateButton />
 
       {/* Main Content */}
       <main className="py-6 lg:py-8">

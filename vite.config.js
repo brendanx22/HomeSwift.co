@@ -4,22 +4,30 @@ import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ command, mode }) => {
   // Environment variables
-  const isProduction = mode === 'production';
+  const isProduction = mode === "production";
   const apiUrl = isProduction
-    ? 'https://api.homeswift.co'
-    : 'http://localhost:5000';
+    ? "https://api.homeswift.co"
+    : "http://localhost:5000";
 
   return {
     // Base path for production deployment
-    base: '/',
+    base: "/",
 
     // Environment variables that will be available in the client
     define: {
-      'import.meta.env.VITE_API_URL': JSON.stringify(apiUrl),
-      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL),
-      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY),
-      'import.meta.env.VITE_POSTHOG_KEY': JSON.stringify(process.env.VITE_POSTHOG_KEY),
-      'import.meta.env.VITE_POSTHOG_HOST': JSON.stringify(process.env.VITE_POSTHOG_HOST),
+      "import.meta.env.VITE_API_URL": JSON.stringify(apiUrl),
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
+        process.env.VITE_SUPABASE_URL
+      ),
+      "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(
+        process.env.VITE_SUPABASE_ANON_KEY
+      ),
+      "import.meta.env.VITE_POSTHOG_KEY": JSON.stringify(
+        process.env.VITE_POSTHOG_KEY
+      ),
+      "import.meta.env.VITE_POSTHOG_HOST": JSON.stringify(
+        process.env.VITE_POSTHOG_HOST
+      ),
     },
 
     // Development server configuration
@@ -28,25 +36,33 @@ export default defineConfig(({ command, mode }) => {
       host: "0.0.0.0",
       proxy: {
         // Proxy API requests to the backend server
-        '/api': {
+        "/api": {
           target: apiUrl,
           changeOrigin: true,
           secure: isProduction,
-          rewrite: (path) => path.replace(/^\/api/, ''),
+          rewrite: (path) => path.replace(/^\/api/, ""),
           configure: (proxy, _options) => {
-            proxy.on('error', (err, _req, _res) => {
-              console.error('Proxy error:', err);
+            proxy.on("error", (err, _req, _res) => {
+              console.error("Proxy error:", err);
             });
-            proxy.on('proxyReq', (proxyReq, req, _res) => {
-              console.log('Sending Request to the Target:', req.method, req.url);
+            proxy.on("proxyReq", (proxyReq, req, _res) => {
+              console.log(
+                "Sending Request to the Target:",
+                req.method,
+                req.url
+              );
             });
-            proxy.on('proxyRes', (proxyRes, req, _res) => {
-              console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+            proxy.on("proxyRes", (proxyRes, req, _res) => {
+              console.log(
+                "Received Response from the Target:",
+                proxyRes.statusCode,
+                req.url
+              );
             });
           },
         },
         // Proxy WebSocket connections
-        '/socket.io': {
+        "/socket.io": {
           target: apiUrl,
           ws: true,
           changeOrigin: true,
@@ -56,40 +72,42 @@ export default defineConfig(({ command, mode }) => {
 
     // Build configuration
     build: {
-      outDir: 'dist',
-      assetsDir: 'assets',
+      outDir: "dist",
+      assetsDir: "assets",
       sourcemap: !isProduction,
-      minify: isProduction ? 'terser' : false,
+      minify: isProduction ? "terser" : false,
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
-          chunkFileNames: 'assets/[name]-[hash].js',
-          entryFileNames: 'assets/[name]-[hash].js',
-          assetFileNames: 'assets/[name]-[hash].[ext]',
+          chunkFileNames: "assets/[name]-[hash].js",
+          entryFileNames: "assets/[name]-[hash].js",
+          assetFileNames: "assets/[name]-[hash].[ext]",
           manualChunks: {
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'supabase': ['@supabase/supabase-js'],
-            'ui-vendor': ['framer-motion', 'lucide-react']
-          }
-        }
-      },
-      terserOptions: isProduction ? {
-        compress: {
-          // drop_console: true,  // Temporarily disabled for debugging
-          drop_debugger: true,
+            "react-vendor": ["react", "react-dom", "react-router-dom"],
+            supabase: ["@supabase/supabase-js"],
+            "ui-vendor": ["framer-motion", "lucide-react"],
+          },
         },
-      } : {}
+      },
+      terserOptions: isProduction
+        ? {
+            compress: {
+              // drop_console: true,  // Temporarily disabled for debugging
+              drop_debugger: true,
+            },
+          }
+        : {},
     },
 
     // Optimize dependencies
     optimizeDeps: {
       exclude: ["@supabase/supabase-js"],
       include: [
-        '@supabase/postgrest-js',
-        '@supabase/functions-js',
-        '@supabase/gotrue-js',
-        '@supabase/realtime-js',
-        '@supabase/storage-js'
+        "@supabase/postgrest-js",
+        "@supabase/functions-js",
+        "@supabase/gotrue-js",
+        "@supabase/realtime-js",
+        "@supabase/storage-js",
       ],
     },
 
@@ -105,10 +123,10 @@ export default defineConfig(({ command, mode }) => {
     plugins: [
       react(),
       VitePWA({
-        registerType: "prompt",  // Changed from autoUpdate to prompt users for updates
-        injectRegister: 'auto',
+        registerType: "prompt", // Changed from autoUpdate to prompt users for updates
+        injectRegister: "auto",
         devOptions: {
-          enabled: false  // Disable PWA in development
+          enabled: false, // Disable PWA in development
         },
         manifest: {
           name: "HomeSwift",
@@ -137,7 +155,9 @@ export default defineConfig(({ command, mode }) => {
           clientsClaim: true,
 
           // Only cache static assets, NOT JavaScript files
-          globPatterns: ["**/*.{css,html,ico,png,svg,jpg,jpeg,gif,woff,woff2,ttf,eot}"],
+          globPatterns: [
+            "**/*.{css,html,ico,png,svg,jpg,jpeg,gif,woff,woff2,ttf,eot}",
+          ],
 
           // Explicitly exclude JS files from caching
           globIgnores: ["**/*.js", "**/*.jsx", "**/node_modules/**"],
@@ -145,7 +165,20 @@ export default defineConfig(({ command, mode }) => {
           // Don't cache these routes
           navigateFallbackDenylist: [/^\/api/, /^\/socket\.io/],
 
+          // Network-first for all JavaScript files to prevent caching issues
           runtimeCaching: [
+            {
+              urlPattern: /\.js$/,
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "js-cache",
+                expiration: {
+                  maxEntries: 10,
+                  maxAgeSeconds: 60, // Only cache for 1 minute
+                },
+                networkTimeoutSeconds: 5,
+              },
+            },
             {
               // Network-first for API calls
               urlPattern: /^https:\/\/api\.homeswift\.co\//,
