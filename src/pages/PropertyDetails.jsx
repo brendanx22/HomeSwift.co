@@ -43,6 +43,7 @@ import { toast } from 'react-hot-toast';
 import { createNewInquiryNotification } from '../services/notificationService';
 import { supabase } from '../lib/supabaseClient';
 import PropertyReviews from '../components/PropertyReviews';
+import PropertyMap from '../components/PropertyMap';
 
 export default function PropertyDetails() {
   const { id } = useParams();
@@ -744,11 +745,11 @@ export default function PropertyDetails() {
             {/* Location Map */}
             <div>
               <h3 className="text-xs font-semibold mb-4 text-gray-400 tracking-wider">LOCATION:</h3>
-              <div className="w-full h-[280px] rounded-2xl overflow-hidden bg-gray-100">
-                <img
-                  src={`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/static/${property.location ? '6.7428,6.4444' : '6.7428,6.4444'},13,0/800x340@2x?access_token=pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbTFrOXo0bW4wNHVqMmtzNHRqN2VlcWJnIn0.r7l1-TSHXWKQ2NNFUwFCfA`}
-                  alt="Map"
-                  className="w-full h-full object-cover"
+              <div className="w-full h-[340px] rounded-2xl overflow-hidden bg-gray-100 border border-gray-200">
+                <PropertyMap
+                  property={property}
+                  height="h-full"
+                  zoom={15}
                 />
               </div>
             </div>

@@ -16,7 +16,9 @@ import {
   X,
   ChevronUp,
   ChevronDown,
-  GitCompare
+  GitCompare,
+  Map,
+  List
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,6 +26,7 @@ import { useMessaging } from '../contexts/MessagingContext';
 import { PropertyAPI } from '../lib/propertyAPI';
 import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
+import PropertyMap from '../components/PropertyMap';
 
 export default function PropertyBrowse() {
   const { user, isAuthenticated } = useAuth();
@@ -37,6 +40,7 @@ export default function PropertyBrowse() {
   const [savedProperties, setSavedProperties] = useState(new Set());
   const [compareProperties, setCompareProperties] = useState([]);
   const [showCompareButton, setShowCompareButton] = useState(false);
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'map'
 
   // Current property index for swipe navigation
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -275,6 +279,22 @@ export default function PropertyBrowse() {
                   <span>Compare ({compareProperties.length})</span>
                 </button>
               )}
+              <div className="flex bg-gray-100 rounded-lg p-1 mr-2">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-[#FF6B35]' : 'text-gray-500 hover:text-gray-700'}`}
+                  title="List View"
+                >
+                  <List className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`p-2 rounded-md transition-all ${viewMode === 'map' ? 'bg-white shadow-sm text-[#FF6B35]' : 'text-gray-500 hover:text-gray-700'}`}
+                  title="Map View"
+                >
+                  <Map className="w-4 h-4" />
+                </button>
+              </div>
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -543,157 +563,165 @@ export default function PropertyBrowse() {
                   </p>
                 </div>
 
-                {/* Properties Grid - Desktop Design */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredProperties.map((property, index) => (
-                    <motion.div
-                      key={property.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300"
-                    >
-                      {/* Property Image */}
-                      <div className="relative h-48 overflow-hidden">
-                        {property.images && property.images.length > 0 ? (
-                          <img
-                            src={property.images[0]}
-                            alt={property.title}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                            <div className="text-gray-400 text-4xl">🏠</div>
-                          </div>
-                        )}
-
-                        {/* Save Button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSaveProperty(property.id);
-                          }}
-                          className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-sm hover:shadow-md transition-shadow"
-                        >
-                          {savedProperties.has(property.id) ? (
-                            <BookmarkCheck className="w-5 h-5 text-[#FF6B35]" />
+                {viewMode === 'map' ? (
+                  <div className="h-[calc(100vh-250px)] rounded-xl overflow-hidden border border-gray-200">
+                    <PropertyMap
+                      properties={filteredProperties}
+                      height="h-full"
+                    />
+                  </div>
+                ) : (
+                  /* Properties Grid - Desktop Design */
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredProperties.map((property, index) => (
+                      <motion.div
+                        key={property.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300"
+                      >
+                        {/* Property Image */}
+                        <div className="relative h-48 overflow-hidden">
+                          {property.images && property.images.length > 0 ? (
+                            <img
+                              src={property.images[0]}
+                              alt={property.title}
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            />
                           ) : (
-                            <Bookmark className="w-5 h-5 text-gray-600" />
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                              <div className="text-gray-400 text-4xl">🏠</div>
+                            </div>
                           )}
-                        </button>
 
-                        {/* Compare Button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddToCompare(property.id);
-                          }}
-                          className="absolute top-3 right-12 p-2 bg-white rounded-full shadow-sm hover:shadow-md transition-shadow text-gray-600 hover:bg-gray-50"
-                        >
-                          <GitCompare className="w-5 h-5" />
-                        </button>
+                          {/* Save Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleSaveProperty(property.id);
+                            }}
+                            className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-sm hover:shadow-md transition-shadow"
+                          >
+                            {savedProperties.has(property.id) ? (
+                              <BookmarkCheck className="w-5 h-5 text-[#FF6B35]" />
+                            ) : (
+                              <Bookmark className="w-5 h-5 text-gray-600" />
+                            )}
+                          </button>
 
-                        {/* Property Type Badge */}
-                        <div className="absolute top-3 left-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            property.listing_type === 'for-rent'
+                          {/* Compare Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddToCompare(property.id);
+                            }}
+                            className="absolute top-3 right-12 p-2 bg-white rounded-full shadow-sm hover:shadow-md transition-shadow text-gray-600 hover:bg-gray-50"
+                          >
+                            <GitCompare className="w-5 h-5" />
+                          </button>
+
+                          {/* Property Type Badge */}
+                          <div className="absolute top-3 left-3">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${property.listing_type === 'for-rent'
                               ? 'bg-blue-500 text-white'
                               : 'bg-green-500 text-white'
-                          }`}>
-                            {property.listing_type === 'for-rent' ? 'For Rent' : 'For Sale'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Property Details */}
-                      <div className="p-4">
-                        <div className="mb-3">
-                          <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-2">
-                            {property.title || 'Untitled Property'}
-                          </h3>
-                          <div className="flex items-center text-gray-600">
-                            <MapPin className="w-4 h-4 mr-1" />
-                            <span className="text-sm">{property.location || 'Location not specified'}</span>
+                              }`}>
+                              {property.listing_type === 'for-rent' ? 'For Rent' : 'For Sale'}
+                            </span>
                           </div>
                         </div>
 
-                        {/* Price */}
-                        <div className="mb-4">
-                          <span className="text-2xl font-bold text-[#FF6B35]">
-                            ₦{property.price?.toLocaleString() || '0'}
-                          </span>
-                          {property.listing_type === 'for-rent' && (
-                            <span className="text-gray-600 text-sm ml-1">/month</span>
-                          )}
-                        </div>
+                        {/* Property Details */}
+                        <div className="p-4">
+                          <div className="mb-3">
+                            <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-2">
+                              {property.title || 'Untitled Property'}
+                            </h3>
+                            <div className="flex items-center text-gray-600">
+                              <MapPin className="w-4 h-4 mr-1" />
+                              <span className="text-sm">{property.location || 'Location not specified'}</span>
+                            </div>
+                          </div>
 
-                        {/* Features */}
-                        <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
-                          <div className="flex items-center space-x-4">
-                            <div className="flex items-center">
-                              <Bed className="w-4 h-4 mr-1" />
-                              <span>{property.bedrooms || property.rooms || 0}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <Bath className="w-4 h-4 mr-1" />
-                              <span>{property.bathrooms || 0}</span>
-                            </div>
-                            {property.area && (
-                              <div className="flex items-center">
-                                <Square className="w-4 h-4 mr-1" />
-                                <span>{property.area} sq ft</span>
-                              </div>
+                          {/* Price */}
+                          <div className="mb-4">
+                            <span className="text-2xl font-bold text-[#FF6B35]">
+                              ₦{property.price?.toLocaleString() || '0'}
+                            </span>
+                            {property.listing_type === 'for-rent' && (
+                              <span className="text-gray-600 text-sm ml-1">/month</span>
                             )}
                           </div>
-                        </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => {
-                              if (isAuthenticated && user?.id) {
-                                supabase.from('property_views').upsert({
-                                  property_id: property.id,
-                                  viewer_id: user.id,
-                                  viewed_at: new Date().toISOString()
-                                }, { onConflict: 'property_id,viewer_id' });
-                              }
-                              navigate(`/properties/${property.id}`);
-                            }}
-                            className="flex-1 bg-[#FF6B35] text-white py-2.5 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium"
-                          >
-                            View Details
-                          </button>
-                          <button
-                            onClick={async () => {
-                              if (!isAuthenticated) {
-                                toast.error('Please sign in to contact the landlord');
-                                return;
-                              }
+                          {/* Features */}
+                          <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
+                            <div className="flex items-center space-x-4">
+                              <div className="flex items-center">
+                                <Bed className="w-4 h-4 mr-1" />
+                                <span>{property.bedrooms || property.rooms || 0}</span>
+                              </div>
+                              <div className="flex items-center">
+                                <Bath className="w-4 h-4 mr-1" />
+                                <span>{property.bathrooms || 0}</span>
+                              </div>
+                              {property.area && (
+                                <div className="flex items-center">
+                                  <Square className="w-4 h-4 mr-1" />
+                                  <span>{property.area} sq ft</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
 
-                              try {
-                                // Create conversation with landlord using messaging system
-                                const conversation = await createConversation(property.landlord_id);
-
-                                if (conversation) {
-                                  toast.success('Conversation started with landlord!');
-                                  // Navigate to message center with the conversation
-                                  navigate('/message-center');
+                          {/* Action Buttons */}
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => {
+                                if (isAuthenticated && user?.id) {
+                                  supabase.from('property_views').upsert({
+                                    property_id: property.id,
+                                    viewer_id: user.id,
+                                    viewed_at: new Date().toISOString()
+                                  }, { onConflict: 'property_id,viewer_id' });
                                 }
-                              } catch (error) {
-                                console.error('Error starting conversation:', error);
-                                toast.error('Failed to start conversation with landlord');
-                              }
-                            }}
-                            className="p-2.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            <MessageSquare className="w-5 h-5" />
-                          </button>
+                                navigate(`/properties/${property.id}`);
+                              }}
+                              className="flex-1 bg-[#FF6B35] text-white py-2.5 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium"
+                            >
+                              View Details
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (!isAuthenticated) {
+                                  toast.error('Please sign in to contact the landlord');
+                                  return;
+                                }
+
+                                try {
+                                  // Create conversation with landlord using messaging system
+                                  const conversation = await createConversation(property.landlord_id);
+
+                                  if (conversation) {
+                                    toast.success('Conversation started with landlord!');
+                                    // Navigate to message center with the conversation
+                                    navigate('/message-center');
+                                  }
+                                } catch (error) {
+                                  console.error('Error starting conversation:', error);
+                                  toast.error('Failed to start conversation with landlord');
+                                }
+                              }}
+                              className="p-2.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                              <MessageSquare className="w-5 h-5" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
 
                 {/* No Results */}
                 {filteredProperties.length === 0 && (
@@ -831,11 +859,10 @@ export default function PropertyBrowse() {
 
                     {/* Property Type Badge */}
                     <div className="absolute top-4 left-4">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        currentProperty.listing_type === 'for-rent'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-green-500 text-white'
-                      }`}>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${currentProperty.listing_type === 'for-rent'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-green-500 text-white'
+                        }`}>
                         {currentProperty.listing_type === 'for-rent' ? 'For Rent' : 'For Sale'}
                       </span>
                     </div>

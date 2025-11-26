@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import PropertyImageUpload from './PropertyImageUpload';
 import PropertyFeatures from './PropertyFeatures';
+import PropertyMap from '../components/PropertyMap';
 import { PropertyAPI } from '../lib/propertyAPI';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -18,6 +19,8 @@ const ListPropertyForm = ({ onSubmit, submitting = false, errorMessage, successM
     locationCity: '',
     locationState: '',
     locationCountry: '',
+    latitude: 6.5244,
+    longitude: 3.3792,
     price: '',
     propertyType: 'apartment',
     listingType: 'for-rent',
@@ -43,9 +46,17 @@ const ListPropertyForm = ({ onSubmit, submitting = false, errorMessage, successM
     setValues((v) => ({ ...v, [name]: Number(value) }));
   };
 
+  const handleLocationSelect = (latlng) => {
+    setValues(v => ({
+      ...v,
+      latitude: latlng.lat,
+      longitude: latlng.lng
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Check if user is authenticated
     if (!user?.id) {
       toast.error('Please log in to list a property');
@@ -64,6 +75,8 @@ const ListPropertyForm = ({ onSubmit, submitting = false, errorMessage, successM
       const payload = {
         title: values.title,
         location: `${values.locationCity}, ${values.locationState}, ${values.locationCountry}`.trim(),
+        latitude: values.latitude,
+        longitude: values.longitude,
         price: Number(values.price),
         property_type: values.propertyType,
         listing_type: values.listingType,
@@ -73,38 +86,38 @@ const ListPropertyForm = ({ onSubmit, submitting = false, errorMessage, successM
         description: values.description || '',
         images: values.images && values.images.length > 0
           ? await Promise.all(values.images.map(async (img) => {
-              setImageConverting(true);
-              console.log('🔄 Processing image:', img.url ? 'blob URL' : 'existing URL');
-              // Convert blob URL to data URL for permanent storage
-              if (img.url && img.url.startsWith('blob:')) {
-                try {
-                  const response = await fetch(img.url);
-                  const blob = await response.blob();
-                  return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                      console.log('✅ Image converted to data URL, length:', reader.result?.length);
-                      resolve(reader.result);
-                    };
-                    reader.onerror = () => {
-                      console.error('❌ Failed to convert image to data URL');
-                      resolve(null);
-                    };
-                    reader.readAsDataURL(blob);
-                  });
-                } catch (error) {
-                  console.error('❌ Error converting blob to data URL:', error);
-                  return null;
-                }
+            setImageConverting(true);
+            console.log('🔄 Processing image:', img.url ? 'blob URL' : 'existing URL');
+            // Convert blob URL to data URL for permanent storage
+            if (img.url && img.url.startsWith('blob:')) {
+              try {
+                const response = await fetch(img.url);
+                const blob = await response.blob();
+                return new Promise((resolve) => {
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    console.log('✅ Image converted to data URL, length:', reader.result?.length);
+                    resolve(reader.result);
+                  };
+                  reader.onerror = () => {
+                    console.error('❌ Failed to convert image to data URL');
+                    resolve(null);
+                  };
+                  reader.readAsDataURL(blob);
+                });
+              } catch (error) {
+                console.error('❌ Error converting blob to data URL:', error);
+                return null;
               }
-              console.log('✅ Using existing image URL:', img.url || img);
-              return img.url || img;
-            })).then(urls => {
-              setImageConverting(false);
-              const filteredUrls = urls.filter(Boolean);
-              console.log('📷 Final image URLs count:', filteredUrls.length);
-              return filteredUrls;
-            })
+            }
+            console.log('✅ Using existing image URL:', img.url || img);
+            return img.url || img;
+          })).then(urls => {
+            setImageConverting(false);
+            const filteredUrls = urls.filter(Boolean);
+            console.log('📷 Final image URLs count:', filteredUrls.length);
+            return filteredUrls;
+          })
           : [], // Store actual uploaded images as data URLs
         landlord_id: user?.id,  // Add the current user's ID
       };
@@ -204,6 +217,21 @@ const ListPropertyForm = ({ onSubmit, submitting = false, errorMessage, successM
                   required
                 />
               </div>
+            </div>
+
+            {/* Location Map Selection */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">Pin Location on Map</label>
+              <div className="h-[400px] rounded-xl overflow-hidden border border-gray-300">
+                <PropertyMap
+                  selectionMode={true}
+                  onLocationSelect={handleLocationSelect}
+                  selectedLocation={{ lat: values.latitude, lng: values.longitude }}
+                  center={[values.latitude, values.longitude]}
+                  height="h-full"
+                />
+              </div>
+              <p className="text-sm text-gray-500 mt-2">Click on the map to set the exact location of the property.</p>
             </div>
 
             {/* Property Details */}
