@@ -26,7 +26,7 @@ export const checkAndClearCache = () => {
   ) {
     console.log("Periodic cache clear (24 hours)");
     performCacheClear();
-    localStorage.setItem(CACHE_BUST, currentCacheBust.toString());
+    localStorage.setItem(CACHE_BUST_KEY, currentCacheBust.toString());
     return true;
   }
 
@@ -65,7 +65,7 @@ const performCacheClear = () => {
 
   // Update version
   localStorage.setItem(VERSION_KEY, APP_VERSION);
-  localStorage.setItem(CACHE_BUST, Date.now().toString());
+  localStorage.setItem(CACHE_BUST_KEY, Date.now().toString());
 
   // Force reload to get fresh content
   console.log("Cache cleared! Reloading...");
@@ -75,8 +75,7 @@ const performCacheClear = () => {
 export const getAppVersion = () => APP_VERSION;
 
 export const forceUpdate = () => {
-  // Increment version and clear cache
-  const newVersion = `${APP_VERSION}.${Date.now()}`;
-  localStorage.setItem(VERSION_KEY, newVersion);
+  // Clear cache and reload
+  localStorage.setItem(VERSION_KEY, "old_version");
   checkAndClearCache();
 };
