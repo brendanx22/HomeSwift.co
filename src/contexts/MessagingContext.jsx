@@ -55,9 +55,13 @@ export const MessagingProvider = ({ children }) => {
 
       // Force HTTPS to avoid mixed content errors
       const apiUrl = 'https://api.homeswift.co';
-      const response = await fetch(`${apiUrl}/api/messages/conversations`, {
+      // Add cache-busting timestamp
+      const timestamp = Date.now();
+      const response = await fetch(`${apiUrl}/api/messages/conversations?_t=${timestamp}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         }
       });
 
