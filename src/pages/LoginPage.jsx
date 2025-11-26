@@ -76,7 +76,7 @@ export default function LoginPage() {
       if (loginResult?.success) {
         // After successful Supabase login, get the backend token
         try {
-          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/auth/signin`, {
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://api.homeswift.co'}/api/auth/signin`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -125,7 +125,7 @@ export default function LoginPage() {
       setLoading(true);
       setError('');
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/resend-verification`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.homeswift.co'}/api/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: unverifiedEmail })

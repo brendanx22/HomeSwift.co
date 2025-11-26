@@ -102,8 +102,9 @@ const PropertyCard = ({ property, isSaved, onSave, onNavigate }) => {
       location: property.location,
       price: property.price
     });
-    // Pass the full property object via location state for faster load in details page
-    onNavigate(`/properties/${property.id}`, { state: { property } });
+    // Force page refresh to prevent caching issues
+    console.log('🔄 Property card clicked, forcing refresh...');
+    window.location.href = `/properties/${property.id}`;
   };
 
   const handleSaveClick = (e) => {
@@ -259,7 +260,9 @@ const RenterHomePage = () => {
       setLoading(true);
       console.log("🔍 Fetching properties from API...");
 
-      const { success, properties: propertiesData, error } = await PropertyAPI.getAllProperties();
+      // Add cache-busting timestamp
+      const timestamp = Date.now();
+      const { success, properties: propertiesData, error } = await PropertyAPI.getAllProperties(`?_t=${timestamp}`);
 
       if (!success) {
         throw new Error(error || 'Failed to fetch properties');
@@ -292,9 +295,42 @@ const RenterHomePage = () => {
     loadProperties();
   }, []);
 
+  // Force refresh data when page becomes visible (user returns to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        console.log('🔄 Page became visible, refreshing data...');
+        loadData();
+        loadConversations();
+        loadProperties();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user]);
+
+  // Force refresh data on focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user) {
+        console.log('🔄 Window focused, refreshing data...');
+        loadData();
+        loadConversations();
+        loadProperties();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user]);
+
   const loadData = async () => {
     try {
       if (!user) return;
+
+      // Add cache-busting timestamp
+      const timestamp = Date.now();
 
       // Load user profile data from user_profiles table
       const { data: profile, error: profileError } = await supabase
@@ -316,14 +352,18 @@ const RenterHomePage = () => {
         setUserFirstName(firstName);
         if (profile.profile_image) {
           console.log('✅ Setting user avatar from DB:', profile.profile_image);
-          setUserAvatar(profile.profile_image);
+          // Add timestamp to prevent image caching
+          const avatarUrl = profile.profile_image.includes('?') 
+            ? `${profile.profile_image}&_t=${timestamp}`
+            : `${profile.profile_image}?_t=${timestamp}`;
+          setUserAvatar(avatarUrl);
         } else {
           console.log('ℹ️ No profile image in DB, will show initials');
           setUserAvatar(null);
         }
       }
 
-      // Load saved properties
+      // Load saved properties with cache-busting
       const { data: saved, error: savedError } = await supabase
         .from('saved_properties')
         .select('property_id')
@@ -605,19 +645,25 @@ const RenterHomePage = () => {
             {/* Right Actions */}
             <div className="flex items-center gap-5">
               {/* Home Button */}
-              <Link
-                to="/"
+              <button
+                onClick={() => {
+                  console.log('🔄 Home button clicked, forcing refresh...');
+                  window.location.href = '/';
+                }}
                 className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
                 title="Home"
               >
                 <Home className="w-5 h-5 text-gray-700" />
-              </Link>
+              </button>
 
               {user && (
                 <>
                   {/* Saved Properties */}
-                  <Link
-                    to="/saved"
+                  <button
+                    onClick={() => {
+                      console.log('🔄 Saved properties clicked, forcing refresh...');
+                      window.location.href = '/saved';
+                    }}
                     className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
                     title="Saved Properties"
                   >
@@ -627,11 +673,14 @@ const RenterHomePage = () => {
                         {savedProperties.size}
                       </span>
                     )}
-                  </Link>
+                  </button>
 
                   {/* Messages */}
-                  <Link
-                    to="/message-center"
+                  <button
+                    onClick={() => {
+                      console.log('🔄 Messages clicked, forcing refresh...');
+                      window.location.href = '/message-center';
+                    }}
                     className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors group"
                     title="Messages"
                   >
@@ -641,7 +690,7 @@ const RenterHomePage = () => {
                         {unreadCount}
                       </span>
                     )}
-                  </Link>
+                  </button>
 
                   {/* Notifications */}
                   <div className="relative group">
@@ -692,13 +741,16 @@ const RenterHomePage = () => {
                   )}
                 </div>
               ) : (
-                <Link
-                  to="/login"
+                <button
+                  onClick={() => {
+                    console.log('🔄 Login button clicked, forcing refresh...');
+                    window.location.href = '/login';
+                  }}
                   className="flex items-center gap-2 pl-3 pr-2 py-1.5 border border-gray-300 rounded-full hover:shadow-md transition-all"
                 >
                   <Menu className="w-4 h-4" />
                   <User className="w-8 h-8 p-1.5 bg-gray-500 text-white rounded-full" />
-                </Link>
+                </button>
               )}
             </div>
           </div>
@@ -1332,14 +1384,26 @@ const RenterHomePage = () => {
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-3 text-sm text-gray-600">
                 <li>
-                  <Link to="/help" className="hover:underline">
+                  <button
+                    onClick={() => {
+                      console.log('🔄 Help Center clicked, forcing refresh...');
+                      window.location.href = '/help';
+                    }}
+                    className="hover:underline text-left w-full"
+                  >
                     Help Center
-                  </Link>
+                  </button>
                 </li>
                 <li>
-                  <Link to="/contact" className="hover:underline">
+                  <button
+                    onClick={() => {
+                      console.log('🔄 Contact us clicked, forcing refresh...');
+                      window.location.href = '/contact';
+                    }}
+                    className="hover:underline text-left w-full"
+                  >
                     Contact us
-                  </Link>
+                  </button>
                 </li>
               </ul>
             </div>
@@ -1347,9 +1411,15 @@ const RenterHomePage = () => {
               <h3 className="font-semibold mb-4">Hosting</h3>
               <ul className="space-y-3 text-sm text-gray-600">
                 <li>
-                  <Link to="/landlord/dashboard" className="hover:underline">
+                  <button
+                    onClick={() => {
+                      console.log('🔄 List your property clicked, forcing refresh...');
+                      window.location.href = '/landlord/dashboard';
+                    }}
+                    className="hover:underline text-left w-full"
+                  >
                     List your property
-                  </Link>
+                  </button>
                 </li>
               </ul>
             </div>
@@ -1357,19 +1427,37 @@ const RenterHomePage = () => {
               <h3 className="font-semibold mb-4">HomeSwift</h3>
               <ul className="space-y-3 text-sm text-gray-600">
                 <li>
-                  <Link to="/about" className="hover:underline">
+                  <button
+                    onClick={() => {
+                      console.log('🔄 About clicked, forcing refresh...');
+                      window.location.href = '/about';
+                    }}
+                    className="hover:underline text-left w-full"
+                  >
                     About
-                  </Link>
+                  </button>
                 </li>
                 <li>
-                  <Link to="/terms" className="hover:underline">
+                  <button
+                    onClick={() => {
+                      console.log('🔄 Terms clicked, forcing refresh...');
+                      window.location.href = '/terms';
+                    }}
+                    className="hover:underline text-left w-full"
+                  >
                     Terms
-                  </Link>
+                  </button>
                 </li>
                 <li>
-                  <Link to="/privacy" className="hover:underline">
+                  <button
+                    onClick={() => {
+                      console.log('🔄 Privacy Policy clicked, forcing refresh...');
+                      window.location.href = '/privacy';
+                    }}
+                    className="hover:underline text-left w-full"
+                  >
                     Privacy Policy
-                  </Link>
+                  </button>
                 </li>
               </ul>
             </div>

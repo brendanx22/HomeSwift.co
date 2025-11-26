@@ -125,7 +125,7 @@ const LandlordLoginPage = () => {
     if (resendCooldown > 0) return;
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/resend-verification', {
+      const response = await fetch('https://api.homeswift.co/api/auth/resend-verification', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

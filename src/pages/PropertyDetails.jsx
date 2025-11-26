@@ -37,7 +37,8 @@ import {
   MoveUp,
   Camera,
   Grid3X3,
-  MessageSquare
+  MessageSquare,
+  Star
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { createNewInquiryNotification } from '../services/notificationService';
@@ -385,7 +386,7 @@ export default function PropertyDetails() {
 
       // Also submit to backend API for notifications
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/leads/create`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.homeswift.co'}/api/leads/create`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
