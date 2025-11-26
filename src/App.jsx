@@ -5,7 +5,7 @@ import { OfflineIndicator, PWAInstallPrompt, UpdatePrompt, registerServiceWorker
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import { initPostHog } from './lib/posthog';
+import { initPostHog, trackPageView } from './lib/posthog';
 import { checkAndClearCache } from './utils/cacheManager';
 
 // Lazy load pages for better performance
@@ -82,6 +82,9 @@ const AppLayout = () => {
     const isLandlordLoginPage = location.pathname === '/landlord/login';
     const isLandlordRoute = location.pathname.startsWith('/landlord/');
     const path = location.pathname;
+
+    // Track page view
+    trackPageView(path);
 
     // Clean up URL if needed
     if (isFromLogout || searchParams.get('redirected') === 'true') {

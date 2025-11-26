@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { PropertyAPI } from '../lib/propertyAPI';
 import { useAuth } from '../contexts/AuthContext';
 import { useMessaging } from '../contexts/MessagingContext';
-import { trackListingViewed } from '../lib/posthog';
+import { trackListingViewed, trackEvent } from '../lib/posthog';
 import {
   ChevronLeft,
   ChevronRight,
@@ -241,6 +241,11 @@ export default function PropertyDetails() {
       // Create conversation with landlord
       const conversation = await createConversation(property.landlord_id);
 
+      trackEvent('message_host_clicked', {
+        property_id: property.id,
+        landlord_id: property.landlord_id
+      });
+
       if (conversation) {
         toast.success('Conversation started with landlord!');
         // Navigate to message center with the conversation
@@ -411,6 +416,12 @@ export default function PropertyDetails() {
         await createNewInquiryNotification(property.landlord_id, property.title || 'Property');
 
         console.log('✅ Booking saved and notifications created');
+
+        trackEvent('booking_submitted', {
+          property_id: property.id,
+          amount: property.price,
+          lease_duration: parseInt(leaseDuration)
+        });
       } catch (notificationError) {
         console.error('Error creating notifications:', notificationError);
         // Don't fail the booking if notifications fail
@@ -515,8 +526,8 @@ export default function PropertyDetails() {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsFavorited(!isFavorited)}
                 className={`p-2 rounded-full transition-colors ${isFavorited
-                    ? 'bg-red-50 text-red-500'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-red-50 text-red-500'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
               >
                 <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
@@ -555,8 +566,8 @@ export default function PropertyDetails() {
                     <div
                       key={`carousel-${offset}`}
                       className={`transition-all duration-500 rounded-2xl overflow-hidden ${isCenter
-                          ? "w-[420px] h-[260px] shadow-2xl scale-105 z-10"
-                          : "w-[340px] h-[220px] opacity-40 blur-[2px]"
+                        ? "w-[420px] h-[260px] shadow-2xl scale-105 z-10"
+                        : "w-[340px] h-[220px] opacity-40 blur-[2px]"
                         }`}
                     >
                       <img

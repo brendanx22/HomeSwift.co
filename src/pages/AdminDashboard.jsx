@@ -123,6 +123,31 @@ export default function AdminDashboard() {
           </tbody>
         </table>
       </section>
+
+      {/* Analytics Dashboard */}
+      <section className="mt-12 mb-12">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          Live User Activity (PostHog)
+        </h2>
+        <div className="bg-white p-4 rounded-xl shadow">
+          {import.meta.env.VITE_POSTHOG_DASHBOARD_URL ? (
+            <iframe
+              src={import.meta.env.VITE_POSTHOG_DASHBOARD_URL}
+              className="w-full h-[600px] border rounded-lg"
+              title="PostHog activity"
+              frameBorder="0"
+              allowFullScreen
+            />
+          ) : (
+            <div className="h-64 flex flex-col items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <p className="text-gray-500 font-medium mb-2">Analytics Dashboard Not Configured</p>
+              <p className="text-sm text-gray-400 max-w-md text-center">
+                To view live analytics, create a dashboard in PostHog and add its embed URL to your .env file as <code>VITE_POSTHOG_DASHBOARD_URL</code>.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

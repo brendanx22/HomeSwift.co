@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import { Star, Home } from 'lucide-react';
+import { trackEvent } from '../lib/posthog';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -61,13 +62,25 @@ const PropertyMap = ({ properties, center = [6.5244, 3.3792], zoom = 12 }) => {
                             key={property.id}
                             position={[lat, lng]}
                             eventHandlers={{
-                                click: () => setActiveProperty(property),
+                                click: () => {
+                                    setActiveProperty(property);
+                                    trackEvent('map_marker_clicked', {
+                                        property_id: property.id,
+                                        location: property.location
+                                    });
+                                },
                             }}
                         >
                             <Popup className="min-w-[250px]">
                                 <div
                                     className="cursor-pointer"
-                                    onClick={() => navigate(`/properties/${property.id}`, { state: { property } })}
+                                    onClick={() => {
+                                        trackEvent('property_card_clicked', {
+                                            property_id: property.id,
+                                            source: 'map_popup'
+                                        });
+                                        navigate(`/properties/${property.id}`, { state: { property } });
+                                    }}
                                 >
                                     <div className="relative h-32 w-full mb-2 rounded-lg overflow-hidden">
                                         <img

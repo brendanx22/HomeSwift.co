@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
+import { trackEvent } from '../lib/posthog';
 import { toast } from 'react-hot-toast';
 
 const PropertyReviews = ({ propertyId, propertyTitle }) => {
@@ -166,6 +167,12 @@ const PropertyReviews = ({ propertyId, propertyTitle }) => {
       // Recalculate stats
       loadReviews();
 
+      trackEvent('review_submitted', {
+        property_id: propertyId,
+        rating: reviewForm.rating,
+        recommend: reviewForm.recommend
+      });
+
       toast.success('Review submitted successfully!');
     } catch (error) {
       console.error('Error submitting review:', error);
@@ -201,11 +208,10 @@ const PropertyReviews = ({ propertyId, propertyTitle }) => {
             className={`${interactive ? 'cursor-pointer hover:scale-110' : 'cursor-default'} transition-transform`}
           >
             <Star
-              className={`w-5 h-5 ${
-                star <= rating
-                  ? 'text-yellow-400 fill-current'
-                  : 'text-gray-300'
-              }`}
+              className={`w-5 h-5 ${star <= rating
+                ? 'text-yellow-400 fill-current'
+                : 'text-gray-300'
+                }`}
             />
           </button>
         ))}
@@ -458,11 +464,10 @@ const PropertyReviews = ({ propertyId, propertyTitle }) => {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <span className={`text-sm px-3 py-1 rounded-full ${
-                    review.recommend
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
+                  <span className={`text-sm px-3 py-1 rounded-full ${review.recommend
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                    }`}>
                     {review.recommend ? 'Would recommend' : 'Would not recommend'}
                   </span>
 

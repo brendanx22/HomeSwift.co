@@ -28,7 +28,7 @@ import { PropertyAPI } from "../lib/propertyAPI";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { useMessaging } from "../contexts/MessagingContext";
-import { trackListingViewed, trackSearch } from "../lib/posthog";
+import { trackListingViewed, trackSearch, trackEvent } from "../lib/posthog";
 import toast from "react-hot-toast";
 import ProfilePopup from "../components/ProfilePopup";
 import NotificationCenter from "../components/NotificationCenter";
@@ -97,12 +97,20 @@ const PropertyCard = ({ property, isSaved, onSave, onNavigate }) => {
   };
 
   const handleCardClick = () => {
+    trackEvent('property_card_clicked', {
+      property_id: property.id,
+      location: property.location,
+      price: property.price
+    });
     // Pass the full property object via location state for faster load in details page
     onNavigate(`/properties/${property.id}`, { state: { property } });
   };
 
   const handleSaveClick = (e) => {
     e.stopPropagation();
+    trackEvent(isSaved ? 'property_unsaved' : 'property_saved', {
+      property_id: property.id
+    });
     onSave(property.id);
   };
 
@@ -1287,7 +1295,11 @@ const RenterHomePage = () => {
       {/* Floating Map Toggle Button */}
       < div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-40" >
         <button
-          onClick={() => setShowMap(!showMap)}
+          onClick={() => {
+            const newShowMap = !showMap;
+            setShowMap(newShowMap);
+            trackEvent('toggle_map_view', { view: newShowMap ? 'map' : 'list' });
+          }}
           className="flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-full shadow-lg hover:scale-105 transition-transform font-semibold"
         >
           {showMap ? (
