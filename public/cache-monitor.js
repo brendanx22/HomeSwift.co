@@ -5,7 +5,7 @@
   "use strict";
 
   let errorCount = 0;
-  const maxErrors = 3;
+  const maxErrors = 2; // Reduced threshold for faster response
 
   // Function to clear all caches and reload
   function clearCacheAndReload() {
@@ -75,39 +75,36 @@
       errorCount: errorCount,
     });
 
-    // Check for JavaScript loading errors
+    // Check for JavaScript loading errors - be more aggressive
     if (
       e.message &&
       (e.message.includes("Unexpected token") ||
         e.message.includes("Unexpected identifier") ||
         e.message.includes("Script error") ||
         e.message.includes("Loading chunk") ||
-        e.message.includes("Failed to load"))
+        e.message.includes("Failed to load") ||
+        e.message.includes("Network error") ||
+        e.message.includes("TypeError") ||
+        e.message.includes("ReferenceError"))
     ) {
       console.log(
-        "🔍 Detected JavaScript loading error, checking error count..."
+        "🔍 Detected JavaScript loading error, clearing cache immediately..."
       );
-
-      if (errorCount >= maxErrors) {
-        console.log(
-          "⚠️ Too many errors detected, clearing cache and reloading..."
-        );
-        clearCacheAndReload();
-        return;
-      }
+      clearCacheAndReload();
+      return;
     }
 
     // Check if error is from a JavaScript file
     if (e.filename && e.filename.endsWith(".js")) {
       console.log("🔍 JavaScript file error detected:", e.filename);
+      clearCacheAndReload();
+      return;
+    }
 
-      if (errorCount >= 2) {
-        console.log(
-          "⚠️ JavaScript file errors detected, clearing cache and reloading..."
-        );
-        clearCacheAndReload();
-        return;
-      }
+    // Clear cache on any error if count is high
+    if (errorCount >= maxErrors) {
+      console.log("⚠️ Error threshold reached, clearing cache...");
+      clearCacheAndReload();
     }
   });
 
@@ -120,10 +117,9 @@
       errorCount: errorCount,
     });
 
-    if (errorCount >= maxErrors) {
-      console.log(
-        "⚠️ Too many promise rejections, clearing cache and reloading..."
-      );
+    // Be more aggressive with promise rejections
+    if (errorCount >= 1) {
+      console.log("⚠️ Promise rejection detected, clearing cache...");
       clearCacheAndReload();
     }
   });
@@ -145,16 +141,17 @@
         "⚠️ Not all scripts loaded properly:",
         loadedScripts + "/" + scripts.length
       );
-
-      // Wait a bit and then check again
-      setTimeout(function () {
-        if (errorCount > 0) {
-          console.log("⚠️ Scripts failed to load, clearing cache...");
-          clearCacheAndReload();
-        }
-      }, 3000);
+      clearCacheAndReload();
     }
   });
 
-  console.log("🔧 Cache monitor initialized");
+  // Also check for loading timeout
+  setTimeout(function () {
+    if (document.readyState === "loading") {
+      console.warn("⚠️ Page still loading after timeout, clearing cache...");
+      clearCacheAndReload();
+    }
+  }, 15000); // 15 seconds
+
+  console.log("🔧 Aggressive cache monitor initialized");
 })();

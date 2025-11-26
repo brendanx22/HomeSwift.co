@@ -62,6 +62,7 @@ export default function PropertyDetails() {
   const [property, setProperty] = useState(preloadedProperty || null);
   const [loading, setLoading] = useState(!preloadedProperty);
   const [error, setError] = useState(null);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   // Derive images from property data
   const images = property?.images || [];
@@ -71,14 +72,26 @@ export default function PropertyDetails() {
     if (preloadedProperty && preloadedProperty.id === id) {
       setProperty(preloadedProperty);
       setLoading(false);
+      setError(null);
       return;
     }
 
     const loadProperty = async () => {
       try {
         setLoading(true);
-        const { success, property: propertyData } = await PropertyAPI.getProperty(id, user);
-        if (success) {
+        setError(null);
+        setLoadingTimeout(false);
+        
+        // Add timeout to prevent infinite loading
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Loading timeout')), 10000)
+        );
+        
+        const propertyPromise = PropertyAPI.getProperty(id, user);
+        
+        const { success, property: propertyData } = await Promise.race([propertyPromise, timeoutPromise]);
+        
+        if (success && propertyData) {
           setProperty(propertyData);
 
           // Debug logging to see what avatar data we have
@@ -107,10 +120,20 @@ export default function PropertyDetails() {
         }
       } catch (error) {
         console.error('Error loading property:', error);
-        setError('Failed to load property');
+        if (error.message === 'Loading timeout') {
+          setError('Loading timed out. Please check your connection and try again.');
+          setLoadingTimeout(true);
+        } else {
+          setError('Failed to load property');
+        }
       } finally {
         setLoading(false);
       }
+    };
+
+    // Retry function
+    const retryLoad = () => {
+      loadProperty();
     };
 
     if (id) {
@@ -485,8 +508,32 @@ export default function PropertyDetails() {
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full"
+          className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full mb-6"
         />
+        
+        <div className="text-center max-w-md px-4">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Loading Property Details
+          </h2>
+          <p className="text-gray-600 mb-4">
+            Please wait while we fetch the property information...
+          </p>
+          
+          {loadingTimeout && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <p className="text-yellow-800 text-sm">
+                This is taking longer than expected. You can try refreshing or wait a bit longer.
+              </p>
+            </div>
+          )}
+          
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-[#FF6B35] text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors"
+          >
+            Refresh Page
+          </button>
+        </div>
       </motion.div>
     );
   }
@@ -494,16 +541,32 @@ export default function PropertyDetails() {
   if (error || !property) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md px-4">
           <div className="text-red-500 text-6xl mb-4">⚠</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Property Not Found</h2>
           <p className="text-gray-600 mb-6">{error || 'Property not found'}</p>
-          <button
-            onClick={() => navigate('/chat')}
-            className="bg-[#FF6B35] text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600"
-          >
-            Back to Chat
-          </button>
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-[#FF6B35] text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+            >
+              Try Again
+            </button>
+            
+            <button
+              onClick={() => navigate('/chat')}
+              className="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+            >
+              Back to Properties
+            </button>
+          </div>
+          
+          {loadingTimeout && (
+            <div className="mt-4 text-sm text-gray-500">
+              If the problem persists, your connection might be slow or the property might be unavailable.
+            </div>
+          )}
         </div>
       </div>
     );

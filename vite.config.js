@@ -154,55 +154,53 @@ export default defineConfig(({ command, mode }) => {
           skipWaiting: true,
           clientsClaim: true,
 
-          // Only cache static assets, NOT JavaScript files
+          // Don't cache any JavaScript files - always fetch from network
           globPatterns: [
             "**/*.{css,html,ico,png,svg,jpg,jpeg,gif,woff,woff2,ttf,eot}",
           ],
-
-          // Explicitly exclude JS files from caching
           globIgnores: ["**/*.js", "**/*.jsx", "**/node_modules/**"],
 
           // Don't cache these routes
           navigateFallbackDenylist: [/^\/api/, /^\/socket\.io/],
 
-          // Network-first for all JavaScript files to prevent caching issues
+          // Network-only for all JavaScript files - no caching at all
           runtimeCaching: [
             {
+              // Network-only for JavaScript files
               urlPattern: /\.js$/,
-              handler: "NetworkFirst",
+              handler: "NetworkOnly",
               options: {
-                cacheName: "js-cache",
+                cacheName: "js-no-cache",
                 expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60, // Only cache for 1 minute
+                  maxEntries: 0,
+                  maxAgeSeconds: 0,
                 },
-                networkTimeoutSeconds: 5,
               },
             },
             {
-              // Network-first for API calls
+              // Network-first for API calls with very short cache
               urlPattern: /^https:\/\/api\.homeswift\.co\//,
               handler: "NetworkFirst",
               options: {
                 cacheName: "api-cache",
                 expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 300, // 5 minutes
+                  maxEntries: 5,
+                  maxAgeSeconds: 60, // Only 1 minute
                 },
-                networkTimeoutSeconds: 10,
+                networkTimeoutSeconds: 5,
               },
             },
             {
-              // Network-first for Supabase
+              // Network-first for Supabase with very short cache
               urlPattern: /^https:\/\/[^/]+\.supabase\.co\//,
               handler: "NetworkFirst",
               options: {
                 cacheName: "supabase-api-cache",
                 expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 300, // 5 minutes only
+                  maxEntries: 10,
+                  maxAgeSeconds: 60, // Only 1 minute
                 },
-                networkTimeoutSeconds: 10,
+                networkTimeoutSeconds: 5,
               },
             },
           ],

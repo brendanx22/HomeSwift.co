@@ -1,13 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const ForceUpdateButton = ({ showInDev = false }) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateStatus, setUpdateStatus] = useState('idle'); // idle, updating, success, error
+  const [isVisible, setIsVisible] = useState(false);
 
-  // Only show in production or if explicitly enabled for dev
-  const isProduction = process.env.NODE_ENV === 'production';
-  if (!isProduction && !showInDev) {
+  // Check if we should show the button
+  useEffect(() => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const urlParams = new URLSearchParams(window.location.search);
+    const showDebugTools = urlParams.get('debug') === 'true';
+    
+    // Only show in development or if debug parameter is set
+    if (!isProduction && showInDev) {
+      setIsVisible(true);
+    } else if (showDebugTools) {
+      setIsVisible(true);
+    } else {
+      setIsVisible(false);
+    }
+  }, [showInDev]);
+
+  // Don't render if not visible
+  if (!isVisible) {
     return null;
   }
 
@@ -127,9 +143,10 @@ const ForceUpdateButton = ({ showInDev = false }) => {
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
-      <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-3">
-        <div className="text-xs text-gray-600 mb-2 font-medium">
-          {isProduction ? 'Production' : 'Development'} Tools
+      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 p-3 max-w-xs">
+        <div className="text-xs text-gray-500 mb-2 font-medium flex items-center gap-1">
+          <AlertTriangle className="w-3 h-3" />
+          Debug Tools
         </div>
         <button
           onClick={handleForceUpdate}
@@ -149,6 +166,12 @@ const ForceUpdateButton = ({ showInDev = false }) => {
         {updateStatus === 'error' && (
           <div className="text-xs text-red-600 mt-2">
             Update failed. Please try again.
+          </div>
+        )}
+        
+        {updateStatus === 'idle' && (
+          <div className="text-xs text-gray-500 mt-2">
+            Use if app is not updating properly
           </div>
         )}
       </div>
