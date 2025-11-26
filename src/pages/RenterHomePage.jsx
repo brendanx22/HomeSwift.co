@@ -32,6 +32,8 @@ import { trackListingViewed, trackSearch } from "../lib/posthog";
 import toast from "react-hot-toast";
 import ProfilePopup from "../components/ProfilePopup";
 import NotificationCenter from "../components/NotificationCenter";
+import PropertyMap from "../components/PropertyMap";
+import { Map as MapIcon, List as ListIcon } from "lucide-react";
 
 // Nigerian cities and locations
 const NIGERIAN_LOCATIONS = [
@@ -241,6 +243,7 @@ const RenterHomePage = () => {
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [activeSearchSection, setActiveSearchSection] = useState(null);
+  const [showMap, setShowMap] = useState(false);
   const scrollContainerRefs = useRef({});
 
   const loadProperties = async () => {
@@ -704,8 +707,8 @@ const RenterHomePage = () => {
                     setShowTypeDropdown(false);
                   }}
                   className={`flex-1 px-6 py-3 rounded-l-full hover:bg-gray-100 transition-colors ${activeSearchSection === "location"
-                      ? "shadow-lg bg-white"
-                      : ""
+                    ? "shadow-lg bg-white"
+                    : ""
                     }`}
                 >
                   <div className="text-left">
@@ -852,8 +855,8 @@ const RenterHomePage = () => {
                           >
                             <div
                               className={`text-sm ${propertyType === type.value
-                                  ? "font-semibold text-gray-900"
-                                  : "text-gray-700"
+                                ? "font-semibold text-gray-900"
+                                : "text-gray-700"
                                 }`}
                             >
                               {type.label}
@@ -981,8 +984,8 @@ const RenterHomePage = () => {
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
                 className={`flex flex-col items-center gap-2 pb-3 border-b-2 transition-colors whitespace-nowrap ${activeCategory === cat.id
-                    ? "border-gray-900 opacity-100"
-                    : "border-transparent opacity-60 hover:opacity-100"
+                  ? "border-gray-900 opacity-100"
+                  : "border-transparent opacity-60 hover:opacity-100"
                   }`}
               >
                 <span className="text-2xl">{cat.emoji}</span>
@@ -1049,8 +1052,8 @@ const RenterHomePage = () => {
                         key={loc}
                         onClick={() => setLocation(loc)}
                         className={`px-4 py-2 text-sm border rounded-lg transition-colors ${location === loc
-                            ? "bg-gray-900 text-white border-gray-900"
-                            : "border-gray-300 hover:border-gray-900"
+                          ? "bg-gray-900 text-white border-gray-900"
+                          : "border-gray-300 hover:border-gray-900"
                           }`}
                       >
                         {loc}
@@ -1104,8 +1107,8 @@ const RenterHomePage = () => {
                         key={type}
                         onClick={() => setPropertyType(type)}
                         className={`w-full px-4 py-3 text-left border rounded-lg transition-colors ${propertyType === type
-                            ? "bg-gray-50 border-gray-900"
-                            : "border-gray-300 hover:border-gray-900"
+                          ? "bg-gray-50 border-gray-900"
+                          : "border-gray-300 hover:border-gray-900"
                           }`}
                       >
                         {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -1127,9 +1130,9 @@ const RenterHomePage = () => {
                           setBedrooms(num === "Any" ? "" : num.replace("+", ""))
                         }
                         className={`px-6 py-3 border rounded-full font-medium transition-colors ${bedrooms ===
-                            (num === "Any" ? "" : num.replace("+", ""))
-                            ? "bg-gray-900 text-white border-gray-900"
-                            : "border-gray-300 hover:border-gray-900"
+                          (num === "Any" ? "" : num.replace("+", ""))
+                          ? "bg-gray-900 text-white border-gray-900"
+                          : "border-gray-300 hover:border-gray-900"
                           }`}
                       >
                         {num}
@@ -1255,6 +1258,10 @@ const RenterHomePage = () => {
               </div>
             )}
           </div>
+        ) : showMap ? (
+          <div className="mt-6 h-[calc(100vh-200px)]">
+            <PropertyMap properties={filteredProperties} />
+          </div>
         ) : (
           <div className="px-4 sm:px-6 lg:px-10 max-w-[1760px] mx-auto text-center py-20">
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -1273,11 +1280,32 @@ const RenterHomePage = () => {
               Clear filters
             </button>
           </div>
-        )}
-      </main>
+        )
+        }
+      </main >
+
+      {/* Floating Map Toggle Button */}
+      < div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-40" >
+        <button
+          onClick={() => setShowMap(!showMap)}
+          className="flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-full shadow-lg hover:scale-105 transition-transform font-semibold"
+        >
+          {showMap ? (
+            <>
+              <ListIcon className="w-4 h-4" />
+              Show List
+            </>
+          ) : (
+            <>
+              <MapIcon className="w-4 h-4" />
+              Show Map
+            </>
+          )}
+        </button>
+      </div >
 
       {/* Profile Popup */}
-      <ProfilePopup
+      < ProfilePopup
         isOpen={showProfilePopup}
         onClose={() => setShowProfilePopup(false)}
         onAvatarUpdate={(newAvatarUrl) => setUserAvatar(newAvatarUrl)}
@@ -1285,7 +1313,7 @@ const RenterHomePage = () => {
       />
 
       {/* Footer */}
-      <footer className="border-t bg-gray-50 mt-12">
+      < footer className="border-t bg-gray-50 mt-12" >
         <div className="px-4 sm:px-6 lg:px-10 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
             <div>
@@ -1307,7 +1335,7 @@ const RenterHomePage = () => {
               <h3 className="font-semibold mb-4">Hosting</h3>
               <ul className="space-y-3 text-sm text-gray-600">
                 <li>
-                  <Link to="/landlord-dashboard" className="hover:underline">
+                  <Link to="/landlord/dashboard" className="hover:underline">
                     List your property
                   </Link>
                 </li>
@@ -1326,6 +1354,11 @@ const RenterHomePage = () => {
                     Terms
                   </Link>
                 </li>
+                <li>
+                  <Link to="/privacy" className="hover:underline">
+                    Privacy Policy
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
@@ -1340,8 +1373,8 @@ const RenterHomePage = () => {
             <p>© 2024 HomeSwift · Made with ❤️ in Nigeria</p>
           </div>
         </div>
-      </footer>
-    </div>
+      </footer >
+    </div >
   );
 };
 

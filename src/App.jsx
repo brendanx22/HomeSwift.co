@@ -6,6 +6,7 @@ import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-
 import { useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { initPostHog } from './lib/posthog';
+import { checkAndClearCache } from './utils/cacheManager';
 
 // Lazy load pages for better performance
 const Home = React.lazy(() => import('./pages/Home'));
@@ -48,6 +49,12 @@ const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
 const RenterHomePage = React.lazy(() => import('./pages/RenterHomePage'));
 
 const Settings = React.lazy(() => import('./pages/Settings'));
+const EditPropertyForm = React.lazy(() => import('./pages/EditPropertyForm'));
+
+// Legal and Support Pages
+const TermsOfService = React.lazy(() => import('./pages/TermsOfService'));
+const PrivacyPolicy = React.lazy(() => import('./pages/PrivacyPolicy'));
+const Help = React.lazy(() => import('./pages/Help'));
 
 
 // Main App Layout Component
@@ -541,6 +548,45 @@ const AppLayout = () => {
               path="/faq"
               element={<FAQ />}
             />
+
+            {/* Legal Pages */}
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+
+            {/* Support */}
+            <Route path="/help" element={<Help />} />
+
+            {/* User Pages */}
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute requiredRoles={['renter', 'landlord']}>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Property Edit */}
+            <Route
+              path="/properties/:id/edit"
+              element={
+                <ProtectedRoute requiredRoles={['landlord']}>
+                  <EditPropertyForm />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Redirects for consistency */}
+            <Route path="/landlord-dashboard" element={<Navigate to="/landlord/dashboard" replace />} />
+            <Route path="/properties/new" element={<Navigate to="/list-property" replace />} />
           </Routes>
         </Suspense>
       </main>
@@ -591,6 +637,9 @@ class ErrorBoundary extends React.Component {
 const App = () => {
   // Initialize PostHog and register service worker
   useEffect(() => {
+    // Check and clear cache if version changed
+    checkAndClearCache();
+
     // Initialize PostHog
     try {
       initPostHog();

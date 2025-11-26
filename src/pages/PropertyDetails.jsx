@@ -42,6 +42,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { createNewInquiryNotification } from '../services/notificationService';
 import { supabase } from '../lib/supabaseClient';
+import PropertyReviews from '../components/PropertyReviews';
 
 export default function PropertyDetails() {
   const { id } = useParams();
@@ -90,7 +91,7 @@ export default function PropertyDetails() {
           if (propertyData?.landlord_id && isAuthenticated && user?.id !== propertyData.landlord_id) {
             await trackPropertyView(propertyData.id, propertyData.landlord_id, propertyData.title);
           }
-          
+
           // Track listing viewed in PostHog
           trackListingViewed({
             id: propertyData.id,
@@ -513,11 +514,10 @@ export default function PropertyDetails() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsFavorited(!isFavorited)}
-                className={`p-2 rounded-full transition-colors ${
-                  isFavorited
+                className={`p-2 rounded-full transition-colors ${isFavorited
                     ? 'bg-red-50 text-red-500'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
               </motion.button>
@@ -554,11 +554,10 @@ export default function PropertyDetails() {
                   return (
                     <div
                       key={`carousel-${offset}`}
-                      className={`transition-all duration-500 rounded-2xl overflow-hidden ${
-                        isCenter
+                      className={`transition-all duration-500 rounded-2xl overflow-hidden ${isCenter
                           ? "w-[420px] h-[260px] shadow-2xl scale-105 z-10"
                           : "w-[340px] h-[220px] opacity-40 blur-[2px]"
-                      }`}
+                        }`}
                     >
                       <img
                         src={images[index]}
@@ -622,9 +621,8 @@ export default function PropertyDetails() {
                 {images.map((_, index) => (
                   <div
                     key={`mobile-${index}`}
-                    className={`h-1 rounded-full transition-all duration-300 ${
-                      index === currentImage ? "w-6 bg-[#FF6B35]" : "w-2 bg-gray-400"
-                    }`}
+                    className={`h-1 rounded-full transition-all duration-300 ${index === currentImage ? "w-6 bg-[#FF6B35]" : "w-2 bg-gray-400"
+                      }`}
                   />
                 ))}
               </div>
@@ -637,9 +635,8 @@ export default function PropertyDetails() {
               {images.map((_, index) => (
                 <div
                   key={`desktop-${index}`}
-                  className={`h-1 rounded-full transition-all duration-300 ${
-                    index === currentImage ? "w-9 bg-[#FF6B35]" : "w-2 bg-gray-400"
-                  }`}
+                  className={`h-1 rounded-full transition-all duration-300 ${index === currentImage ? "w-9 bg-[#FF6B35]" : "w-2 bg-gray-400"
+                    }`}
                 />
               ))}
             </div>
@@ -653,7 +650,7 @@ export default function PropertyDetails() {
             {/* Property Info */}
             <div>
               <h2 className="text-2xl font-bold mb-3">
-                {property.bedrooms || 3} - Bedroom Flat at<br/>
+                {property.bedrooms || 3} - Bedroom Flat at<br />
                 {property.location || 'Location not specified'}
               </h2>
               <div className="flex items-start gap-2 text-gray-400 mb-3">
@@ -748,9 +745,149 @@ export default function PropertyDetails() {
 
           {/* Property Reviews Section */}
           <div className="mt-12 max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Reviews Coming Soon</h3>
-              <p className="text-gray-600">Property reviews will be available soon.</p>
+            <PropertyReviews propertyId={property.id} propertyTitle={property.title} />
+          </div>
+
+          {/* Meet your Host Section */}
+          <div className="mt-12 max-w-4xl mx-auto border-t border-gray-200 pt-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Meet your Host</h2>
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+              <div className="flex flex-col md:flex-row gap-8 items-start">
+                <div className="flex flex-col items-center justify-center w-full md:w-1/3 bg-gray-50 rounded-xl p-8 shadow-inner">
+                  {property.landlord_profile_image ? (
+                    <img
+                      src={property.landlord_profile_image}
+                      alt={property.landlord_name || "Landlord"}
+                      className="w-32 h-32 rounded-full object-cover mb-4 shadow-md"
+                    />
+                  ) : (
+                    <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center mb-4 shadow-md">
+                      <span className="text-4xl font-medium text-gray-600">
+                        {(property.landlord_name || 'L').charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <h3 className="text-xl font-bold text-gray-900 mb-1">{property.landlord_name || 'Property Owner'}</h3>
+                  <div className="flex items-center gap-2 text-gray-600 text-sm mb-4">
+                    <Shield className="w-4 h-4 text-[#FF6B35]" />
+                    <span>Identity verified</span>
+                  </div>
+
+                  <div className="flex gap-4 w-full justify-center">
+                    <div className="text-center">
+                      <p className="font-bold text-gray-900">12</p>
+                      <p className="text-xs text-gray-500">Reviews</p>
+                    </div>
+                    <div className="w-px bg-gray-300 h-8"></div>
+                    <div className="text-center">
+                      <p className="font-bold text-gray-900">4.8</p>
+                      <p className="text-xs text-gray-500">Rating</p>
+                    </div>
+                    <div className="w-px bg-gray-300 h-8"></div>
+                    <div className="text-center">
+                      <p className="font-bold text-gray-900">2</p>
+                      <p className="text-xs text-gray-500">Years hosting</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold mb-4">About the host</h4>
+                  <p className="text-gray-600 leading-relaxed mb-6">
+                    Hi there! I'm {property.landlord_name || 'the owner'}, and I'm excited to welcome you to my property.
+                    I take pride in offering clean, comfortable, and well-maintained homes for my tenants.
+                    I'm always available to answer any questions you might have and ensure you have a great stay.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1">
+                        <Star className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Experienced Host</p>
+                        <p className="text-sm text-gray-500">I have 12 reviews from other properties.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1">
+                        <MessageSquare className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Responsive</p>
+                        <p className="text-sm text-gray-500">I usually respond within an hour.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleMessageLandlord}
+                    className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-black transition-colors font-medium"
+                  >
+                    Message Host
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Things to Know Section */}
+          <div className="mt-12 max-w-4xl mx-auto border-t border-gray-200 pt-12 pb-20">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Things to know</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">House Rules</h3>
+                <ul className="space-y-2 text-gray-600 text-sm">
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                    Check-in after 2:00 PM
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                    No smoking
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                    No parties or events
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                    Pets allowed on request
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Health & Safety</h3>
+                <ul className="space-y-2 text-gray-600 text-sm">
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                    Carbon monoxide alarm
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                    Smoke alarm
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                    First aid kit
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                    Fire extinguisher
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Cancellation Policy</h3>
+                <p className="text-gray-600 text-sm mb-2">
+                  Free cancellation for 48 hours. After that, cancel up to 7 days before move-in for a 50% refund.
+                </p>
+                <button className="text-gray-900 font-medium underline text-sm hover:text-gray-700">
+                  Read full policy
+                </button>
+              </div>
             </div>
           </div>
 
@@ -930,14 +1067,12 @@ export default function PropertyDetails() {
                   <button
                     type="button"
                     onClick={() => setMovemateEnabled(!movemateEnabled)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      movemateEnabled ? 'bg-blue-500' : 'bg-gray-200'
-                    }`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${movemateEnabled ? 'bg-blue-500' : 'bg-gray-200'
+                      }`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        movemateEnabled ? 'translate-x-6' : 'translate-x-1'
-                      }`}
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${movemateEnabled ? 'translate-x-6' : 'translate-x-1'
+                        }`}
                     />
                   </button>
                 </div>
