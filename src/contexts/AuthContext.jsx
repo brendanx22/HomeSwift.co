@@ -162,7 +162,7 @@ export const AuthProvider = ({ children }) => {
   const updatePrimaryRole = async (userId, role) => {
     try {
       console.log(`🔄 Updating primary role to ${role} for user ${userId}`);
-      
+
       // First, set all roles to not primary
       const { error: updateError } = await supabase
         .from('user_roles')
@@ -209,28 +209,28 @@ export const AuthProvider = ({ children }) => {
 
       if (!directError && directRoles?.length > 0) {
         console.log('Direct roles from user_roles table:', directRoles);
-        
+
         // Update roles in state and localStorage
         setRoles(directRoles);
         localStorage.setItem('userRoles', JSON.stringify(directRoles));
-        
+
         // Find the primary role or use the first role if no primary is set
         let primaryRole = directRoles.find(r => r.is_primary)?.role || directRoles[0]?.role;
-        
+
         // Ensure we have a valid role
         if (!primaryRole) {
           console.warn('No valid role found, defaulting to renter');
           primaryRole = 'renter';
         }
-        
+
         // Update current role in state and localStorage
         console.log('Setting primary role to:', primaryRole);
         setCurrentRole(primaryRole);
         localStorage.setItem('currentRole', primaryRole);
-        
+
         // Dispatch event to notify other components about the role update
         window.dispatchEvent(new CustomEvent('role-updated'));
-        
+
         return true;
       }
 
@@ -278,92 +278,92 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Sign up a new user using Supabase client-side auth
-const signup = async (userData) => {
-  try {
-    console.log('Starting signup with data:', userData);
+  const signup = async (userData) => {
+    try {
+      console.log('Starting signup with data:', userData);
 
-    // Generate a unique agent ID for the user
-    const { generateUniqueAgentId } = await import('../utils/agentId.js');
-    const agentId = await generateUniqueAgentId();
-    console.log('Generated agent ID:', agentId);
+      // Generate a unique agent ID for the user
+      const { generateUniqueAgentId } = await import('../utils/agentId.js');
+      const agentId = await generateUniqueAgentId();
+      console.log('Generated agent ID:', agentId);
 
-    // Use Supabase's client-side auth for signup to trigger email verification
-    const { data, error } = await supabase.auth.signUp({
-      email: userData.email,
-      password: userData.password,
-      options: {
-        data: {
-          full_name: userData.full_name || `${userData.firstName} ${userData.lastName}`,
-          user_type: userData.user_type || 'renter',
-          agent_id: agentId, // Store the agent ID in user metadata
+      // Use Supabase's client-side auth for signup to trigger email verification
+      const { data, error } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            full_name: userData.full_name || `${userData.firstName} ${userData.lastName}`,
+            user_type: userData.user_type || 'renter',
+            agent_id: agentId, // Store the agent ID in user metadata
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+      });
 
-    if (error) {
-      console.error('Signup error:', error);
-      let userFriendlyError = 'We encountered an issue creating your account. ';
+      if (error) {
+        console.error('Signup error:', error);
+        let userFriendlyError = 'We encountered an issue creating your account. ';
 
-      // Map common Supabase errors to friendly messages
-      if (error.message.includes('already registered')) {
-        userFriendlyError = 'This email is already registered. Please try logging in or use a different email.';
-      } else if (error.message.includes('password')) {
-        userFriendlyError = 'Please choose a stronger password (minimum 6 characters).';
-      } else if (error.message.includes('email')) {
-        userFriendlyError = 'Please enter a valid email address.';
-      } else if (error.message.includes('network')) {
-        userFriendlyError = 'Unable to connect to our servers. Please check your internet connection and try again.';
+        // Map common Supabase errors to friendly messages
+        if (error.message.includes('already registered')) {
+          userFriendlyError = 'This email is already registered. Please try logging in or use a different email.';
+        } else if (error.message.includes('password')) {
+          userFriendlyError = 'Please choose a stronger password (minimum 6 characters).';
+        } else if (error.message.includes('email')) {
+          userFriendlyError = 'Please enter a valid email address.';
+        } else if (error.message.includes('network')) {
+          userFriendlyError = 'Unable to connect to our servers. Please check your internet connection and try again.';
+        }
+
+        return {
+          success: false,
+          error: userFriendlyError,
+          technicalError: error.message // Include original error for debugging
+        };
       }
 
+      // Check if email confirmation is required
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        return {
+          success: false,
+          error: 'This email is already registered. Please check your inbox for a verification email or try resetting your password.'
+        };
+      }
+
+      console.log('Signup successful, check your email for verification');
+
+      return {
+        success: true,
+        message: 'Almost there! We\'ve sent a verification link to your email. Please check your inbox (and spam folder) to complete your registration.',
+        requiresVerification: true
+      };
+
+    } catch (error) {
+      console.error('Signup error:', error);
       return {
         success: false,
-        error: userFriendlyError,
+        error: 'We apologize, but we encountered an unexpected error while creating your account. Our team has been notified. Please try again in a few minutes.',
         technicalError: error.message // Include original error for debugging
       };
     }
-
-    // Check if email confirmation is required
-    if (data.user && data.user.identities && data.user.identities.length === 0) {
-      return {
-        success: false,
-        error: 'This email is already registered. Please check your inbox for a verification email or try resetting your password.'
-      };
-    }
-
-    console.log('Signup successful, check your email for verification');
-
-    return {
-      success: true,
-      message: 'Almost there! We\'ve sent a verification link to your email. Please check your inbox (and spam folder) to complete your registration.',
-      requiresVerification: true
-    };
-
-  } catch (error) {
-    console.error('Signup error:', error);
-    return {
-      success: false,
-      error: 'We apologize, but we encountered an unexpected error while creating your account. Our team has been notified. Please try again in a few minutes.',
-      technicalError: error.message // Include original error for debugging
-    };
-  }
-};
+  };
 
   // Sign out the current user
   const logout = async () => {
     try {
       console.log('🔒 Starting logout process...');
-      
+
       // First, try to sign out from Supabase
       console.log('🔐 Attempting to sign out from Supabase...');
       try {
         const { error } = await Promise.race([
           supabase.auth.signOut(),
-          new Promise((_, reject) => 
+          new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Sign out timed out')), 5000)
           )
         ]);
-        
+
         if (error) {
           console.error('Supabase sign out error:', error);
           // Continue with local sign out even if Supabase fails
@@ -374,7 +374,7 @@ const signup = async (userData) => {
         console.error('Error during Supabase sign out:', signOutError);
         // Continue with local sign out even if Supabase fails
       }
-      
+
       // Clear all auth related data from localStorage
       console.log('🧹 Clearing local storage...');
       localStorage.removeItem('token');
@@ -382,18 +382,18 @@ const signup = async (userData) => {
       localStorage.removeItem('userRoles');
       localStorage.removeItem('currentRole');
       localStorage.removeItem('backendToken');
-      
+
       // Reset all state
       console.log('🔄 Resetting application state...');
       setUser(null);
       setRoles([]);
       setCurrentRole(null);
       setIsAuthenticated(false);
-      
+
       // Track logout event after clearing data
       console.log('📊 Tracking logout event...');
       resetUser();
-      
+
       // Force a full page reload to ensure all state is cleared
       console.log('🔄 Reloading application...');
       window.location.href = '/';
@@ -443,7 +443,7 @@ const signup = async (userData) => {
               },
               _updated: Date.now() // Force re-render
             };
-            
+
             setUser(updatedUser);
             localStorage.setItem('user', JSON.stringify(updatedUser));
             console.log('✅ Profile updated, state refreshed');
@@ -465,10 +465,10 @@ const signup = async (userData) => {
         },
         async (payload) => {
           console.log('🔄 User roles updated:', payload);
-          
+
           // Refetch all roles when any role changes
           const rolesUpdated = await fetchUserRoles(user.id);
-          
+
           // Force a state update to trigger re-renders
           if (rolesUpdated) {
             console.log('✅ Roles refreshed, forcing state update');
@@ -509,7 +509,7 @@ const signup = async (userData) => {
       try {
         const storedRole = localStorage.getItem('currentRole');
         const storedRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
-        
+
         if (storedRole && storedRoles.some(r => r.role === storedRole)) {
           console.log('🔄 Syncing current role from localStorage:', storedRole);
           setCurrentRole(storedRole);
@@ -556,10 +556,10 @@ const signup = async (userData) => {
         if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session) {
           console.log('✅ User session active, updating auth state');
           const user = session.user;
-          
+
           // Check if we're in the middle of an OAuth flow with a pending user type
           const pendingUserType = localStorage.getItem('pendingUserType');
-          
+
           // If there's a pending user type and we're on the callback page, let AuthCallback handle it
           if (pendingUserType && window.location.pathname === '/auth/callback') {
             console.log('🔄 OAuth flow in progress with pending type:', pendingUserType, '- letting AuthCallback handle it');
@@ -570,13 +570,13 @@ const signup = async (userData) => {
             }
             return; // Exit early, let AuthCallback handle role creation
           }
-          
+
           // Update auth state
           if (isMounted) {
             try {
               setIsAuthenticated(true);
               setUser(user);
-              
+
               // Store in localStorage
               const userData = {
                 ...user,
@@ -584,24 +584,24 @@ const signup = async (userData) => {
                 user_metadata: user.user_metadata
               };
               localStorage.setItem('user', JSON.stringify(userData));
-              
+
               // Fetch user roles and wait for completion
               console.log('🔄 Fetching user roles...');
               const rolesResult = await fetchUserRoles(user.id);
-              
+
               if (!isMounted) return;
-              
+
               // Get the latest roles from localStorage (updated by fetchUserRoles)
               const roles = JSON.parse(localStorage.getItem('userRoles') || '[]');
               const currentStoredRole = localStorage.getItem('currentRole');
-              
+
               console.log('🔍 Role check after fetch:', {
                 roles,
                 currentStoredRole,
                 hasRoles: roles.length > 0,
                 pendingUserType
               });
-              
+
               // If we have a pending user type from login, ensure it's set as primary
               if (pendingUserType && roles.some(r => r.role === pendingUserType)) {
                 console.log(`🔄 Found pending user type: ${pendingUserType}, setting as primary`);
@@ -609,17 +609,17 @@ const signup = async (userData) => {
                 localStorage.removeItem('pendingUserType');
                 // Track login event
                 trackLogin(user, pendingUserType);
-                
+
                 // If we're on the login page, redirect based on role
                 if (window.location.pathname.includes('/login') || window.location.pathname.includes('/landlord/login')) {
                   // Always prioritize the pendingUserType if it exists
-                  const targetRole = pendingUserType || userType || 'landlord';
+                  const targetRole = pendingUserType || 'renter';
                   console.log(`🔄 Login redirect: ${window.location.pathname} -> ${targetRole === 'renter' ? '/chat' : '/landlord/dashboard'}`, {
                     pendingUserType,
-                    userType,
+                    targetRole,
                     currentPath: window.location.pathname
                   });
-                  
+
                   // Force redirect to landlord dashboard for landlord login
                   if (window.location.pathname.includes('/landlord/login')) {
                     console.log('🔵 Forcing redirect to landlord dashboard');
@@ -630,7 +630,7 @@ const signup = async (userData) => {
                   }
                   return;
                 }
-                
+
                 // Mark loading as complete
                 setLoading(false);
                 console.log('✅ Auth state update complete');
@@ -650,7 +650,7 @@ const signup = async (userData) => {
             setRoles([]);
             setCurrentRole(null);
             setLoading(false);
-            
+
             // Clear auth-related localStorage
             localStorage.removeItem('user');
             localStorage.removeItem('userRoles');
@@ -721,7 +721,7 @@ const signup = async (userData) => {
   // Initial session check (auth state listener will handle the rest)
   useEffect(() => {
     let isMounted = true; // Declare isMounted at the top of the effect
-    
+
     // Safety timeout to ensure loading is always set to false
     const loadingTimeout = setTimeout(() => {
       console.log('⏱️ Loading timeout reached, forcing loading to false');
@@ -734,7 +734,7 @@ const signup = async (userData) => {
       try {
         console.log('🔍 Checking initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           console.error('❌ Error getting session:', error);
           if (isMounted) {
@@ -743,7 +743,7 @@ const signup = async (userData) => {
           }
           return;
         }
-        
+
         if (!session) {
           console.log('❌ No initial session found');
           if (isMounted) {
@@ -752,7 +752,7 @@ const signup = async (userData) => {
           }
           return;
         }
-        
+
         console.log('✅ Initial session found, auth state listener will handle it');
         // The auth state listener will handle the session via INITIAL_SESSION event
       } catch (error) {
@@ -765,7 +765,7 @@ const signup = async (userData) => {
     };
 
     checkInitialSession();
-    
+
     // Cleanup function
     return () => {
       isMounted = false;
@@ -780,9 +780,9 @@ const signup = async (userData) => {
       console.error('No user ID provided for role assignment');
       return { success: false, error: 'No user ID provided' };
     }
-    
+
     console.log(`Attempting to add role '${role}' to user ${targetUserId}`);
-    
+
     // First, check if the user already has this role
     const { data: existingRoles, error: fetchError } = await supabase
       .from('user_roles')
@@ -797,36 +797,36 @@ const signup = async (userData) => {
 
     if (existingRoles && existingRoles.length > 0) {
       console.log('Role already exists, updating to primary');
-      
+
       // Update all roles for this user to set is_primary correctly
       const { error: updateError } = await supabase
         .from('user_roles')
         .update({ is_primary: false })
         .eq('user_id', targetUserId);
-        
+
       if (updateError) throw updateError;
-      
+
       // Set the selected role as primary
       const { error: setPrimaryError } = await supabase
         .from('user_roles')
         .update({ is_primary: true })
         .eq('user_id', targetUserId)
         .eq('role', role);
-        
+
       if (setPrimaryError) throw setPrimaryError;
-      
+
       return { success: true };
     }
-    
+
     // If role doesn't exist, add it
     try {
       const { data, error } = await supabase
         .from('user_roles')
         .insert([
-          { 
-            user_id: targetUserId, 
-            role: role, 
-            is_primary: true 
+          {
+            user_id: targetUserId,
+            role: role,
+            is_primary: true
           }
         ])
         .select();
@@ -874,7 +874,7 @@ const signup = async (userData) => {
       return { success: true };
     } catch (error) {
       console.error('Error in direct role assignment, trying RPC as fallback:', error);
-      
+
       // Fallback to RPC if direct insert fails
       try {
         const { data, error: rpcError } = await supabase.rpc('add_user_role', {
@@ -882,15 +882,15 @@ const signup = async (userData) => {
           role_name: role,
           make_primary: true
         });
-        
+
         if (rpcError) throw rpcError;
-        
+
         // Refresh roles if this is the current user
         if (!userId) {
           await fetchUserRoles(targetUserId);
           console.log('Roles refreshed via RPC for current user');
         }
-        
+
         return { success: true };
       } catch (rpcError) {
         console.error('Error in RPC role assignment:', {
@@ -900,26 +900,26 @@ const signup = async (userData) => {
           userId: targetUserId,
           role: role
         });
-        
-        return { 
-          success: false, 
+
+        return {
+          success: false,
           error: rpcError.message || 'Failed to assign role',
           details: rpcError
         };
       }
     }
   };
-  
+
   // Get the user's current role
   const getCurrentRole = () => {
     return currentRole;
   };
-  
+
   // Get all user roles
   const getUserRoles = () => {
     return [...roles];
   };
-  
+
   // Switch the current user to a different role
   const switchRole = async (newRole) => {
     try {
@@ -959,7 +959,7 @@ const signup = async (userData) => {
       setError(null);
 
       console.log('AuthContext login called with:', credentials);
-      
+
       // Store the user type in localStorage before authentication
       if (credentials.userType) {
         console.log(`Setting pending user type to: ${credentials.userType}`);
@@ -973,7 +973,7 @@ const signup = async (userData) => {
 
       if (error) {
         console.error('Login error:', error);
-        
+
         // Handle specific error cases
         if (error.message.includes('Invalid login credentials')) {
           throw new Error('Invalid email or password. Please try again.');
@@ -991,7 +991,7 @@ const signup = async (userData) => {
       if (user) {
         // Ensure we have the latest user data
         const { data: { user: updatedUser } } = await supabase.auth.getUser();
-        
+
         console.log('🔍 Login - User object before processing:', {
           id: user.id,
           email: user.email,
@@ -1127,15 +1127,15 @@ const signup = async (userData) => {
                 if (setPrimaryError) throw setPrimaryError;
 
                 console.log(`✅ Successfully updated primary role to ${expectedRole}`);
-                
+
                 // Force refresh roles and update state
                 const updated = await fetchUserRoles(user.id);
-                
+
                 if (updated) {
                   // Update the current role in both state and localStorage
                   setCurrentRole(expectedRole);
                   localStorage.setItem('currentRole', expectedRole);
-                  
+
                   // Force a re-render of protected routes
                   window.dispatchEvent(new Event('role-updated'));
                 } else {
@@ -1301,14 +1301,14 @@ const signup = async (userData) => {
   };
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        loading, 
-        isAuthenticated, 
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isAuthenticated,
         currentRole,
         roles,
-        signup, 
+        signup,
         login,
         loginWithGoogle,
         logout,
