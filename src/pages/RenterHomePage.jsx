@@ -102,9 +102,9 @@ const PropertyCard = ({ property, isSaved, onSave, onNavigate }) => {
       location: property.location,
       price: property.price
     });
-    // Force page refresh to prevent caching issues
-    console.log('🔄 Property card clicked, forcing refresh...');
-    window.location.href = `/properties/${property.id}`;
+    // Use React Router navigation instead of forced reload
+    console.log('🔄 Property card clicked, navigating...');
+    onNavigate(`/properties/${property.id}`);
   };
 
   const handleSaveClick = (e) => {
@@ -353,7 +353,7 @@ const RenterHomePage = () => {
         if (profile.profile_image) {
           console.log('✅ Setting user avatar from DB:', profile.profile_image);
           // Add timestamp to prevent image caching
-          const avatarUrl = profile.profile_image.includes('?') 
+          const avatarUrl = profile.profile_image.includes('?')
             ? `${profile.profile_image}&_t=${timestamp}`
             : `${profile.profile_image}?_t=${timestamp}`;
           setUserAvatar(avatarUrl);
@@ -647,8 +647,8 @@ const RenterHomePage = () => {
               {/* Home Button */}
               <button
                 onClick={() => {
-                  console.log('🔄 Home button clicked, forcing refresh...');
-                  window.location.href = '/';
+                  console.log('🔄 Home button clicked, navigating...');
+                  navigate('/');
                 }}
                 className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
                 title="Home"
@@ -661,8 +661,8 @@ const RenterHomePage = () => {
                   {/* Saved Properties */}
                   <button
                     onClick={() => {
-                      console.log('🔄 Saved properties clicked, forcing refresh...');
-                      window.location.href = '/saved';
+                      console.log('🔄 Saved properties clicked, navigating...');
+                      navigate('/saved');
                     }}
                     className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
                     title="Saved Properties"
@@ -678,8 +678,8 @@ const RenterHomePage = () => {
                   {/* Messages */}
                   <button
                     onClick={() => {
-                      console.log('🔄 Messages clicked, forcing refresh...');
-                      window.location.href = '/message-center';
+                      console.log('🔄 Messages clicked, navigating...');
+                      navigate('/message-center');
                     }}
                     className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors group"
                     title="Messages"
@@ -743,8 +743,8 @@ const RenterHomePage = () => {
               ) : (
                 <button
                   onClick={() => {
-                    console.log('🔄 Login button clicked, forcing refresh...');
-                    window.location.href = '/login';
+                    console.log('🔄 Login button clicked, navigating...');
+                    navigate('/login');
                   }}
                   className="flex items-center gap-2 pl-3 pr-2 py-1.5 border border-gray-300 rounded-full hover:shadow-md transition-all"
                 >

@@ -167,6 +167,19 @@ export default defineConfig(({ command, mode }) => {
           // Network-only for all JavaScript files - no caching at all
           runtimeCaching: [
             {
+              // Network-first for HTML pages - always get fresh content
+              urlPattern: ({ request }) => request.destination === 'document',
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "html-cache",
+                expiration: {
+                  maxEntries: 10,
+                  maxAgeSeconds: 60, // Cache HTML for only 1 minute
+                },
+                networkTimeoutSeconds: 3,
+              },
+            },
+            {
               // Network-only for JavaScript files
               urlPattern: /\.js$/,
               handler: "NetworkOnly",
