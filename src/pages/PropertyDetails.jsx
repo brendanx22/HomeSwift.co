@@ -81,16 +81,16 @@ export default function PropertyDetails() {
         setLoading(true);
         setError(null);
         setLoadingTimeout(false);
-        
+
         // Add timeout to prevent infinite loading
-        const timeoutPromise = new Promise((_, reject) => 
+        const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Loading timeout')), 30000) // Increased to 30 seconds
         );
-        
-        const propertyPromise = PropertyAPI.getProperty(id, user);
-        
+
+        const propertyPromise = PropertyAPI.getProperty(id);
+
         const { success, property: propertyData } = await Promise.race([propertyPromise, timeoutPromise]);
-        
+
         if (success && propertyData) {
           setProperty(propertyData);
 
@@ -510,7 +510,7 @@ export default function PropertyDetails() {
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full mb-6"
         />
-        
+
         <div className="text-center max-w-md px-4">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Loading Property Details
@@ -518,7 +518,7 @@ export default function PropertyDetails() {
           <p className="text-gray-600 mb-4">
             Please wait while we fetch the property information...
           </p>
-          
+
           {loadingTimeout && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
               <p className="text-yellow-800 text-sm">
@@ -526,7 +526,7 @@ export default function PropertyDetails() {
               </p>
             </div>
           )}
-          
+
           <button
             onClick={() => window.location.reload()}
             className="bg-[#FF6B35] text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors"
@@ -545,7 +545,7 @@ export default function PropertyDetails() {
           <div className="text-red-500 text-6xl mb-4">⚠</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Property Not Found</h2>
           <p className="text-gray-600 mb-6">{error || 'Property not found'}</p>
-          
+
           <div className="space-y-3">
             <button
               onClick={() => window.location.reload()}
@@ -553,7 +553,7 @@ export default function PropertyDetails() {
             >
               Try Again
             </button>
-            
+
             <button
               onClick={() => navigate('/chat')}
               className="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
@@ -561,7 +561,7 @@ export default function PropertyDetails() {
               Back to Properties
             </button>
           </div>
-          
+
           {loadingTimeout && (
             <div className="mt-4 text-sm text-gray-500">
               If the problem persists, your connection might be slow or the property might be unavailable.
