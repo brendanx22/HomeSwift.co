@@ -28,7 +28,6 @@ export default defineConfig(({ command, mode }) => {
       "import.meta.env.VITE_POSTHOG_HOST": JSON.stringify(
         process.env.VITE_POSTHOG_HOST
       ),
-      "import.meta.env.VITE_BUILD_TIME": JSON.stringify(Date.now().toString()),
     },
 
     // Development server configuration
@@ -92,11 +91,11 @@ export default defineConfig(({ command, mode }) => {
       },
       terserOptions: isProduction
         ? {
-          compress: {
-            // drop_console: true,  // Temporarily disabled for debugging
-            drop_debugger: true,
-          },
-        }
+            compress: {
+              // drop_console: true,  // Temporarily disabled for debugging
+              drop_debugger: true,
+            },
+          }
         : {},
     },
 
@@ -155,82 +154,42 @@ export default defineConfig(({ command, mode }) => {
           skipWaiting: true,
           clientsClaim: true,
 
-          // CRITICAL: Only cache static assets, NEVER JavaScript or HTML
+          // Only cache static assets, NOT JavaScript files
           globPatterns: [
-            "**/*.{css,ico,png,svg,jpg,jpeg,gif,woff,woff2,ttf,eot}",
+            "**/*.{css,html,ico,png,svg,jpg,jpeg,gif,woff,woff2,ttf,eot}",
           ],
 
-          // Explicitly exclude JS and HTML from precaching
-          globIgnores: [
-            "**/*.js",
-            "**/*.jsx",
-            "**/*.html",
-            "**/node_modules/**"
-          ],
+          // Explicitly exclude JS files from caching
+          globIgnores: ["**/*.js", "**/*.jsx", "**/node_modules/**"],
 
-          // Disable navigation fallback to prevent "non-precached-url" warnings
-          // We're using network-first for HTML anyway, so fallback isn't needed
-          navigateFallback: null,
+          // Don't cache these routes
+          navigateFallbackDenylist: [/^\/api/, /^\/socket\.io/],
 
-          // Don't use navigation fallback for these patterns
-          navigateFallbackDenylist: [
-            /^\/api/,
-            /^\/socket\.io/,
-            /\.js$/,  // Never fallback for JS files
-            /\.css$/, // Never fallback for CSS files
-          ],
-
-          // Network-only for all JavaScript files - no caching at all
           runtimeCaching: [
             {
-              // Network-first for HTML pages - always get fresh content
-              urlPattern: ({ request }) => request.destination === 'document',
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "html-cache",
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60, // Cache HTML for only 1 minute
-                },
-                networkTimeoutSeconds: 3,
-              },
-            },
-            {
-              // Network-only for JavaScript files
-              urlPattern: /\.js$/,
-              handler: "NetworkOnly",
-              options: {
-                cacheName: "js-no-cache",
-                expiration: {
-                  maxEntries: 0,
-                  maxAgeSeconds: 0,
-                },
-              },
-            },
-            {
-              // Network-first for API calls with very short cache
+              // Network-first for API calls
               urlPattern: /^https:\/\/api\.homeswift\.co\//,
               handler: "NetworkFirst",
               options: {
                 cacheName: "api-cache",
                 expiration: {
-                  maxEntries: 5,
-                  maxAgeSeconds: 60, // Only 1 minute
+                  maxEntries: 10,
+                  maxAgeSeconds: 300, // 5 minutes
                 },
-                networkTimeoutSeconds: 5,
+                networkTimeoutSeconds: 10,
               },
             },
             {
-              // Network-first for Supabase with very short cache
+              // Network-first for Supabase
               urlPattern: /^https:\/\/[^/]+\.supabase\.co\//,
               handler: "NetworkFirst",
               options: {
                 cacheName: "supabase-api-cache",
                 expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60, // Only 1 minute
+                  maxEntries: 50,
+                  maxAgeSeconds: 300, // 5 minutes only
                 },
-                networkTimeoutSeconds: 5,
+                networkTimeoutSeconds: 10,
               },
             },
           ],

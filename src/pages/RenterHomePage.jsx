@@ -102,9 +102,8 @@ const PropertyCard = ({ property, isSaved, onSave, onNavigate }) => {
       location: property.location,
       price: property.price
     });
-    // Use React Router navigation instead of forced reload
-    console.log('🔄 Property card clicked, navigating...');
-    onNavigate(`/properties/${property.id}`);
+    // Pass the full property object via location state for faster load in details page
+    onNavigate(`/properties/${property.id}`, { state: { property } });
   };
 
   const handleSaveClick = (e) => {
@@ -226,37 +225,6 @@ const PropertyCard = ({ property, isSaved, onSave, onNavigate }) => {
   );
 };
 
-// Group properties by location and property type
-const groupProperties = (properties) => {
-  const grouped = {};
-
-  properties.forEach(property => {
-    // Extract city from location (first part before comma)
-    const location = property.location.split(',').length > 1
-      ? property.location.split(',')[0].trim()
-      : property.location.trim();
-
-    // Get property type or default to 'other'
-    const type = property.property_type?.toLowerCase() || 'other';
-
-    // Create a unique key for each location-type combination
-    const groupKey = `${location}_${type}`;
-
-    if (!grouped[groupKey]) {
-      grouped[groupKey] = {
-        location,
-        type,
-        properties: []
-      };
-    }
-
-    grouped[groupKey].properties.push(property);
-  });
-
-  // Convert to array and sort by location name
-  return Object.values(grouped).sort((a, b) => a.location.localeCompare(b.location));
-};
-
 const RenterHomePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -286,14 +254,12 @@ const RenterHomePage = () => {
   const [showMap, setShowMap] = useState(false);
   const scrollContainerRefs = useRef({});
 
-  const loadProperties = useCallback(async () => {
+  const loadProperties = async () => {
     try {
       setLoading(true);
       console.log("🔍 Fetching properties from API...");
 
-      // Add cache-busting timestamp
-      const timestamp = Date.now();
-      const { success, properties: propertiesData, error } = await PropertyAPI.getAllProperties(`?_t=${timestamp}`);
+      const { success, properties: propertiesData, error } = await PropertyAPI.getAllProperties();
 
       if (!success) {
         throw new Error(error || 'Failed to fetch properties');
@@ -319,14 +285,16 @@ const RenterHomePage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    console.log("🚀 Component mounted, loading properties...");
+    loadProperties();
   }, []);
 
-  const loadData = useCallback(async () => {
+  const loadData = async () => {
     try {
       if (!user) return;
-
-      // Add cache-busting timestamp
-      const timestamp = Date.now();
 
       // Load user profile data from user_profiles table
       const { data: profile, error: profileError } = await supabase
@@ -343,25 +311,19 @@ const RenterHomePage = () => {
         }
       }
 
-      console.log('👤 Profile data loaded:', profile);
-
       if (profile) {
         const firstName = profile.full_name?.split(' ')[0] || '';
         setUserFirstName(firstName);
         if (profile.profile_image) {
           console.log('✅ Setting user avatar from DB:', profile.profile_image);
-          // Add timestamp to prevent image caching
-          const avatarUrl = profile.profile_image.includes('?')
-            ? `${profile.profile_image}&_t=${timestamp}`
-            : `${profile.profile_image}?_t=${timestamp}`;
-          setUserAvatar(avatarUrl);
+          setUserAvatar(profile.profile_image);
         } else {
           console.log('ℹ️ No profile image in DB, will show initials');
           setUserAvatar(null);
         }
       }
 
-      // Load saved properties with cache-busting
+      // Load saved properties
       const { data: saved, error: savedError } = await supabase
         .from('saved_properties')
         .select('property_id')
@@ -376,54 +338,14 @@ const RenterHomePage = () => {
     } catch (error) {
       console.error('Error loading user data:', error);
     }
-  }, [user]);
-
-  useEffect(() => {
-    console.log("🚀 Component mounted, loading properties...");
-    loadProperties();
-  }, []);
-
-  // Force refresh data when page becomes visible (user returns to tab)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && user) {
-        console.log('🔄 Page became visible, refreshing data...');
-        loadData();
-        loadConversations();
-        loadProperties();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user, loadData, loadConversations, loadProperties]);
-
-  // Force refresh data on focus
-  useEffect(() => {
-    const handleFocus = () => {
-      if (user) {
-        console.log('🔄 Window focused, refreshing data...');
-        loadData();
-        loadConversations();
-        loadProperties();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [user, loadData, loadConversations, loadProperties]);
-
-
+  };
 
   useEffect(() => {
     if (user) {
-      console.log('👤 User available, loading navbar data...', user.id);
       loadData();
       loadConversations();
-    } else {
-      console.log('👤 User NOT available yet in RenterHomePage');
     }
-  }, [user, loadConversations, loadData]);
+  }, [user]);
 
   // Calculate unread messages
   useEffect(() => {
@@ -436,7 +358,36 @@ const RenterHomePage = () => {
     }
   }, [conversations, user]);
 
+  // Group properties by location and property type
+  const groupProperties = (properties) => {
+    const grouped = {};
 
+    properties.forEach(property => {
+      // Extract city from location (first part before comma)
+      const location = property.location.split(',').length > 1
+        ? property.location.split(',')[0].trim()
+        : property.location.trim();
+
+      // Get property type or default to 'other'
+      const type = property.property_type?.toLowerCase() || 'other';
+
+      // Create a unique key for each location-type combination
+      const groupKey = `${location}_${type}`;
+
+      if (!grouped[groupKey]) {
+        grouped[groupKey] = {
+          location,
+          type,
+          properties: []
+        };
+      }
+
+      grouped[groupKey].properties.push(property);
+    });
+
+    // Convert to array and sort by location name
+    return Object.values(grouped).sort((a, b) => a.location.localeCompare(b.location));
+  };
 
   // Filter properties
   const filterProperties = useCallback(() => {
@@ -654,25 +605,19 @@ const RenterHomePage = () => {
             {/* Right Actions */}
             <div className="flex items-center gap-5">
               {/* Home Button */}
-              <button
-                onClick={() => {
-                  console.log('🔄 Home button clicked, navigating...');
-                  navigate('/');
-                }}
+              <Link
+                to="/"
                 className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
                 title="Home"
               >
                 <Home className="w-5 h-5 text-gray-700" />
-              </button>
+              </Link>
 
               {user && (
                 <>
                   {/* Saved Properties */}
-                  <button
-                    onClick={() => {
-                      console.log('🔄 Saved properties clicked, navigating...');
-                      navigate('/saved');
-                    }}
+                  <Link
+                    to="/saved"
                     className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
                     title="Saved Properties"
                   >
@@ -682,14 +627,11 @@ const RenterHomePage = () => {
                         {savedProperties.size}
                       </span>
                     )}
-                  </button>
+                  </Link>
 
                   {/* Messages */}
-                  <button
-                    onClick={() => {
-                      console.log('🔄 Messages clicked, navigating...');
-                      navigate('/message-center');
-                    }}
+                  <Link
+                    to="/message-center"
                     className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors group"
                     title="Messages"
                   >
@@ -699,7 +641,7 @@ const RenterHomePage = () => {
                         {unreadCount}
                       </span>
                     )}
-                  </button>
+                  </Link>
 
                   {/* Notifications */}
                   <div className="relative group">
@@ -750,16 +692,13 @@ const RenterHomePage = () => {
                   )}
                 </div>
               ) : (
-                <button
-                  onClick={() => {
-                    console.log('🔄 Login button clicked, navigating...');
-                    navigate('/login');
-                  }}
+                <Link
+                  to="/login"
                   className="flex items-center gap-2 pl-3 pr-2 py-1.5 border border-gray-300 rounded-full hover:shadow-md transition-all"
                 >
                   <Menu className="w-4 h-4" />
                   <User className="w-8 h-8 p-1.5 bg-gray-500 text-white rounded-full" />
-                </button>
+                </Link>
               )}
             </div>
           </div>
@@ -1393,26 +1332,14 @@ const RenterHomePage = () => {
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-3 text-sm text-gray-600">
                 <li>
-                  <button
-                    onClick={() => {
-                      console.log('🔄 Help Center clicked, forcing refresh...');
-                      window.location.href = '/help';
-                    }}
-                    className="hover:underline text-left w-full"
-                  >
+                  <Link to="/help" className="hover:underline">
                     Help Center
-                  </button>
+                  </Link>
                 </li>
                 <li>
-                  <button
-                    onClick={() => {
-                      console.log('🔄 Contact us clicked, forcing refresh...');
-                      window.location.href = '/contact';
-                    }}
-                    className="hover:underline text-left w-full"
-                  >
+                  <Link to="/contact" className="hover:underline">
                     Contact us
-                  </button>
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -1420,15 +1347,9 @@ const RenterHomePage = () => {
               <h3 className="font-semibold mb-4">Hosting</h3>
               <ul className="space-y-3 text-sm text-gray-600">
                 <li>
-                  <button
-                    onClick={() => {
-                      console.log('🔄 List your property clicked, forcing refresh...');
-                      window.location.href = '/landlord/dashboard';
-                    }}
-                    className="hover:underline text-left w-full"
-                  >
+                  <Link to="/landlord/dashboard" className="hover:underline">
                     List your property
-                  </button>
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -1436,37 +1357,19 @@ const RenterHomePage = () => {
               <h3 className="font-semibold mb-4">HomeSwift</h3>
               <ul className="space-y-3 text-sm text-gray-600">
                 <li>
-                  <button
-                    onClick={() => {
-                      console.log('🔄 About clicked, forcing refresh...');
-                      window.location.href = '/about';
-                    }}
-                    className="hover:underline text-left w-full"
-                  >
+                  <Link to="/about" className="hover:underline">
                     About
-                  </button>
+                  </Link>
                 </li>
                 <li>
-                  <button
-                    onClick={() => {
-                      console.log('🔄 Terms clicked, forcing refresh...');
-                      window.location.href = '/terms';
-                    }}
-                    className="hover:underline text-left w-full"
-                  >
+                  <Link to="/terms" className="hover:underline">
                     Terms
-                  </button>
+                  </Link>
                 </li>
                 <li>
-                  <button
-                    onClick={() => {
-                      console.log('🔄 Privacy Policy clicked, forcing refresh...');
-                      window.location.href = '/privacy';
-                    }}
-                    className="hover:underline text-left w-full"
-                  >
+                  <Link to="/privacy" className="hover:underline">
                     Privacy Policy
-                  </button>
+                  </Link>
                 </li>
               </ul>
             </div>

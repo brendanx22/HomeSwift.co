@@ -2,7 +2,6 @@
   "name": "HomeSwift - AI Real Estate Platform",
   "short_name": "HomeSwift",
   "description": "Find, compare, and invest in properties with AI-powered insights",
-  "version": "2.1.1",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

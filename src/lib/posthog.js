@@ -24,13 +24,16 @@ export const initPostHog = () => {
       },
       capture_pageview: true,
       capture_pageleave: true,
-      autocapture: false, // Disable autocapture to reduce blocked requests
+      autocapture: {
+        url_allowlist: ["homeswift.co", "www.homeswift.co"],
+        cors_safelist: ["homeswift.co", "www.homeswift.co"],
+      },
       session_recording: {
-        recordCrossOriginIframes: false, // Disable to reduce blocked requests
-        cross_origin_iframe: false,
+        recordCrossOriginIframes: true,
+        cross_origin_iframe: true,
       },
       persistence: "localStorage",
-      disable_session_recording: true, // Disable session recording entirely
+      disable_session_recording: import.meta.env.DEV, // Disable session recording in dev
       disable_persistence: import.meta.env.TEST, // Disable persistence in test env
       opt_out_capturing_by_default: import.meta.env.DEV, // Opt out by default in dev
       secure_cookie: true,
@@ -39,70 +42,43 @@ export const initPostHog = () => {
       ui_host: "app.posthog.com",
       save_referrer: true,
       property_blacklist: ["$current_url", "$pathname", "$host"],
-      // Add request timeout and retry configuration
-      request_batching: {
-        size: 10,
-        flush_interval: 5000,
-      },
-      // Disable features that cause blocked requests
-      disable_heatmaps: true,
-      disable_surveys: true,
-      disable_toolbar: true,
     });
 
     isInitialized = true;
     console.log("PostHog initialized successfully");
   } catch (error) {
     console.error("Failed to initialize PostHog:", error);
-    // Don't throw error - continue without analytics
   }
 };
 
 // Track custom events
 export const trackEvent = (eventName, properties = {}) => {
-  try {
-    if (typeof window !== "undefined" && posthog && isInitialized) {
-      posthog.capture(eventName, properties);
-    }
-  } catch (error) {
-    // Silently fail - don't let analytics errors break the app
-    console.warn("PostHog tracking failed:", eventName, error);
+  if (typeof window !== "undefined" && posthog) {
+    posthog.capture(eventName, properties);
   }
 };
 
 // Identify user
 export const identifyUser = (userId, userProperties = {}) => {
-  try {
-    if (typeof window !== "undefined" && posthog && isInitialized) {
-      posthog.identify(userId, userProperties);
-    }
-  } catch (error) {
-    console.warn("PostHog identify failed:", error);
+  if (typeof window !== "undefined" && posthog) {
+    posthog.identify(userId, userProperties);
   }
 };
 
 // Reset user (on logout)
 export const resetUser = () => {
-  try {
-    if (typeof window !== "undefined" && posthog && isInitialized) {
-      posthog.reset();
-    }
-  } catch (error) {
-    console.warn("PostHog reset failed:", error);
+  if (typeof window !== "undefined" && posthog) {
+    posthog.reset();
   }
 };
 
 // Track page view
 export const trackPageView = (pageName, properties = {}) => {
-  try {
-    if (typeof window !== "undefined" && posthog && isInitialized) {
-      posthog.capture("$pageview", {
-        page_name: pageName,
-        ...properties,
-      });
-    }
-  } catch (error) {
-    console.warn("PostHog page view tracking failed:", error);
+  if (typeof window !== "undefined" && posthog) {
+    posthog.capture("$pageview", {
+      page_name: pageName,
+      ...properties,
+    });
   }
 };
 

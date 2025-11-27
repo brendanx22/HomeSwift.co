@@ -120,14 +120,7 @@ export const OfflineIndicator = () => {
 // PWA Install Prompt Component
 export const PWAInstallPrompt = () => {
   const { isInstallable, installApp, isInstalled } = usePWA();
-  const [dismissed, setDismissed] = useState(() => {
-    return localStorage.getItem('pwa_prompt_dismissed') === 'true';
-  });
-
-  const handleDismiss = () => {
-    setDismissed(true);
-    localStorage.setItem('pwa_prompt_dismissed', 'true');
-  };
+  const [dismissed, setDismissed] = useState(false);
 
   if (!isInstallable || isInstalled || dismissed) return null;
 
@@ -157,7 +150,7 @@ export const PWAInstallPrompt = () => {
               Install App
             </button>
             <button
-              onClick={() => handleDismiss()}
+              onClick={() => setDismissed(true)}
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50 transition-colors"
             >
               Not Now
@@ -166,7 +159,7 @@ export const PWAInstallPrompt = () => {
         </div>
 
         <button
-          onClick={() => handleDismiss()}
+          onClick={() => setDismissed(true)}
           className="text-gray-400 hover:text-gray-600 transition-colors"
         >
           <X className="w-5 h-5" />

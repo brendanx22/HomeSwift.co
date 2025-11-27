@@ -5,7 +5,6 @@ import { OfflineIndicator, PWAInstallPrompt, UpdatePrompt, registerServiceWorker
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import ErrorBoundary from './components/ErrorBoundary';
 import { initPostHog, trackPageView } from './lib/posthog';
 import { checkAndClearCache } from './utils/cacheManager';
 
@@ -598,23 +597,49 @@ const AppLayout = () => {
   );
 };
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-red-50 p-4">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h2 className="text-xl font-bold text-red-600 mb-4">Something went wrong</h2>
+            <p className="text-gray-700 mb-4">
+              We're sorry, but an unexpected error occurred. The issue has been logged.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 // Main App Component
 const App = () => {
   // Initialize PostHog and register service worker
   useEffect(() => {
-    // CRITICAL: Clear all caches immediately to fix JS loading issues
-    // This fixes the "Unexpected token '<'" error from corrupted cache
-    (async () => {
-      if ('caches' in window) {
-        const cacheNames = await caches.keys();
-        if (cacheNames.length > 0) {
-          console.log('🧹 Clearing all caches on load...');
-          await Promise.all(cacheNames.map(name => caches.delete(name)));
-          console.log('✅ All caches cleared');
-        }
-      }
-    })();
-
     // Check and clear cache if version changed
     checkAndClearCache();
 

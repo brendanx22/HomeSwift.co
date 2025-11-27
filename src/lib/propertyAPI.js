@@ -62,8 +62,6 @@ export class PropertyAPI {
    */
   static async getProperty(propertyId) {
     try {
-      console.log('🔍 Fetching property:', propertyId);
-
       const { data, error } = await supabase
         .from("properties")
         .select(
@@ -78,19 +76,9 @@ export class PropertyAPI {
         .eq("id", propertyId)
         .single();
 
-      if (error) {
-        console.error('❌ Supabase error:', error);
-        throw error;
-      }
-
-      if (!data) {
-        console.error('❌ No property data returned');
-        throw new Error('Property not found');
-      }
+      if (error) throw error;
 
       console.log("🏠 Property data from DB:", {
-        id: data.id,
-        title: data.title,
         hasLandlordData: !!data.landlord,
         landlordName: data.landlord?.full_name,
         landlordImage: data.landlord?.profile_image,
@@ -108,8 +96,8 @@ export class PropertyAPI {
 
       return { success: true, property };
     } catch (error) {
-      console.error("❌ Error fetching property:", error);
-      return { success: false, error: error.message, property: null };
+      console.error("Error fetching property:", error);
+      return { success: false, error: error.message };
     }
   }
 
