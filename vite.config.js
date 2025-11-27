@@ -155,14 +155,26 @@ export default defineConfig(({ command, mode }) => {
           skipWaiting: true,
           clientsClaim: true,
 
-          // Don't cache any JavaScript files - always fetch from network
+          // CRITICAL: Only cache static assets, NEVER JavaScript or HTML
           globPatterns: [
-            "**/*.{css,html,ico,png,svg,jpg,jpeg,gif,woff,woff2,ttf,eot}",
+            "**/*.{css,ico,png,svg,jpg,jpeg,gif,woff,woff2,ttf,eot}",
           ],
-          globIgnores: ["**/*.js", "**/*.jsx", "**/node_modules/**"],
 
-          // Don't cache these routes
-          navigateFallbackDenylist: [/^\/api/, /^\/socket\.io/],
+          // Explicitly exclude JS and HTML from precaching
+          globIgnores: [
+            "**/*.js",
+            "**/*.jsx",
+            "**/*.html",
+            "**/node_modules/**"
+          ],
+
+          // Don't use navigation fallback for these patterns
+          navigateFallbackDenylist: [
+            /^\/api/,
+            /^\/socket\.io/,
+            /\.js$/,  // Never fallback for JS files
+            /\.css$/, // Never fallback for CSS files
+          ],
 
           // Network-only for all JavaScript files - no caching at all
           runtimeCaching: [

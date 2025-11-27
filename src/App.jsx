@@ -602,6 +602,19 @@ const AppLayout = () => {
 const App = () => {
   // Initialize PostHog and register service worker
   useEffect(() => {
+    // CRITICAL: Clear all caches immediately to fix JS loading issues
+    // This fixes the "Unexpected token '<'" error from corrupted cache
+    (async () => {
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        if (cacheNames.length > 0) {
+          console.log('🧹 Clearing all caches on load...');
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+          console.log('✅ All caches cleared');
+        }
+      }
+    })();
+
     // Check and clear cache if version changed
     checkAndClearCache();
 

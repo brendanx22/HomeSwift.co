@@ -73,6 +73,27 @@ const performCacheClear = () => {
   window.location.reload(true);
 };
 
+// Clear all JS file caches immediately on load (fixes corrupted cache issue)
+export const clearJSCache = async () => {
+  if ('caches' in window) {
+    try {
+      const cacheNames = await caches.keys();
+      console.log('🧹 Clearing all caches to fix JS loading issues...');
+
+      await Promise.all(
+        cacheNames.map(cacheName => {
+          console.log(`Deleting cache: ${cacheName}`);
+          return caches.delete(cacheName);
+        })
+      );
+
+      console.log('✅ All caches cleared');
+    } catch (error) {
+      console.error('Error clearing caches:', error);
+    }
+  }
+};
+
 export const getAppVersion = () => APP_VERSION;
 
 export const forceUpdate = () => {
