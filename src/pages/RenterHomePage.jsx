@@ -321,41 +321,6 @@ const RenterHomePage = () => {
     }
   }, []);
 
-  useEffect(() => {
-    console.log("🚀 Component mounted, loading properties...");
-    loadProperties();
-  }, []);
-
-  // Force refresh data when page becomes visible (user returns to tab)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && user) {
-        console.log('🔄 Page became visible, refreshing data...');
-        loadData();
-        loadConversations();
-        loadProperties();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user, loadData, loadConversations, loadProperties]);
-
-  // Force refresh data on focus
-  useEffect(() => {
-    const handleFocus = () => {
-      if (user) {
-        console.log('🔄 Window focused, refreshing data...');
-        loadData();
-        loadConversations();
-        loadProperties();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [user, loadData, loadConversations, loadProperties]);
-
   const loadData = useCallback(async () => {
     try {
       if (!user) return;
@@ -410,6 +375,43 @@ const RenterHomePage = () => {
       console.error('Error loading user data:', error);
     }
   }, [user]);
+
+  useEffect(() => {
+    console.log("🚀 Component mounted, loading properties...");
+    loadProperties();
+  }, []);
+
+  // Force refresh data when page becomes visible (user returns to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        console.log('🔄 Page became visible, refreshing data...');
+        loadData();
+        loadConversations();
+        loadProperties();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user, loadData, loadConversations, loadProperties]);
+
+  // Force refresh data on focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user) {
+        console.log('🔄 Window focused, refreshing data...');
+        loadData();
+        loadConversations();
+        loadProperties();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user, loadData, loadConversations, loadProperties]);
+
+
 
   useEffect(() => {
     if (user) {
