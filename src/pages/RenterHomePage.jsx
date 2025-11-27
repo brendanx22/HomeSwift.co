@@ -255,7 +255,7 @@ const RenterHomePage = () => {
   const [showMap, setShowMap] = useState(false);
   const scrollContainerRefs = useRef({});
 
-  const loadProperties = async () => {
+  const loadProperties = useCallback(async () => {
     try {
       setLoading(true);
       console.log("🔍 Fetching properties from API...");
@@ -288,7 +288,7 @@ const RenterHomePage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     console.log("🚀 Component mounted, loading properties...");
@@ -308,7 +308,7 @@ const RenterHomePage = () => {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user]);
+  }, [user, loadData, loadConversations, loadProperties]);
 
   // Force refresh data on focus
   useEffect(() => {
@@ -323,9 +323,9 @@ const RenterHomePage = () => {
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [user]);
+  }, [user, loadData, loadConversations, loadProperties]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       if (!user) return;
 
@@ -378,14 +378,15 @@ const RenterHomePage = () => {
     } catch (error) {
       console.error('Error loading user data:', error);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (user) {
+      console.log('👤 User available, loading navbar data...');
       loadData();
       loadConversations();
     }
-  }, [user]);
+  }, [user, loadConversations]);
 
   // Calculate unread messages
   useEffect(() => {
