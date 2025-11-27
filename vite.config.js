@@ -168,6 +168,10 @@ export default defineConfig(({ command, mode }) => {
             "**/node_modules/**"
           ],
 
+          // Disable navigation fallback to prevent "non-precached-url" warnings
+          // We're using network-first for HTML anyway, so fallback isn't needed
+          navigateFallback: null,
+
           // Don't use navigation fallback for these patterns
           navigateFallbackDenylist: [
             /^\/api/,
