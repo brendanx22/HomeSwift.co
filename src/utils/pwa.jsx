@@ -120,7 +120,14 @@ export const OfflineIndicator = () => {
 // PWA Install Prompt Component
 export const PWAInstallPrompt = () => {
   const { isInstallable, installApp, isInstalled } = usePWA();
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    return localStorage.getItem('pwa_prompt_dismissed') === 'true';
+  });
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    localStorage.setItem('pwa_prompt_dismissed', 'true');
+  };
 
   if (!isInstallable || isInstalled || dismissed) return null;
 
@@ -150,7 +157,7 @@ export const PWAInstallPrompt = () => {
               Install App
             </button>
             <button
-              onClick={() => setDismissed(true)}
+              onClick={() => handleDismiss()}
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50 transition-colors"
             >
               Not Now
@@ -159,7 +166,7 @@ export const PWAInstallPrompt = () => {
         </div>
 
         <button
-          onClick={() => setDismissed(true)}
+          onClick={() => handleDismiss()}
           className="text-gray-400 hover:text-gray-600 transition-colors"
         >
           <X className="w-5 h-5" />
@@ -328,7 +335,7 @@ export const registerServiceWorker = async (onUpdate) => {
     // Clear existing registrations
     console.log('Service Worker: Checking for existing service workers...');
     const registrations = await navigator.serviceWorker.getRegistrations();
-    
+
     // Only unregister if we have registrations
     if (registrations.length > 0) {
       console.log(`Service Worker: Found ${registrations.length} existing registration(s)`);
@@ -362,19 +369,19 @@ export const registerServiceWorker = async (onUpdate) => {
       updateViaCache: 'none',
       scope: '/'
     });
-    
+
     console.log('Service Worker: Registered successfully');
 
     // Handle updates
     registration.addEventListener('updatefound', () => {
       const newWorker = registration.installing;
       if (!newWorker) return;
-      
+
       console.log('Service Worker: New service worker found');
-      
+
       newWorker.addEventListener('statechange', () => {
         console.log('Service Worker: State changed to:', newWorker.state);
-        
+
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
           console.log('Service Worker: New update available');
           if (onUpdate) {
@@ -396,10 +403,10 @@ export const registerServiceWorker = async (onUpdate) => {
 
     // Check for updates on page load
     await checkForUpdates();
-    
+
     // Check for updates every hour
     const updateInterval = setInterval(checkForUpdates, 60 * 60 * 1000);
-    
+
     // Clean up interval on page unload
     window.addEventListener('beforeunload', () => {
       clearInterval(updateInterval);

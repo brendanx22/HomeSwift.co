@@ -343,6 +343,8 @@ const RenterHomePage = () => {
         }
       }
 
+      console.log('👤 Profile data loaded:', profile);
+
       if (profile) {
         const firstName = profile.full_name?.split(' ')[0] || '';
         setUserFirstName(firstName);
@@ -415,11 +417,13 @@ const RenterHomePage = () => {
 
   useEffect(() => {
     if (user) {
-      console.log('👤 User available, loading navbar data...');
+      console.log('👤 User available, loading navbar data...', user.id);
       loadData();
       loadConversations();
+    } else {
+      console.log('👤 User NOT available yet in RenterHomePage');
     }
-  }, [user, loadConversations]);
+  }, [user, loadConversations, loadData]);
 
   // Calculate unread messages
   useEffect(() => {
