@@ -500,41 +500,14 @@ export default function PropertyDetails() {
 
   if (loading) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="flex flex-col items-center justify-center min-h-screen bg-gray-50"
-      >
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
         <motion.div
           animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full mb-6"
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-16 h-16 border-4 border-[#FF6B35]/20 border-t-[#FF6B35] rounded-full mb-4"
         />
-
-        <div className="text-center max-w-md px-4">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Loading Property Details
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Please wait while we fetch the property information...
-          </p>
-
-          {loadingTimeout && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-              <p className="text-yellow-800 text-sm">
-                This is taking longer than expected. You can try refreshing or wait a bit longer.
-              </p>
-            </div>
-          )}
-
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-[#FF6B35] text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors"
-          >
-            Refresh Page
-          </button>
-        </div>
-      </motion.div>
+        <p className="text-gray-600">Loading property details…</p>
+      </div>
     );
   }
 
