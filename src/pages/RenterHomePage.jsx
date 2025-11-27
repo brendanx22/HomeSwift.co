@@ -226,6 +226,37 @@ const PropertyCard = ({ property, isSaved, onSave, onNavigate }) => {
   );
 };
 
+// Group properties by location and property type
+const groupProperties = (properties) => {
+  const grouped = {};
+
+  properties.forEach(property => {
+    // Extract city from location (first part before comma)
+    const location = property.location.split(',').length > 1
+      ? property.location.split(',')[0].trim()
+      : property.location.trim();
+
+    // Get property type or default to 'other'
+    const type = property.property_type?.toLowerCase() || 'other';
+
+    // Create a unique key for each location-type combination
+    const groupKey = `${location}_${type}`;
+
+    if (!grouped[groupKey]) {
+      grouped[groupKey] = {
+        location,
+        type,
+        properties: []
+      };
+    }
+
+    grouped[groupKey].properties.push(property);
+  });
+
+  // Convert to array and sort by location name
+  return Object.values(grouped).sort((a, b) => a.location.localeCompare(b.location));
+};
+
 const RenterHomePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -399,36 +430,7 @@ const RenterHomePage = () => {
     }
   }, [conversations, user]);
 
-  // Group properties by location and property type
-  const groupProperties = (properties) => {
-    const grouped = {};
 
-    properties.forEach(property => {
-      // Extract city from location (first part before comma)
-      const location = property.location.split(',').length > 1
-        ? property.location.split(',')[0].trim()
-        : property.location.trim();
-
-      // Get property type or default to 'other'
-      const type = property.property_type?.toLowerCase() || 'other';
-
-      // Create a unique key for each location-type combination
-      const groupKey = `${location}_${type}`;
-
-      if (!grouped[groupKey]) {
-        grouped[groupKey] = {
-          location,
-          type,
-          properties: []
-        };
-      }
-
-      grouped[groupKey].properties.push(property);
-    });
-
-    // Convert to array and sort by location name
-    return Object.values(grouped).sort((a, b) => a.location.localeCompare(b.location));
-  };
 
   // Filter properties
   const filterProperties = useCallback(() => {
