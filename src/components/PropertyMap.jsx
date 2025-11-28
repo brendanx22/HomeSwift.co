@@ -1,18 +1,3 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-    Viewer,
-    Cartesian3,
-    Color,
-    ScreenSpaceEventType,
-    defined,
-    Ion,
-    createOpenStreetMapImageryProvider,
-    EllipsoidTerrainProvider
-} from 'cesium';
-import { trackEvent } from '../lib/posthog';
-import 'cesium/Build/Cesium/Widgets/widgets.css';
-
 // Disable Cesium Ion completely
 Ion.defaultAccessToken = undefined;
 
@@ -38,7 +23,7 @@ const PropertyMap = ({
 
         try {
             // Create OSM imagery provider (100% free!)
-            const imageryProvider = createOpenStreetMapImageryProvider({
+            const imageryProvider = new OpenStreetMapImageryProvider({
                 url: 'https://tile.openstreetmap.org/'
             });
 
