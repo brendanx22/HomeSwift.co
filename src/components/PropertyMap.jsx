@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl, Layer, Source } from 'react-map-gl/maplibre';
+import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl } from 'react-map-gl/maplibre';
 import { useNavigate } from 'react-router-dom';
 import { Star, MapPin } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
+// 100% FREE - No API keys needed!
 const PropertyMap = ({
     properties = [],
     property = null,
@@ -40,10 +41,10 @@ const PropertyMap = ({
 
         if (selectedLocation) {
             newCenter = { latitude: selectedLocation.lat, longitude: selectedLocation.lng };
-            newZoom = 15; // Closer zoom for selected location
+            newZoom = 15;
         } else if (property && property.latitude && property.longitude) {
             newCenter = { latitude: property.latitude, longitude: property.longitude };
-            newZoom = 14; // Closer zoom for single property
+            newZoom = 14;
         } else if (displayProperties.length > 0 && displayProperties[0].latitude) {
             newCenter = { latitude: displayProperties[0].latitude, longitude: displayProperties[0].longitude };
         } else if (center) {
@@ -51,11 +52,10 @@ const PropertyMap = ({
         }
 
         if (newCenter && mapRef.current) {
-            // Smooth camera transition
             mapRef.current.flyTo({
                 center: [newCenter.longitude, newCenter.latitude],
                 zoom: newZoom,
-                pitch: property ? 45 : 0, // Tilt for single property view
+                pitch: property ? 45 : 0,
                 duration: 2000,
                 essential: true
             });
@@ -76,21 +76,17 @@ const PropertyMap = ({
         return () => clearInterval(rotationInterval);
     }, [isInteracting, selectionMode, viewState.zoom]);
 
-
     const onMapClick = useCallback((event) => {
         setIsInteracting(true);
         if (selectionMode && onLocationSelect) {
             const { lng, lat } = event.lngLat;
             onLocationSelect({ lat, lng });
         }
-        // Resume auto-rotation after 5 seconds
         setTimeout(() => setIsInteracting(false), 5000);
     }, [selectionMode, onLocationSelect]);
 
     const markers = useMemo(() => displayProperties.map((prop) => {
         const hasCoords = prop.latitude && prop.longitude;
-        // Use random offset if no coords (for demo data only) - ideally we filter these out
-        // But for consistency with previous implementation:
         const lat = hasCoords ? prop.latitude : (center[0] + (Math.random() - 0.5) * 0.02);
         const lng = hasCoords ? prop.longitude : (center[1] + (Math.random() - 0.5) * 0.02);
 
@@ -101,7 +97,6 @@ const PropertyMap = ({
                 latitude={lat}
                 anchor="bottom"
                 onClick={e => {
-                    // If we let the click propagate, it might trigger the map click handler
                     e.originalEvent.stopPropagation();
                     setPopupInfo(prop);
                     trackEvent('map_marker_clicked', {
@@ -111,14 +106,9 @@ const PropertyMap = ({
                 }}
             >
                 <div className="cursor-pointer transform hover:scale-110 transition-transform">
-                    {/* Custom Marker Pin */}
                     <div className="bg-[#FF6B35] text-white p-1.5 rounded-full shadow-lg border-2 border-white">
                         <MapPin className="w-5 h-5" />
                     </div>
-                    {/* Price Tag (optional, maybe too cluttered for many markers) */}
-                    {/* <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-gray-900 text-xs font-bold px-2 py-1 rounded shadow-md whitespace-nowrap">
-                        ₦{prop.price?.toLocaleString()}
-                    </div> */}
                 </div>
             </Marker>
         );
@@ -139,7 +129,7 @@ const PropertyMap = ({
                 onWheel={() => setIsInteracting(true)}
                 style={{ width: '100%', height: '100%' }}
                 mapStyle="https://demotiles.maplibre.org/style.json"
-                projection="globe" // Enable 3D Globe
+                projection="globe"
                 onClick={onMapClick}
                 minZoom={1}
                 maxZoom={20}
@@ -175,7 +165,7 @@ const PropertyMap = ({
                 {popupInfo && (
                     <Popup
                         anchor="top"
-                        longitude={popupInfo.longitude || (center[1] + (Math.random() - 0.5) * 0.02)} // Fallback logic same as marker
+                        longitude={popupInfo.longitude || (center[1] + (Math.random() - 0.5) * 0.02)}
                         latitude={popupInfo.latitude || (center[0] + (Math.random() - 0.5) * 0.02)}
                         onClose={() => setPopupInfo(null)}
                         maxWidth="300px"
