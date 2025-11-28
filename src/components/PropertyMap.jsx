@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Viewer, Cartesian3, Color, Entity, ScreenSpaceEventType, defined } from 'cesium';
+import { Viewer, Cartesian3, Color, ScreenSpaceEventType, defined, Ion } from 'cesium';
 import { trackEvent } from '../lib/posthog';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
-// 100% FREE CesiumJS - No API keys needed!
+// Disable Cesium Ion (we'll use free OSM imagery instead)
+Ion.defaultAccessToken = '';
+
+// 100% FREE CesiumJS - No external dependencies!
 const PropertyMap = ({
     properties = [],
     property = null,
@@ -26,8 +29,9 @@ const PropertyMap = ({
 
         try {
             const viewer = new Viewer(containerRef.current, {
+                // UI controls
                 animation: false,
-                baseLayerPicker: true,
+                baseLayerPicker: false, // Disable to avoid Ion dependency
                 timeline: false,
                 geocoder: false,
                 homeButton: true,
@@ -35,10 +39,14 @@ const PropertyMap = ({
                 sceneModePicker: true,
                 selectionIndicator: false,
                 infoBox: false,
+                // Disable features that require external data
+                terrainProvider: undefined,
+                skyBox: false,
+                skyAtmosphere: false,
             });
 
-            // Enable lighting for better globe appearance
-            viewer.scene.globe.enableLighting = true;
+            // Disable lighting to avoid external data dependencies
+            viewer.scene.globe.enableLighting = false;
             viewer.scene.globe.showGroundAtmosphere = true;
 
             viewerRef.current = viewer;
@@ -55,7 +63,11 @@ const PropertyMap = ({
 
         return () => {
             if (viewerRef.current) {
-                viewerRef.current.destroy();
+                try {
+                    viewerRef.current.destroy();
+                } catch (e) {
+                    console.error('Error destroying viewer:', e);
+                }
                 viewerRef.current = null;
             }
         };
@@ -107,16 +119,22 @@ const PropertyMap = ({
         handler.setInputAction((click) => {
             const pickedObject = viewer.scene.pick(click.position);
 
-            if (defined(pickedObject) && pickedObject.id) {
-                const entity = pickedObject.id;
-                if (entity.properties) {
-                    const prop = entity.properties.getValue(viewer.clock.currentTime);
-                    setSelectedProperty(prop);
-                    trackEvent('map_marker_clicked', {
-                        property_id: prop.id,
-                        location: prop.location
-                    });
-                }
+            if (defined(pickedObject) && pickedObject.id && pickedObject.id.properties) {
+                const entityProps = pickedObject.id.properties;
+                const prop = {
+                    id: pickedObject.id.id,
+                    title: entityProps.title?._value || '',
+                    location: entityProps.location?._value || '',
+                    price: entityProps.price?._value || 0,
+                    images: entityProps.images?._value || [],
+                    property_type: entityProps.property_type?._value || ''
+                };
+
+                setSelectedProperty(prop);
+                trackEvent('map_marker_clicked', {
+                    property_id: prop.id,
+                    location: prop.location
+                });
             }
         }, ScreenSpaceEventType.LEFT_CLICK);
 
