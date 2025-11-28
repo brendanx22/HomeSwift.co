@@ -1,13 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Viewer, Cartesian3, Color, ScreenSpaceEventType, defined, Ion } from 'cesium';
+import {
+    Viewer,
+    Cartesian3,
+    Color,
+    ScreenSpaceEventType,
+    defined,
+    Ion,
+    createOpenStreetMapImageryProvider,
+    EllipsoidTerrainProvider
+} from 'cesium';
 import { trackEvent } from '../lib/posthog';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
-// Disable Cesium Ion (we'll use free OSM imagery instead)
-Ion.defaultAccessToken = '';
+// Disable Cesium Ion completely
+Ion.defaultAccessToken = undefined;
 
-// 100% FREE CesiumJS - No external dependencies!
+// 100% FREE CesiumJS with OpenStreetMap tiles
 const PropertyMap = ({
     properties = [],
     property = null,
@@ -28,10 +37,18 @@ const PropertyMap = ({
         if (!containerRef.current || viewerRef.current) return;
 
         try {
+            // Create OSM imagery provider (100% free!)
+            const imageryProvider = createOpenStreetMapImageryProvider({
+                url: 'https://tile.openstreetmap.org/'
+            });
+
+            // Create viewer with custom imagery
             const viewer = new Viewer(containerRef.current, {
+                imageryProvider: imageryProvider,
+                terrainProvider: new EllipsoidTerrainProvider(), // Simple sphere, no external data
                 // UI controls
                 animation: false,
-                baseLayerPicker: false, // Disable to avoid Ion dependency
+                baseLayerPicker: false,
                 timeline: false,
                 geocoder: false,
                 homeButton: true,
@@ -39,13 +56,13 @@ const PropertyMap = ({
                 sceneModePicker: true,
                 selectionIndicator: false,
                 infoBox: false,
-                // Disable features that require external data
-                terrainProvider: undefined,
+                // Disable external dependencies
+                requestRenderMode: false,
                 skyBox: false,
                 skyAtmosphere: false,
             });
 
-            // Disable lighting to avoid external data dependencies
+            // Simple lighting
             viewer.scene.globe.enableLighting = false;
             viewer.scene.globe.showGroundAtmosphere = true;
 
