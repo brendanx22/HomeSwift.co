@@ -145,43 +145,6 @@ const PropertyMap = ({
                 maxZoom={20}
                 maxPitch={85}
             >
-                {/* Add 3D Buildings Layer */}
-                <Source
-                    id="openmaptiles"
-                    type="vector"
-                    url="https://demotiles.maplibre.org/tiles/tiles.json"
-                />
-                <Layer
-                    id="3d-buildings"
-                    source="openmaptiles"
-                    source-layer="building"
-                    filter={['==', 'extrude', 'true']}
-                    type="fill-extrusion"
-                    minzoom={14}
-                    paint={{
-                        'fill-extrusion-color': '#aaa',
-                        'fill-extrusion-height': [
-                            'interpolate',
-                            ['linear'],
-                            ['zoom'],
-                            15,
-                            0,
-                            15.05,
-                            ['get', 'render_height']
-                        ],
-                        'fill-extrusion-base': [
-                            'interpolate',
-                            ['linear'],
-                            ['zoom'],
-                            15,
-                            0,
-                            15.05,
-                            ['get', 'render_min_height']
-                        ],
-                        'fill-extrusion-opacity': 0.6
-                    }}
-                />
-
                 <NavigationControl position="top-right" showCompass={true} showZoom={true} />
                 <FullscreenControl position="top-right" />
                 <ScaleControl />
