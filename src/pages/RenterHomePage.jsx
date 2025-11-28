@@ -636,7 +636,7 @@ const RenterHomePage = () => {
 
               {/* Profile Menu - Avatar with Unread Indicator */}
               {user ? (
-                <div className="relative">
+                <div className="relative" title={user.email}>
                   <button
                     onClick={() => setShowProfilePopup(true)}
                     className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] hover:shadow-md transition-all transform hover:scale-105 relative"
@@ -644,14 +644,16 @@ const RenterHomePage = () => {
                     {getUserAvatar() ? (
                       <>
                         <img
+                          key={getUserAvatar()} // Force reload if URL changes
                           src={getUserAvatar()}
                           alt="Profile"
                           className="absolute inset-0 w-full h-full object-cover"
                           onError={(e) => {
                             e.target.style.display = 'none';
+                            e.target.onerror = null; // Prevent infinite loop
                           }}
                         />
-                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#FF6B35] to-[#e85e2f]">
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] -z-10">
                           <span className="text-white text-sm font-bold">
                             {getUserInitial()}
                           </span>
