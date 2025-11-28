@@ -21,7 +21,7 @@ const PropertyMap = ({
     const [viewState, setViewState] = useState({
         latitude: center[0],
         longitude: center[1],
-        zoom: zoom
+        zoom: property ? zoom : 2.5 // Full globe view by default, zoom in for single property
     });
 
     // Normalize properties input
