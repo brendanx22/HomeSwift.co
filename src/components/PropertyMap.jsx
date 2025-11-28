@@ -67,7 +67,7 @@ const PropertyMap = ({
     }), [displayProperties, center]);
 
     return (
-        <div className={`${height} w-full rounded-xl overflow-hidden shadow-lg border border-gray-200 relative`}>
+        <div className={`${height} w-full relative`}>
             <Map
                 {...viewState}
                 onMove={evt => setViewState(evt.viewState)}
