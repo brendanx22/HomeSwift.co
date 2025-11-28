@@ -5,6 +5,53 @@ import { Star, MapPin } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
+// Globe styles
+const globeStyles = `
+  .globe-container {
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2), inset 0 0 30px rgba(0, 0, 0, 0.1);
+    position: relative;
+  }
+
+  .globe-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .mapboxgl-canvas {
+    border-radius: 50% !important;
+  }
+
+  .mapboxgl-ctrl-top-right {
+    top: 20px !important;
+    right: 20px !important;
+  }
+
+  .mapboxgl-ctrl-nav-forward,
+  .mapboxgl-ctrl-nav-backward,
+  .mapboxgl-ctrl-nav-rotate,
+  .mapboxgl-ctrl-nav-pitch {
+    display: none;
+  }
+`;
+
+// Inject styles
+if (!document.getElementById('globe-styles')) {
+  const styleSheet = document.createElement('style');
+  styleSheet.id = 'globe-styles';
+  styleSheet.innerText = globeStyles;
+  document.head.appendChild(styleSheet);
+}
+
 // Mapbox Token
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -101,14 +148,14 @@ const PropertyMap = ({
     }), [displayProperties, center]);
 
     return (
-        <div className={`${height} w-full rounded-xl overflow-hidden shadow-lg border border-gray-200 relative`}>
+        <div className="globe-container" style={{ width: '100%', height: height === "h-[calc(100vh-180px)]" ? 'calc(100vh - 180px)' : height, maxWidth: '600px', margin: '0 auto' }}>
             <Map
                 {...viewState}
                 onMove={evt => setViewState(evt.viewState)}
                 style={{ width: '100%', height: '100%' }}
                 mapStyle="mapbox://styles/mapbox/streets-v12"
                 mapboxAccessToken={MAPBOX_TOKEN}
-                projection="globe" // Enable 3D Globe
+                projection="globe"
                 onClick={onMapClick}
                 fog={{
                     "range": [0.5, 10],
@@ -119,6 +166,9 @@ const PropertyMap = ({
                     "star-intensity": 0.15
                 }}
                 terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
+                pitch={45}
+                bearing={0}
+                attributionControl={false}
             >
                 <NavigationControl position="top-right" />
                 <FullscreenControl position="top-right" />
@@ -150,7 +200,7 @@ const PropertyMap = ({
                 {popupInfo && (
                     <Popup
                         anchor="top"
-                        longitude={popupInfo.longitude || (center[1] + (Math.random() - 0.5) * 0.02)} // Fallback logic same as marker
+                        longitude={popupInfo.longitude || (center[1] + (Math.random() - 0.5) * 0.02)}
                         latitude={popupInfo.latitude || (center[0] + (Math.random() - 0.5) * 0.02)}
                         onClose={() => setPopupInfo(null)}
                         maxWidth="300px"

@@ -340,6 +340,69 @@ const RenterHomePage = () => {
     }
   };
 
+  // Set up real-time subscriptions for navbar data
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('🔄 Setting up real-time subscriptions for navbar...');
+
+    // Subscribe to user profile changes
+    const profileSubscription = supabase
+      .channel(`user_profiles:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_profiles',
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('🔄 User profile updated:', payload);
+          if (payload.new) {
+            const firstName = payload.new.full_name?.split(' ')[0] || '';
+            setUserFirstName(firstName);
+            if (payload.new.profile_image) {
+              setUserAvatar(payload.new.profile_image);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to saved properties changes
+    const savedPropsSubscription = supabase
+      .channel(`saved_properties:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'saved_properties',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('🔄 Saved properties updated:', payload);
+          setSavedProperties((prev) => {
+            const updated = new Set(prev);
+            if (payload.eventType === 'INSERT') {
+              updated.add(payload.new.property_id);
+            } else if (payload.eventType === 'DELETE') {
+              updated.delete(payload.old.property_id);
+            }
+            return updated;
+          });
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions
+    return () => {
+      profileSubscription?.unsubscribe();
+      savedPropsSubscription?.unsubscribe();
+    };
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       loadData();
