@@ -86,7 +86,6 @@ export default defineConfig(({ command, mode }) => {
             "react-vendor": ["react", "react-dom", "react-router-dom"],
             supabase: ["@supabase/supabase-js"],
             "ui-vendor": ["framer-motion", "lucide-react"],
-            cesium: ["cesium"], // CesiumJS for 3D globe
           },
         },
       },
