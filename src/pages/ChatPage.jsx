@@ -73,7 +73,7 @@ export default function ChatPage() {
   useEffect(() => {
     console.log('User object:', user);
   }, [user]);
-  
+
   // Get user's display name (first name only)
   const getUserDisplayName = useCallback(() => {
     if (!user) return 'User';
@@ -172,7 +172,7 @@ export default function ChatPage() {
 
     return result;
   }, [user]);
-  
+
   // UI state
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
@@ -268,7 +268,7 @@ export default function ChatPage() {
       setSearchInput('');
     }
   }, [searchInput]);
-  
+
 
   // Handle authentication state and redirects
   useEffect(() => {
@@ -287,7 +287,7 @@ export default function ChatPage() {
           navigate(redirectTo, { replace: true });
         }
       }
-    } 
+    }
     // If user is not authenticated
     else if (!isAuthenticated) {
       // If not on an auth page and not already going to login, redirect to login
@@ -297,7 +297,7 @@ export default function ChatPage() {
       }
     }
   }, [user, isAuthenticated, authLoading, location, navigate]);
-  
+
   // Show loading state while checking auth
   if (authLoading) {
     return (
@@ -381,17 +381,17 @@ export default function ChatPage() {
         // Clear all forms of storage
         localStorage.clear();
         sessionStorage.clear();
-        
+
         // Clear all cookies
         document.cookie.split(';').forEach(cookie => {
           const [name] = cookie.trim().split('=');
           document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname}`;
         });
       };
-      
+
       // 2. Clear storage immediately
       clearStorage();
-      
+
       // 3. Call the server-side logout endpoint if it exists
       try {
         await fetch('/api/auth/signout', {
@@ -404,7 +404,7 @@ export default function ChatPage() {
       } catch (apiError) {
         console.warn('API signout failed, continuing with client-side cleanup', apiError);
       }
-      
+
       // 4. Clear any auth state in the app
       if (typeof contextSignOut === 'function') {
         try {
@@ -413,7 +413,7 @@ export default function ChatPage() {
           console.warn('Context sign out failed, continuing with full page reload', signOutError);
         }
       }
-      
+
       // 5. Clear any service worker caches
       if ('caches' in window) {
         try {
@@ -423,14 +423,14 @@ export default function ChatPage() {
           console.warn('Failed to clear cache:', cacheError);
         }
       }
-      
+
       // 6. Force a full page reload with a clean state
       // Add a random parameter to prevent caching
       const timestamp = `?t=${Date.now()}&from=logout`;
-      
+
       // 7. Clear any remaining state and redirect
       window.history.replaceState(null, '', '/login' + timestamp);
-      
+
       // 8. Use a small delay to ensure all state is cleared
       setTimeout(() => {
         // Clear storage one more time before redirecting
@@ -438,7 +438,7 @@ export default function ChatPage() {
         // Force a hard redirect to the login page
         window.location.href = '/login' + timestamp;
       }, 50);
-      
+
     } catch (error) {
       console.error('Logout error:', error);
       // Last resort: force redirect with a fresh state
@@ -450,14 +450,14 @@ export default function ChatPage() {
   const [activeTab, setActiveTab] = useState("browse");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  
+
   // Motion values for interactive elements
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const rotateX = useTransform(mouseY, [-300, 300], [5, -5]);
   const rotateY = useTransform(mouseX, [-300, 300], [-5, 5]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  
+
   // Navigation items with their respective routes
   const navItems = [
     { id: 'ai-assistant', label: 'AI Assistant', icon: <MessageSquare className="w-5 h-5" /> },
@@ -477,7 +477,7 @@ export default function ChatPage() {
 
   // Handle sidebar navigation
   const handleSidebarNavigation = (label) => {
-    switch(label) {
+    switch (label) {
       case 'AI Assistant':
         // Stay on current page (chat)
         break;
@@ -542,11 +542,11 @@ export default function ChatPage() {
   const previewDropdownRef = useRef(null);
   const searchTimeoutRef = useRef(null);
   const autoRoutedRef = useRef(false);
-  
+
   // Load featured and recent properties only on non-chat domains
   useEffect(() => {
     if (isChat) return;
-    
+
     const loadProperties = async () => {
       try {
         // Get featured properties (e.g., where is_featured is true)
@@ -555,7 +555,7 @@ export default function ChatPage() {
           .select('*')
           .eq('is_featured', true)
           .limit(6);
-          
+
         if (featuredError) throw featuredError;
 
         // Get recent properties (ordered by created_at)
@@ -564,7 +564,7 @@ export default function ChatPage() {
           .select('*')
           .order('created_at', { ascending: false })
           .limit(8);
-          
+
         if (recentError) throw recentError;
 
         setFeaturedProperties(featuredData || []);
@@ -580,9 +580,9 @@ export default function ChatPage() {
   // Handle search submission
   const handleSearchSubmit = async (e) => {
     e.preventDefault();
-    
+
     const query = searchQuery.trim();
-    
+
     if (!query) {
       setSearchError('Please enter a search term');
       return;
@@ -607,8 +607,8 @@ export default function ChatPage() {
         const { error } = await supabase
           .from('search_history')
           .insert([
-            { 
-              user_id: user.id, 
+            {
+              user_id: user.id,
               query: query,
               search_data: {
                 location: searchLocation,
@@ -616,7 +616,7 @@ export default function ChatPage() {
               }
             }
           ]);
-          
+
         if (error) console.error('Error saving search history:', error);
       }
       // Navigate to the results page with the query - ensure proper navigation
@@ -719,7 +719,7 @@ export default function ChatPage() {
           // Check if this looks like a Nigerian location
           for (const location of nigerianLocations) {
             if (potentialLocation.toLowerCase().includes(location) ||
-                location.includes(potentialLocation.toLowerCase())) {
+              location.includes(potentialLocation.toLowerCase())) {
               intent.location = location.charAt(0).toUpperCase() + location.slice(1);
               break;
             }
@@ -1195,10 +1195,10 @@ export default function ChatPage() {
 
     // Trigger search after a brief delay - ensure proper navigation
     setTimeout(() => {
-      handleIntelligentSearchSubmit({ preventDefault: () => {} });
+      handleIntelligentSearchSubmit({ preventDefault: () => { } });
     }, 100);
   };
-  
+
   // --- responsive sidebar state ---
   const [isDesktop, setIsDesktop] = useState(() => {
     return typeof window !== 'undefined' ? window.innerWidth >= 1024 : false;
@@ -1208,47 +1208,47 @@ export default function ChatPage() {
   });
   const [showSidePanel, setShowSidePanel] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
-  
+
   // Use refs to track previous values to prevent unnecessary state updates
   const prevIsDesktop = useRef(isDesktop);
   const prevIsSmUp = useRef(isSmUp);
-  
+
   // Single source of truth for window size state
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
       const newIsDesktop = width >= 1024;
       const newIsTablet = width >= 640;
-      
+
       // Only update state if values actually change
       if (newIsTablet !== prevIsSmUp.current) {
         prevIsSmUp.current = newIsTablet;
         setIsSmUp(newIsTablet);
       }
-      
+
       if (newIsDesktop !== prevIsDesktop.current) {
         prevIsDesktop.current = newIsDesktop;
         setIsDesktop(newIsDesktop);
-        
+
         // Auto-hide mobile sidebar on desktop
         if (newIsDesktop) {
           setShowMobileSidebar(false);
         }
       }
-      
+
       // Check mobile sidebar state - only update if needed
       if (!newIsDesktop && !showMobileSidebar && localStorage.getItem('sidebarOpen') === null) {
         setShowMobileSidebar(false);
       }
     };
-    
+
     // Initial check
     handleResize();
-    
+
     // Debounce the resize handler
     const debouncedResize = debounce(handleResize, 100);
     window.addEventListener('resize', debouncedResize);
-    
+
     // Cleanup
     return () => {
       window.removeEventListener('resize', debouncedResize);
@@ -1257,7 +1257,7 @@ export default function ChatPage() {
     // Empty dependency array because we don't want this effect to re-run
     // when state changes, only on mount/unmount
   }, []);
-  
+
   const [compactMode, setCompactMode] = useState(() => {
     // Initialize compact mode from localStorage if it exists
     if (typeof window !== 'undefined') {
@@ -1286,7 +1286,7 @@ export default function ChatPage() {
     try {
       const savedCompact = localStorage.getItem('sidebarCompact');
       if (savedCompact !== null) setCompactMode(JSON.parse(savedCompact));
-      
+
       // Only load mobile sidebar state if we're on mobile
       if (typeof window !== 'undefined' && window.innerWidth < 1024) {
         const savedMobileOpen = localStorage.getItem('sidebarMobileOpen');
@@ -1302,35 +1302,35 @@ export default function ChatPage() {
   const imageInputRef = useRef(null);
   const [showPlusDropdown, setShowPlusDropdown] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  
+
   // Quick actions for search
   const quickActions = [
-    { 
-      id: 'find', 
-      label: 'Find Properties', 
-      icon: () => <SearchIcon className="h-4 w-4" /> 
+    {
+      id: 'find',
+      label: 'Find Properties',
+      icon: () => <SearchIcon className="h-4 w-4" />
     },
-    { 
-      id: 'mortgage', 
-      label: 'Mortgage Calculator', 
-      icon: () => <Calculator className="h-4 w-4" /> 
+    {
+      id: 'mortgage',
+      label: 'Mortgage Calculator',
+      icon: () => <Calculator className="h-4 w-4" />
     },
-    { 
-      id: 'neighborhood', 
-      label: 'Neighborhoods', 
-      icon: () => <MapPin className="h-4 w-4" /> 
+    {
+      id: 'neighborhood',
+      label: 'Neighborhoods',
+      icon: () => <MapPin className="h-4 w-4" />
     },
-    { 
-      id: 'featured', 
-      label: 'Featured Homes', 
-      icon: () => <Home className="h-4 w-4" /> 
+    {
+      id: 'featured',
+      label: 'Featured Homes',
+      icon: () => <Home className="h-4 w-4" />
     }
   ];
-  
+
   // --- preview state ---
   const [previewItem, setPreviewItem] = useState(null);
   const [previewURL, setPreviewURL] = useState(null);
-  
+
   // --- chat data ---
   const [chatHistory, setChatHistory] = useState(() => {
     try {
@@ -1340,7 +1340,7 @@ export default function ChatPage() {
       return [];
     }
   });
-  
+
   const [activeChat, setActiveChat] = useState(null);
   const [hoveredChat, setHoveredChat] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -1411,7 +1411,7 @@ export default function ChatPage() {
     return () => {
       try {
         URL.revokeObjectURL(url);
-      } catch (e) {}
+      } catch (e) { }
       setPreviewURL(null);
     };
   }, [previewItem]);
@@ -1437,7 +1437,7 @@ export default function ChatPage() {
     if (file) setUploadedImages((p) => [...p, file]);
     e.target.value = null;
   };
-  
+
   // Cleanup functions
   const handleRemoveFile = (index) => setUploadedFiles((p) => p.filter((_, i) => i !== index));
   const handleRemoveImage = (index) => setUploadedImages((p) => p.filter((_, i) => i !== index));
@@ -1479,7 +1479,7 @@ export default function ChatPage() {
     setShowSuggestions(false);
     // Trigger search with the selected suggestion - ensure proper navigation
     setTimeout(() => {
-      handleSearchSubmit({ preventDefault: () => {} });
+      handleSearchSubmit({ preventDefault: () => { } });
     }, 100);
   };
 
@@ -1508,7 +1508,7 @@ export default function ChatPage() {
     document.body.style.backgroundAttachment = 'fixed';
     document.body.style.backgroundPosition = 'center';
     document.body.style.backgroundRepeat = 'no-repeat';
-    
+
     return () => {
       // Cleanup on unmount
       document.body.style.backgroundSize = '';
@@ -1586,7 +1586,7 @@ export default function ChatPage() {
                       </>
                     )}
                   </div>
-                  
+
                   {/* Settings Button */}
                   <div className="flex items-center gap-2">
                     <button
@@ -1601,8 +1601,8 @@ export default function ChatPage() {
                   {!compactMode && (
                     <div className="flex items-center gap-1">
                       {!isDesktop ? (
-                        <button 
-                          onClick={() => setShowMobileSidebar(false)} 
+                        <button
+                          onClick={() => setShowMobileSidebar(false)}
                           className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-[#2C3E50] transition-all duration-200"
                         >
                           <X size={18} />
@@ -1650,11 +1650,10 @@ export default function ChatPage() {
                       initial={{ opacity: 0, x: -12 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.18, delay: idx * 0.05 }}
-                      className={`group relative flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 ${
-                        item.active 
-                          ? 'bg-[#FF6B35] text-white shadow-lg' 
+                      className={`group relative flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 ${item.active
+                          ? 'bg-[#FF6B35] text-white shadow-lg'
                           : 'text-gray-600 hover:bg-gray-100 hover:text-[#FF6B35] hover:shadow-sm'
-                      }`}
+                        }`}
                       onClick={() => handleSidebarNavigation(item.label)}
                     >
                       <item.icon size={18} className="shrink-0" />
@@ -1664,7 +1663,7 @@ export default function ChatPage() {
                     </motion.div>
                   ))}
                 </div>
-                
+
                 {/* Chat History */}
                 {!compactMode && (
                   <div className="mt-8 px-2">
@@ -1678,15 +1677,14 @@ export default function ChatPage() {
                           transition={{ duration: 0.18 }}
                           onMouseEnter={() => setHoveredChat(chat.id)}
                           onMouseLeave={() => setHoveredChat(null)}
-                          onClick={() => { 
-                            setActiveChat(chat.id); 
-                            if (!isSmUp) setShowSidePanel(false); 
+                          onClick={() => {
+                            setActiveChat(chat.id);
+                            if (!isSmUp) setShowSidePanel(false);
                           }}
-                          className={`group relative flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-200 ${
-                            activeChat === chat.id 
-                              ? 'bg-[#FF6B35]/10 text-[#2C3E50] border border-[#FF6B35]/20 shadow-sm' 
+                          className={`group relative flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-200 ${activeChat === chat.id
+                              ? 'bg-[#FF6B35]/10 text-[#2C3E50] border border-[#FF6B35]/20 shadow-sm'
                               : 'text-gray-600 hover:bg-gray-100 hover:text-[#FF6B35] hover:shadow-sm'
-                          }`}
+                            }`}
                         >
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-xs font-medium">{chat.title}</p>
@@ -1695,7 +1693,7 @@ export default function ChatPage() {
 
                           {(hoveredChat === chat.id || activeChat === chat.id) && (
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                              <button 
+                              <button
                                 onClick={(e) => deleteChat(chat.id, e)}
                                 className="p-1 rounded hover:bg-red-50 transition-colors duration-200"
                                 title="Delete"
@@ -2355,7 +2353,7 @@ export default function ChatPage() {
                         <button
                           onClick={() => {
                             // Apply filters and search
-                            handleIntelligentSearchSubmit({ preventDefault: () => {} });
+                            handleIntelligentSearchSubmit({ preventDefault: () => { } });
                             setShowAdvancedSearch(false);
                           }}
                           className="px-4 py-2 text-sm bg-[#FF6B35] text-white hover:bg-[#e85e2f] rounded-lg transition-colors shadow-sm"
@@ -2396,7 +2394,7 @@ export default function ChatPage() {
                       >
                         <X size={16} className="text-gray-500" />
                       </button>
-                    </div>  
+                    </div>
 
                     {/* Property Suggestions */}
                     {suggestions.length > 0 && (
@@ -2515,13 +2513,12 @@ export default function ChatPage() {
                                       {suggestion.bathrooms}BA
                                     </span>
                                   )}
-                                  <span className={`px-2 py-0.5 rounded-full ${
-                                    suggestion.relevance > 8 ? 'bg-green-100 text-green-700' :
-                                    suggestion.relevance > 5 ? 'bg-blue-100 text-blue-700' :
-                                    'bg-gray-100 text-gray-700'
-                                  }`}>
+                                  <span className={`px-2 py-0.5 rounded-full ${suggestion.relevance > 8 ? 'bg-green-100 text-green-700' :
+                                      suggestion.relevance > 5 ? 'bg-blue-100 text-blue-700' :
+                                        'bg-gray-100 text-gray-700'
+                                    }`}>
                                     {suggestion.relevance > 8 ? 'Excellent Match' :
-                                     suggestion.relevance > 5 ? 'Good Match' : 'Fair Match'}
+                                      suggestion.relevance > 5 ? 'Good Match' : 'Fair Match'}
                                   </span>
                                 </div>
                               </div>
@@ -2530,11 +2527,10 @@ export default function ChatPage() {
                                 <div className="text-xs text-gray-500 mb-1">Relevance</div>
                                 <div className="w-12 h-2 bg-gray-200 rounded-full overflow-hidden">
                                   <div
-                                    className={`h-full rounded-full transition-all duration-300 ${
-                                      suggestion.relevance > 8 ? 'bg-green-500' :
-                                      suggestion.relevance > 5 ? 'bg-blue-500' :
-                                      'bg-gray-400'
-                                    }`}
+                                    className={`h-full rounded-full transition-all duration-300 ${suggestion.relevance > 8 ? 'bg-green-500' :
+                                        suggestion.relevance > 5 ? 'bg-blue-500' :
+                                          'bg-gray-400'
+                                      }`}
                                     style={{ width: `${Math.min(suggestion.relevance * 10, 100)}%` }}
                                   />
                                 </div>
@@ -2710,4 +2706,4 @@ export default function ChatPage() {
       </div>
     </motion.div>
   );
-  }
+}

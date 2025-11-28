@@ -34,6 +34,7 @@ import ProfilePopup from "../components/ProfilePopup";
 import NotificationCenter from "../components/NotificationCenter";
 import PropertyMap from "../components/PropertyMap";
 import { Map as MapIcon, List as ListIcon } from "lucide-react";
+import { useRealtimeUserData } from "../hooks/useRealtimeUserData";
 
 // Nigerian cities and locations
 const NIGERIAN_LOCATIONS = [
@@ -230,6 +231,13 @@ const RenterHomePage = () => {
   const { user } = useAuth();
   const { conversations, loadConversations } = useMessaging();
 
+  // Real-time user data hook
+  const {
+    savedPropertiesCount: realtimeSavedCount,
+    userProfile: realtimeUserProfile,
+    loading: userDataLoading
+  } = useRealtimeUserData(user?.id);
+
   // State
   const [properties, setProperties] = useState([]);
   const [filteredProperties, setFilteredProperties] = useState([]);
@@ -244,8 +252,6 @@ const RenterHomePage = () => {
   const [activeCategory, setActiveCategory] = useState("all");
   const [unreadCount, setUnreadCount] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
-  const [userAvatar, setUserAvatar] = useState(null);
-  const [userFirstName, setUserFirstName] = useState("");
   const [showProfilePopup, setShowProfilePopup] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
@@ -296,34 +302,7 @@ const RenterHomePage = () => {
     try {
       if (!user) return;
 
-      // Load user profile data from user_profiles table
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('full_name, profile_image')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
-        console.log('Profile error:', profileError);
-        // If no profile exists, that's okay - use defaults
-        if (profileError.code !== 'PGRST116') {
-          throw profileError;
-        }
-      }
-
-      if (profile) {
-        const firstName = profile.full_name?.split(' ')[0] || '';
-        setUserFirstName(firstName);
-        if (profile.profile_image) {
-          console.log('✅ Setting user avatar from DB:', profile.profile_image);
-          setUserAvatar(profile.profile_image);
-        } else {
-          console.log('ℹ️ No profile image in DB, will show initials');
-          setUserAvatar(null);
-        }
-      }
-
-      // Load saved properties
+      // Load saved properties IDs only (profile is handled by real-time hook)
       const { data: saved, error: savedError } = await supabase
         .from('saved_properties')
         .select('property_id')
@@ -336,72 +315,9 @@ const RenterHomePage = () => {
         setSavedProperties(savedIds);
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error('Error loading saved properties:', error);
     }
   };
-
-  // Set up real-time subscriptions for navbar data
-  useEffect(() => {
-    if (!user) return;
-
-    console.log('🔄 Setting up real-time subscriptions for navbar...');
-
-    // Subscribe to user profile changes
-    const profileSubscription = supabase
-      .channel(`user_profiles:${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_profiles',
-          filter: `id=eq.${user.id}`,
-        },
-        (payload) => {
-          console.log('🔄 User profile updated:', payload);
-          if (payload.new) {
-            const firstName = payload.new.full_name?.split(' ')[0] || '';
-            setUserFirstName(firstName);
-            if (payload.new.profile_image) {
-              setUserAvatar(payload.new.profile_image);
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    // Subscribe to saved properties changes
-    const savedPropsSubscription = supabase
-      .channel(`saved_properties:${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'saved_properties',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          console.log('🔄 Saved properties updated:', payload);
-          setSavedProperties((prev) => {
-            const updated = new Set(prev);
-            if (payload.eventType === 'INSERT') {
-              updated.add(payload.new.property_id);
-            } else if (payload.eventType === 'DELETE') {
-              updated.delete(payload.old.property_id);
-            }
-            return updated;
-          });
-        }
-      )
-      .subscribe();
-
-    // Cleanup subscriptions
-    return () => {
-      profileSubscription?.unsubscribe();
-      savedPropsSubscription?.unsubscribe();
-    };
-  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -570,13 +486,25 @@ const RenterHomePage = () => {
   ]);
 
   const getUserInitial = () => {
-    if (userFirstName) {
-      return userFirstName.charAt(0).toUpperCase();
+    if (realtimeUserProfile?.full_name) {
+      const firstName = realtimeUserProfile.full_name.split(' ')[0];
+      return firstName.charAt(0).toUpperCase();
     }
     if (user?.email) {
       return user.email.charAt(0).toUpperCase();
     }
     return "U";
+  };
+
+  const getUserFirstName = () => {
+    if (realtimeUserProfile?.full_name) {
+      return realtimeUserProfile.full_name.split(' ')[0];
+    }
+    return "";
+  };
+
+  const getUserAvatar = () => {
+    return realtimeUserProfile?.profile_image || null;
   };
 
   const scroll = (locationName, direction) => {
@@ -685,9 +613,9 @@ const RenterHomePage = () => {
                     title="Saved Properties"
                   >
                     <Heart className="w-5 h-5" />
-                    {savedProperties.size > 0 && (
+                    {realtimeSavedCount > 0 && (
                       <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white text-xs font-bold rounded-full flex items-center justify-center">
-                        {savedProperties.size}
+                        {realtimeSavedCount}
                       </span>
                     )}
                   </Link>
@@ -724,10 +652,10 @@ const RenterHomePage = () => {
                     onClick={() => setShowProfilePopup(true)}
                     className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] hover:shadow-md transition-all transform hover:scale-105 relative"
                   >
-                    {userAvatar ? (
+                    {getUserAvatar() ? (
                       <>
                         <img
-                          src={userAvatar}
+                          src={getUserAvatar()}
                           alt="Profile"
                           className="absolute inset-0 w-full h-full object-cover"
                           onError={(e) => {

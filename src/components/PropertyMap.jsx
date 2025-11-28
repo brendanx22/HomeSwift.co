@@ -1,56 +1,9 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl } from 'react-map-gl/mapbox';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl, Layer, Source } from 'react-map-gl/mapbox';
 import { useNavigate } from 'react-router-dom';
 import { Star, MapPin } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
 import 'mapbox-gl/dist/mapbox-gl.css';
-
-// Globe styles
-const globeStyles = `
-  .globe-container {
-    border-radius: 50%;
-    overflow: hidden;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2), inset 0 0 30px rgba(0, 0, 0, 0.1);
-    position: relative;
-  }
-
-  .globe-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 50%;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  .mapboxgl-canvas {
-    border-radius: 50% !important;
-  }
-
-  .mapboxgl-ctrl-top-right {
-    top: 20px !important;
-    right: 20px !important;
-  }
-
-  .mapboxgl-ctrl-nav-forward,
-  .mapboxgl-ctrl-nav-backward,
-  .mapboxgl-ctrl-nav-rotate,
-  .mapboxgl-ctrl-nav-pitch {
-    display: none;
-  }
-`;
-
-// Inject styles
-if (!document.getElementById('globe-styles')) {
-  const styleSheet = document.createElement('style');
-  styleSheet.id = 'globe-styles';
-  styleSheet.innerText = globeStyles;
-  document.head.appendChild(styleSheet);
-}
 
 // Mapbox Token
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -66,11 +19,15 @@ const PropertyMap = ({
     height = "h-[calc(100vh-180px)]"
 }) => {
     const navigate = useNavigate();
+    const mapRef = useRef(null);
     const [popupInfo, setPopupInfo] = useState(null);
+    const [isInteracting, setIsInteracting] = useState(false);
     const [viewState, setViewState] = useState({
         latitude: center[0],
         longitude: center[1],
-        zoom: zoom
+        zoom: zoom,
+        pitch: 0,
+        bearing: 0
     });
 
     // Normalize properties input
@@ -80,34 +37,57 @@ const PropertyMap = ({
     }, [property, properties]);
 
     // Update view state when center or property changes
-    React.useEffect(() => {
+    useEffect(() => {
         let newCenter = null;
+        let newZoom = zoom;
 
         if (selectedLocation) {
             newCenter = { latitude: selectedLocation.lat, longitude: selectedLocation.lng };
+            newZoom = 15; // Closer zoom for selected location
         } else if (property && property.latitude && property.longitude) {
             newCenter = { latitude: property.latitude, longitude: property.longitude };
+            newZoom = 14; // Closer zoom for single property
         } else if (displayProperties.length > 0 && displayProperties[0].latitude) {
             newCenter = { latitude: displayProperties[0].latitude, longitude: displayProperties[0].longitude };
         } else if (center) {
             newCenter = { latitude: center[0], longitude: center[1] };
         }
 
-        if (newCenter) {
-            setViewState(prev => ({
-                ...prev,
-                ...newCenter,
-                zoom: zoom // Reset zoom on center change if desired, or keep prev.zoom
-            }));
+        if (newCenter && mapRef.current) {
+            // Smooth camera transition
+            mapRef.current.flyTo({
+                center: [newCenter.longitude, newCenter.latitude],
+                zoom: newZoom,
+                pitch: property ? 45 : 0, // Tilt for single property view
+                duration: 2000,
+                essential: true
+            });
         }
     }, [center, property, selectedLocation, displayProperties, zoom]);
 
+    // Auto-rotation when idle (for globe effect)
+    useEffect(() => {
+        if (isInteracting || selectionMode || viewState.zoom > 8) return;
+
+        const rotationInterval = setInterval(() => {
+            setViewState(prev => ({
+                ...prev,
+                bearing: (prev.bearing + 0.5) % 360
+            }));
+        }, 100);
+
+        return () => clearInterval(rotationInterval);
+    }, [isInteracting, selectionMode, viewState.zoom]);
+
 
     const onMapClick = useCallback((event) => {
+        setIsInteracting(true);
         if (selectionMode && onLocationSelect) {
             const { lng, lat } = event.lngLat;
             onLocationSelect({ lat, lng });
         }
+        // Resume auto-rotation after 5 seconds
+        setTimeout(() => setIsInteracting(false), 5000);
     }, [selectionMode, onLocationSelect]);
 
     const markers = useMemo(() => displayProperties.map((prop) => {
@@ -148,29 +128,74 @@ const PropertyMap = ({
     }), [displayProperties, center]);
 
     return (
-        <div className="globe-container" style={{ width: '100%', height: height === "h-[calc(100vh-180px)]" ? 'calc(100vh - 180px)' : height, maxWidth: '600px', margin: '0 auto' }}>
+        <div className={`${height} w-full rounded-xl overflow-hidden shadow-lg border border-gray-200 relative`}>
             <Map
+                ref={mapRef}
                 {...viewState}
-                onMove={evt => setViewState(evt.viewState)}
+                onMove={evt => {
+                    setViewState(evt.viewState);
+                    setIsInteracting(true);
+                    setTimeout(() => setIsInteracting(false), 5000);
+                }}
+                onMouseDown={() => setIsInteracting(true)}
+                onTouchStart={() => setIsInteracting(true)}
+                onWheel={() => setIsInteracting(true)}
                 style={{ width: '100%', height: '100%' }}
                 mapStyle="mapbox://styles/mapbox/streets-v12"
                 mapboxAccessToken={MAPBOX_TOKEN}
-                projection="globe"
+                projection="globe" // Enable 3D Globe
                 onClick={onMapClick}
                 fog={{
-                    "range": [0.5, 10],
-                    "color": "#ffffff",
-                    "horizon-blend": 0.05,
-                    "high-color": "#245cdf",
-                    "space-color": "#000000",
-                    "star-intensity": 0.15
+                    "range": [0.8, 12],
+                    "color": "#e8f4f8",
+                    "horizon-blend": 0.1,
+                    "high-color": "#4a90e2",
+                    "space-color": "#0a0e27",
+                    "star-intensity": 0.35
                 }}
-                terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
-                pitch={45}
-                bearing={0}
-                attributionControl={false}
+                terrain={{ source: 'mapbox-dem', exaggeration: 1.8 }}
+                minZoom={1}
+                maxZoom={20}
+                maxPitch={85}
             >
-                <NavigationControl position="top-right" />
+                {/* Add 3D Buildings Layer */}
+                <Source
+                    id="composite"
+                    type="vector"
+                    url="mapbox://mapbox.mapbox-streets-v8"
+                />
+                <Layer
+                    id="3d-buildings"
+                    source="composite"
+                    source-layer="building"
+                    filter={['==', 'extrude', 'true']}
+                    type="fill-extrusion"
+                    minzoom={14}
+                    paint={{
+                        'fill-extrusion-color': '#aaa',
+                        'fill-extrusion-height': [
+                            'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            15,
+                            0,
+                            15.05,
+                            ['get', 'height']
+                        ],
+                        'fill-extrusion-base': [
+                            'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            15,
+                            0,
+                            15.05,
+                            ['get', 'min_height']
+                        ],
+                        'fill-extrusion-opacity': 0.6
+                    }}
+                />
+
+                <NavigationControl position="top-right" showCompass={true} showZoom={true} />
                 <FullscreenControl position="top-right" />
                 <ScaleControl />
 
@@ -200,7 +225,7 @@ const PropertyMap = ({
                 {popupInfo && (
                     <Popup
                         anchor="top"
-                        longitude={popupInfo.longitude || (center[1] + (Math.random() - 0.5) * 0.02)}
+                        longitude={popupInfo.longitude || (center[1] + (Math.random() - 0.5) * 0.02)} // Fallback logic same as marker
                         latitude={popupInfo.latitude || (center[0] + (Math.random() - 0.5) * 0.02)}
                         onClose={() => setPopupInfo(null)}
                         maxWidth="300px"
