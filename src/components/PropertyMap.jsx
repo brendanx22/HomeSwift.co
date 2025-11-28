@@ -1,12 +1,9 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl, Layer, Source } from 'react-map-gl/mapbox';
+import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl, Layer, Source } from 'react-map-gl/maplibre';
 import { useNavigate } from 'react-router-dom';
 import { Star, MapPin } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
-import 'mapbox-gl/dist/mapbox-gl.css';
-
-// Mapbox Token
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 const PropertyMap = ({
     properties = [],
@@ -141,32 +138,22 @@ const PropertyMap = ({
                 onTouchStart={() => setIsInteracting(true)}
                 onWheel={() => setIsInteracting(true)}
                 style={{ width: '100%', height: '100%' }}
-                mapStyle="mapbox://styles/mapbox/streets-v12"
-                mapboxAccessToken={MAPBOX_TOKEN}
+                mapStyle="https://demotiles.maplibre.org/style.json"
                 projection="globe" // Enable 3D Globe
                 onClick={onMapClick}
-                fog={{
-                    "range": [0.8, 12],
-                    "color": "#e8f4f8",
-                    "horizon-blend": 0.1,
-                    "high-color": "#4a90e2",
-                    "space-color": "#0a0e27",
-                    "star-intensity": 0.35
-                }}
-                terrain={{ source: 'mapbox-dem', exaggeration: 1.8 }}
                 minZoom={1}
                 maxZoom={20}
                 maxPitch={85}
             >
                 {/* Add 3D Buildings Layer */}
                 <Source
-                    id="composite"
+                    id="openmaptiles"
                     type="vector"
-                    url="mapbox://mapbox.mapbox-streets-v8"
+                    url="https://demotiles.maplibre.org/tiles/tiles.json"
                 />
                 <Layer
                     id="3d-buildings"
-                    source="composite"
+                    source="openmaptiles"
                     source-layer="building"
                     filter={['==', 'extrude', 'true']}
                     type="fill-extrusion"
@@ -180,7 +167,7 @@ const PropertyMap = ({
                             15,
                             0,
                             15.05,
-                            ['get', 'height']
+                            ['get', 'render_height']
                         ],
                         'fill-extrusion-base': [
                             'interpolate',
@@ -189,7 +176,7 @@ const PropertyMap = ({
                             15,
                             0,
                             15.05,
-                            ['get', 'min_height']
+                            ['get', 'render_min_height']
                         ],
                         'fill-extrusion-opacity': 0.6
                     }}
