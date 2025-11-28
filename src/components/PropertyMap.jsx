@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl } from 'react-map-gl/maplibre';
 import { useNavigate } from 'react-router-dom';
 import { Star, MapPin } from 'lucide-react';
@@ -17,15 +17,11 @@ const PropertyMap = ({
     height = "h-[calc(100vh-180px)]"
 }) => {
     const navigate = useNavigate();
-    const mapRef = useRef(null);
     const [popupInfo, setPopupInfo] = useState(null);
-    const [isInteracting, setIsInteracting] = useState(false);
     const [viewState, setViewState] = useState({
         latitude: center[0],
         longitude: center[1],
-        zoom: zoom,
-        pitch: 0,
-        bearing: 0
+        zoom: zoom
     });
 
     // Normalize properties input
@@ -34,55 +30,11 @@ const PropertyMap = ({
         return properties;
     }, [property, properties]);
 
-    // Update view state when center or property changes
-    useEffect(() => {
-        let newCenter = null;
-        let newZoom = zoom;
-
-        if (selectedLocation) {
-            newCenter = { latitude: selectedLocation.lat, longitude: selectedLocation.lng };
-            newZoom = 15;
-        } else if (property && property.latitude && property.longitude) {
-            newCenter = { latitude: property.latitude, longitude: property.longitude };
-            newZoom = 14;
-        } else if (displayProperties.length > 0 && displayProperties[0].latitude) {
-            newCenter = { latitude: displayProperties[0].latitude, longitude: displayProperties[0].longitude };
-        } else if (center) {
-            newCenter = { latitude: center[0], longitude: center[1] };
-        }
-
-        if (newCenter && mapRef.current) {
-            mapRef.current.flyTo({
-                center: [newCenter.longitude, newCenter.latitude],
-                zoom: newZoom,
-                pitch: property ? 45 : 0,
-                duration: 2000,
-                essential: true
-            });
-        }
-    }, [center, property, selectedLocation, displayProperties, zoom]);
-
-    // Auto-rotation when idle (for globe effect)
-    useEffect(() => {
-        if (isInteracting || selectionMode || viewState.zoom > 8) return;
-
-        const rotationInterval = setInterval(() => {
-            setViewState(prev => ({
-                ...prev,
-                bearing: (prev.bearing + 0.5) % 360
-            }));
-        }, 100);
-
-        return () => clearInterval(rotationInterval);
-    }, [isInteracting, selectionMode, viewState.zoom]);
-
     const onMapClick = useCallback((event) => {
-        setIsInteracting(true);
         if (selectionMode && onLocationSelect) {
             const { lng, lat } = event.lngLat;
             onLocationSelect({ lat, lng });
         }
-        setTimeout(() => setIsInteracting(false), 5000);
     }, [selectionMode, onLocationSelect]);
 
     const markers = useMemo(() => displayProperties.map((prop) => {
@@ -117,23 +69,14 @@ const PropertyMap = ({
     return (
         <div className={`${height} w-full rounded-xl overflow-hidden shadow-lg border border-gray-200 relative`}>
             <Map
-                ref={mapRef}
                 {...viewState}
-                onMove={evt => {
-                    setViewState(evt.viewState);
-                    setIsInteracting(true);
-                    setTimeout(() => setIsInteracting(false), 5000);
-                }}
-                onMouseDown={() => setIsInteracting(true)}
-                onTouchStart={() => setIsInteracting(true)}
-                onWheel={() => setIsInteracting(true)}
+                onMove={evt => setViewState(evt.viewState)}
                 style={{ width: '100%', height: '100%' }}
                 mapStyle="https://demotiles.maplibre.org/style.json"
-                projection="globe"
+                projection="globe" // 3D globe projection
                 onClick={onMapClick}
-                minZoom={1}
+                minZoom={1} // Allow zooming out to see full globe
                 maxZoom={20}
-                maxPitch={85}
             >
                 <NavigationControl position="top-right" showCompass={true} showZoom={true} />
                 <FullscreenControl position="top-right" />
