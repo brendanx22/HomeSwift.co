@@ -1,5 +1,16 @@
-// Disable Cesium Ion completely
-Ion.defaultAccessToken = undefined;
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+    Viewer,
+    Cartesian3,
+    Color,
+    ScreenSpaceEventType,
+    defined,
+    OpenStreetMapImageryProvider,
+    EllipsoidTerrainProvider
+} from 'cesium';
+import { trackEvent } from '../lib/posthog';
+import 'cesium/Build/Cesium/Widgets/widgets.css';
 
 // 100% FREE CesiumJS with OpenStreetMap tiles
 const PropertyMap = ({
