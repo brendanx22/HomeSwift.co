@@ -1,11 +1,10 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl } from 'react-map-gl/maplibre';
-import { useNavigate } from 'react-router-dom';
-import { Star, MapPin } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
-import 'maplibre-gl/dist/maplibre-gl.css';
+import 'cesium/Build/Cesium/Widgets/widgets.css';
 
-// 100% FREE - No API keys needed!
+// CesiumJS is 100% FREE - no API token needed for default assets!
+// Ion token is optional - only needed for premium Cesium Ion assets
+// Default Bing Maps imagery is free
+
 const PropertyMap = ({
     properties = [],
     property = null,
@@ -17,18 +16,7 @@ const PropertyMap = ({
     height = "h-[calc(100vh-180px)]"
 }) => {
     const navigate = useNavigate();
-    const [popupInfo, setPopupInfo] = useState(null);
-
-    // Calculate initial zoom based on whether we're showing a single property or list
-    const initialZoom = property ? 12 : (properties.length > 0 ? 8 : 2);
-
-    const [viewState, setViewState] = useState({
-        latitude: center[0],
-        longitude: center[1],
-        zoom: initialZoom,
-        pitch: 0, // Tilt angle (0-85)
-        bearing: 0 // Rotation angle
-    });
+    const [selectedProperty, setSelectedProperty] = useState(null);
 
     // Normalize properties input
     const displayProperties = useMemo(() => {
@@ -36,136 +24,158 @@ const PropertyMap = ({
         return properties;
     }, [property, properties]);
 
-    const onMapClick = useCallback((event) => {
-        if (selectionMode && onLocationSelect) {
-            const { lng, lat } = event.lngLat;
-            onLocationSelect({ lat, lng });
-        }
-    }, [selectionMode, onLocationSelect]);
+    // Calculate camera position based on zoom level
+    // Zoom 11 ≈ 50km altitude, zoom 14 ≈ 15km altitude
+    const getAltitudeFromZoom = (zoomLevel) => {
+        return Math.pow(2, 20 - zoomLevel) * 156543.03392 / 2;
+    };
 
-    const markers = useMemo(() => displayProperties.map((prop) => {
-        const hasCoords = prop.latitude && prop.longitude;
-        const lat = hasCoords ? prop.latitude : (center[0] + (Math.random() - 0.5) * 0.02);
-        const lng = hasCoords ? prop.longitude : (center[1] + (Math.random() - 0.5) * 0.02);
+    const cameraPosition = useMemo(() => {
+        const altitude = getAltitudeFromZoom(property ? 14 : zoom);
+        return Cartesian3.fromDegrees(center[1], center[0], altitude);
+    }, [center, zoom, property]);
 
-        return (
-            <Marker
-                key={prop.id}
-                longitude={lng}
-                latitude={lat}
-                anchor="bottom"
-                onClick={e => {
-                    e.originalEvent.stopPropagation();
-                    setPopupInfo(prop);
-                    trackEvent('map_marker_clicked', {
-                        property_id: prop.id,
-                        location: prop.location
-                    });
-                }}
-            >
-                <div className="cursor-pointer transform hover:scale-110 transition-transform">
-                    <div className="bg-[#FF6B35] text-white p-1.5 rounded-full shadow-lg border-2 border-white">
-                        <MapPin className="w-5 h-5" />
-                    </div>
-                </div>
-            </Marker>
-        );
-    }), [displayProperties, center]);
+    const handlePropertyClick = useCallback((prop) => {
+        setSelectedProperty(prop);
+        trackEvent('map_marker_clicked', {
+            property_id: prop.id,
+            location: prop.location
+        });
+    }, []);
+
+    const handlePropertyNavigate = useCallback((prop) => {
+        trackEvent('property_card_clicked', {
+            property_id: prop.id,
+            source: 'map_popup'
+        });
+        navigate(`/properties/${prop.id}`, { state: { property: prop } });
+    }, [navigate]);
 
     return (
         <div className={`${height} w-full rounded-xl overflow-hidden shadow-lg border border-gray-200 relative`}>
-            <Map
-                {...viewState}
-                onMove={evt => setViewState(evt.viewState)}
+            <Viewer
+                full
+                animation={false}
+                baseLayerPicker={true}
+                timeline={false}
+                geocoder={false}
+                homeButton={true}
+                navigationHelpButton={false}
+                sceneModePicker={true}
+                selectionIndicator={false}
+                infoBox={false}
                 style={{ width: '100%', height: '100%' }}
-                mapStyle="https://demotiles.maplibre.org/style.json"
-                projection="globe" // 3D globe projection
-                onClick={onMapClick}
-                minZoom={0.5} // Allow zooming out to see full globe
-                maxZoom={20}
-                maxPitch={85}
-                terrain={{ source: 'terrainSource', exaggeration: 1.5 }}
-                fog={{
-                    range: [0.5, 10],
-                    color: '#def',
-                    'horizon-blend': 0.1,
-                    'high-color': '#245bde',
-                    'space-color': '#000',
-                    'star-intensity': 0.15
-                }}
             >
-                <NavigationControl position="top-right" showCompass={true} showZoom={true} />
-                <FullscreenControl position="top-right" />
-                <ScaleControl />
+                {/* Globe with terrain */}
+                <Globe
+                    enableLighting={true}
+                    showGroundAtmosphere={true}
+                    atmosphereHueShift={0.0}
+                    atmosphereSaturationShift={0.0}
+                    atmosphereBrightnessShift={0.0}
+                />
+
+                {/* Fly to initial position */}
+                <CameraFlyTo
+                    destination={cameraPosition}
+                    duration={0}
+                />
+
+                {/* Property Markers */}
+                {!selectionMode && displayProperties.map((prop) => {
+                    const hasCoords = prop.latitude && prop.longitude;
+                    if (!hasCoords) return null;
+
+                    const position = Cartesian3.fromDegrees(
+                        prop.longitude,
+                        prop.latitude,
+                        0
+                    );
+
+                    return (
+                        <Entity
+                            key={prop.id}
+                            position={position}
+                            point={{
+                                pixelSize: 12,
+                                color: Color.fromCssColorString('#FF6B35'),
+                                outlineColor: Color.WHITE,
+                                outlineWidth: 2,
+                                heightReference: 0, // CLAMP_TO_GROUND
+                            }}
+                            label={selectedProperty?.id === prop.id ? {
+                                text: `${prop.title}\n₦${prop.price?.toLocaleString()}`,
+                                font: '14px sans-serif',
+                                fillColor: Color.WHITE,
+                                outlineColor: Color.BLACK,
+                                outlineWidth: 2,
+                                style: 0, // FILL
+                                verticalOrigin: 1, // BOTTOM
+                                pixelOffset: new Cartesian2(0, -20),
+                                showBackground: true,
+                                backgroundColor: Color.fromCssColorString('rgba(0,0,0,0.7)'),
+                                backgroundPadding: new Cartesian2(8, 4),
+                            } : undefined}
+                            onClick={() => handlePropertyClick(prop)}
+                            onDoubleClick={() => handlePropertyNavigate(prop)}
+                        />
+                    );
+                })}
 
                 {/* Selection Marker */}
                 {selectionMode && selectedLocation && (
-                    <Marker
-                        longitude={selectedLocation.lng}
-                        latitude={selectedLocation.lat}
-                        anchor="bottom"
-                        draggable
-                        onDragEnd={evt => {
-                            if (onLocationSelect) {
-                                onLocationSelect({ lat: evt.lngLat.lat, lng: evt.lngLat.lng });
-                            }
+                    <Entity
+                        position={Cartesian3.fromDegrees(
+                            selectedLocation.lng,
+                            selectedLocation.lat,
+                            0
+                        )}
+                        point={{
+                            pixelSize: 15,
+                            color: Color.fromCssColorString('#2563eb'),
+                            outlineColor: Color.WHITE,
+                            outlineWidth: 3,
+                            heightReference: 0,
                         }}
-                    >
-                        <div className="cursor-pointer">
-                            <MapPin className="w-8 h-8 text-blue-600 fill-blue-600 drop-shadow-lg" />
-                        </div>
-                    </Marker>
+                    />
                 )}
+            </Viewer>
 
-                {/* Property Markers */}
-                {!selectionMode && markers}
-
-                {/* Popup */}
-                {popupInfo && (
-                    <Popup
-                        anchor="top"
-                        longitude={popupInfo.longitude || (center[1] + (Math.random() - 0.5) * 0.02)}
-                        latitude={popupInfo.latitude || (center[0] + (Math.random() - 0.5) * 0.02)}
-                        onClose={() => setPopupInfo(null)}
-                        maxWidth="300px"
-                        className="rounded-xl"
+            {/* Property Info Popup Overlay */}
+            {selectedProperty && (
+                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-white rounded-xl shadow-2xl p-4 max-w-sm z-50">
+                    <button
+                        onClick={() => setSelectedProperty(null)}
+                        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
                     >
-                        <div
-                            className="cursor-pointer p-1"
-                            onClick={() => {
-                                trackEvent('property_card_clicked', {
-                                    property_id: popupInfo.id,
-                                    source: 'map_popup'
-                                });
-                                navigate(`/properties/${popupInfo.id}`, { state: { property: popupInfo } });
-                            }}
-                        >
-                            <div className="relative h-32 w-full mb-2 rounded-lg overflow-hidden">
-                                <img
-                                    src={popupInfo.images?.[0] || '/placeholder-house.jpg'}
-                                    alt={popupInfo.title}
-                                    className="w-full h-full object-cover"
-                                />
-                                <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-xs font-bold shadow-sm">
-                                    ₦{popupInfo.price?.toLocaleString()}
-                                </div>
+                        ✕
+                    </button>
+                    <div
+                        className="cursor-pointer"
+                        onClick={() => handlePropertyNavigate(selectedProperty)}
+                    >
+                        <div className="relative h-32 w-full mb-2 rounded-lg overflow-hidden">
+                            <img
+                                src={selectedProperty.images?.[0] || '/placeholder-house.jpg'}
+                                alt={selectedProperty.title}
+                                className="w-full h-full object-cover"
+                            />
+                            <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-xs font-bold shadow-sm">
+                                ₦{selectedProperty.price?.toLocaleString()}
                             </div>
-                            <h3 className="font-bold text-gray-900 truncate text-sm">{popupInfo.title}</h3>
-                            <div className="flex items-center text-xs text-gray-600 mt-1">
-                                {popupInfo.rating ? (
-                                    <>
-                                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 mr-1" />
-                                        <span>{popupInfo.rating} ({popupInfo.reviews_count || 0})</span>
-                                        <span className="mx-1">•</span>
-                                    </>
-                                ) : null}
-                                <span>{popupInfo.property_type}</span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1 truncate">{popupInfo.location}</p>
                         </div>
-                    </Popup>
-                )}
-            </Map>
+                        <h3 className="font-bold text-gray-900 truncate text-sm">
+                            {selectedProperty.title}
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1 truncate">
+                            {selectedProperty.location}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">
+                            {selectedProperty.property_type}
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -86,6 +86,7 @@ export default defineConfig(({ command, mode }) => {
             "react-vendor": ["react", "react-dom", "react-router-dom"],
             supabase: ["@supabase/supabase-js"],
             "ui-vendor": ["framer-motion", "lucide-react"],
+            cesium: ["cesium", "resium"], // Separate Cesium into its own chunk
           },
         },
       },
@@ -108,6 +109,7 @@ export default defineConfig(({ command, mode }) => {
         "@supabase/gotrue-js",
         "@supabase/realtime-js",
         "@supabase/storage-js",
+        "cesium", // Add Cesium for optimization
       ],
     },
 
