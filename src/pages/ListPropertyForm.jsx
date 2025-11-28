@@ -1,9 +1,3 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import { motion } from 'framer-motion';
-import PropertyImageUpload from './PropertyImageUpload';
 import PropertyFeatures from './PropertyFeatures';
 import PropertyMap from '../components/PropertyMap';
 import { PropertyAPI } from '../lib/propertyAPI';

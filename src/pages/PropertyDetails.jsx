@@ -1,9 +1,3 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { PropertyAPI } from '../lib/propertyAPI';
-import { useAuth } from '../contexts/AuthContext';
-import { useMessaging } from '../contexts/MessagingContext';
 import { trackListingViewed, trackEvent } from '../lib/posthog';
 import {
   ChevronLeft,
@@ -782,18 +776,22 @@ export default function PropertyDetails() {
                   )}
                   <h3 className="text-xl font-bold text-gray-900 mb-1">{property.landlord_name || 'Property Owner'}</h3>
                   <div className="flex items-center gap-2 text-gray-600 text-sm mb-4">
-                    <Shield className="w-4 h-4 text-[#FF6B35]" />
-                    <span>Identity verified</span>
+                    {property.landlord_verified && (
+                      <>
+                        <Shield className="w-4 h-4 text-[#FF6B35]" />
+                        <span>Identity verified</span>
+                      </>
+                    )}
                   </div>
 
                   <div className="flex gap-4 w-full justify-center">
                     <div className="text-center">
-                      <p className="font-bold text-gray-900">12</p>
+                      <p className="font-bold text-gray-900">{property.reviews_count || 0}</p>
                       <p className="text-xs text-gray-500">Reviews</p>
                     </div>
                     <div className="w-px bg-gray-300 h-8"></div>
                     <div className="text-center">
-                      <p className="font-bold text-gray-900">4.8</p>
+                      <p className="font-bold text-gray-900">{property.rating || 'New'}</p>
                       <p className="text-xs text-gray-500">Rating</p>
                     </div>
                     <div className="w-px bg-gray-300 h-8"></div>

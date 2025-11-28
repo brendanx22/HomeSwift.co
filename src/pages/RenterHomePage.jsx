@@ -1196,6 +1196,10 @@ const RenterHomePage = () => {
               ))}
             </div>
           </div>
+        ) : showMap ? (
+          <div className="mt-6 h-[calc(100vh-200px)]">
+            <PropertyMap properties={filteredProperties} />
+          </div>
         ) : filteredProperties.length > 0 ? (
           <div className="space-y-12 -mx-4 sm:-mx-6 lg:-mx-10">
             {displayedGroups.map((group) => {
@@ -1265,10 +1269,6 @@ const RenterHomePage = () => {
                 </button>
               </div>
             )}
-          </div>
-        ) : showMap ? (
-          <div className="mt-6 h-[calc(100vh-200px)]">
-            <PropertyMap properties={filteredProperties} />
           </div>
         ) : (
           <div className="px-4 sm:px-6 lg:px-10 max-w-[1760px] mx-auto text-center py-20">

@@ -1,157 +1,197 @@
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import React, { useState, useCallback, useMemo } from 'react';
+import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl } from 'react-map-gl';
 import { useNavigate } from 'react-router-dom';
-import { Star } from 'lucide-react';
+import { Star, MapPin } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
-// Fix for default marker icon
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
-
-// Component to update map center when properties change
-const MapUpdater = ({ center }) => {
-    const map = useMap();
-    useEffect(() => {
-        if (center) {
-            map.setView(center, map.getZoom());
-        }
-    }, [center, map]);
-    return null;
-};
-
-// Component to handle map clicks for location selection
-const LocationSelector = ({ onSelect }) => {
-    useMapEvents({
-        click(e) {
-            onSelect(e.latlng);
-        },
-    });
-    return null;
-};
+// Mapbox Token
+const MAPBOX_TOKEN = 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbTFrOXo0bW4wNHVqMmtzNHRqN2VlcWJnIn0.r7l1-TSHXWKQ2NNFUwFCfA';
 
 const PropertyMap = ({
     properties = [],
     property = null,
-    center = [6.5244, 3.3792], // Default to Lagos
-    zoom = 13,
+    center = [6.5244, 3.3792], // Default to Lagos [lat, lng]
+    zoom = 11,
     selectionMode = false,
     onLocationSelect,
     selectedLocation,
     height = "h-[calc(100vh-180px)]"
 }) => {
     const navigate = useNavigate();
-    const [activeProperty, setActiveProperty] = useState(null);
+    const [popupInfo, setPopupInfo] = useState(null);
+    const [viewState, setViewState] = useState({
+        latitude: center[0],
+        longitude: center[1],
+        zoom: zoom
+    });
 
     // Normalize properties input
-    const displayProperties = property ? [property] : properties;
+    const displayProperties = useMemo(() => {
+        if (property) return [property];
+        return properties;
+    }, [property, properties]);
 
-    // Determine center
-    let mapCenter = center;
-    if (selectedLocation) {
-        mapCenter = [selectedLocation.lat, selectedLocation.lng];
-    } else if (property && property.latitude && property.longitude) {
-        mapCenter = [property.latitude, property.longitude];
-    } else if (displayProperties.length > 0 && displayProperties[0].latitude) {
-        // If first property has coords, use it
-        mapCenter = [displayProperties[0].latitude, displayProperties[0].longitude];
-    }
+    // Update view state when center or property changes
+    React.useEffect(() => {
+        let newCenter = null;
+
+        if (selectedLocation) {
+            newCenter = { latitude: selectedLocation.lat, longitude: selectedLocation.lng };
+        } else if (property && property.latitude && property.longitude) {
+            newCenter = { latitude: property.latitude, longitude: property.longitude };
+        } else if (displayProperties.length > 0 && displayProperties[0].latitude) {
+            newCenter = { latitude: displayProperties[0].latitude, longitude: displayProperties[0].longitude };
+        } else if (center) {
+            newCenter = { latitude: center[0], longitude: center[1] };
+        }
+
+        if (newCenter) {
+            setViewState(prev => ({
+                ...prev,
+                ...newCenter,
+                zoom: zoom // Reset zoom on center change if desired, or keep prev.zoom
+            }));
+        }
+    }, [center, property, selectedLocation, displayProperties, zoom]);
+
+
+    const onMapClick = useCallback((event) => {
+        if (selectionMode && onLocationSelect) {
+            const { lng, lat } = event.lngLat;
+            onLocationSelect({ lat, lng });
+        }
+    }, [selectionMode, onLocationSelect]);
+
+    const markers = useMemo(() => displayProperties.map((prop) => {
+        const hasCoords = prop.latitude && prop.longitude;
+        // Use random offset if no coords (for demo data only) - ideally we filter these out
+        // But for consistency with previous implementation:
+        const lat = hasCoords ? prop.latitude : (center[0] + (Math.random() - 0.5) * 0.02);
+        const lng = hasCoords ? prop.longitude : (center[1] + (Math.random() - 0.5) * 0.02);
+
+        return (
+            <Marker
+                key={prop.id}
+                longitude={lng}
+                latitude={lat}
+                anchor="bottom"
+                onClick={e => {
+                    // If we let the click propagate, it might trigger the map click handler
+                    e.originalEvent.stopPropagation();
+                    setPopupInfo(prop);
+                    trackEvent('map_marker_clicked', {
+                        property_id: prop.id,
+                        location: prop.location
+                    });
+                }}
+            >
+                <div className="cursor-pointer transform hover:scale-110 transition-transform">
+                    {/* Custom Marker Pin */}
+                    <div className="bg-[#FF6B35] text-white p-1.5 rounded-full shadow-lg border-2 border-white">
+                        <MapPin className="w-5 h-5" />
+                    </div>
+                    {/* Price Tag (optional, maybe too cluttered for many markers) */}
+                    {/* <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-gray-900 text-xs font-bold px-2 py-1 rounded shadow-md whitespace-nowrap">
+                        ₦{prop.price?.toLocaleString()}
+                    </div> */}
+                </div>
+            </Marker>
+        );
+    }), [displayProperties, center]);
 
     return (
-        <div className={`${height} w-full rounded-xl overflow-hidden shadow-lg border border-gray-200 relative z-0`}>
-            <MapContainer
-                center={mapCenter}
-                zoom={zoom}
-                style={{ height: '100%', width: '100%' }}
-                scrollWheelZoom={true}
+        <div className={`${height} w-full rounded-xl overflow-hidden shadow-lg border border-gray-200 relative`}>
+            <Map
+                {...viewState}
+                onMove={evt => setViewState(evt.viewState)}
+                style={{ width: '100%', height: '100%' }}
+                mapStyle="mapbox://styles/mapbox/streets-v12"
+                mapboxAccessToken={MAPBOX_TOKEN}
+                projection="globe" // Enable 3D Globe
+                onClick={onMapClick}
+                fog={{
+                    "range": [0.5, 10],
+                    "color": "#ffffff",
+                    "horizon-blend": 0.05,
+                    "high-color": "#245cdf",
+                    "space-color": "#000000",
+                    "star-intensity": 0.15
+                }}
+                terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
             >
-                <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+                <NavigationControl position="top-right" />
+                <FullscreenControl position="top-right" />
+                <ScaleControl />
 
-                <MapUpdater center={mapCenter} />
-
-                {selectionMode && onLocationSelect && (
-                    <LocationSelector onSelect={onLocationSelect} />
-                )}
-
-                {/* Render Selection Marker */}
+                {/* Selection Marker */}
                 {selectionMode && selectedLocation && (
-                    <Marker position={[selectedLocation.lat, selectedLocation.lng]} />
+                    <Marker
+                        longitude={selectedLocation.lng}
+                        latitude={selectedLocation.lat}
+                        anchor="bottom"
+                        draggable
+                        onDragEnd={evt => {
+                            if (onLocationSelect) {
+                                onLocationSelect({ lat: evt.lngLat.lat, lng: evt.lngLat.lng });
+                            }
+                        }}
+                    >
+                        <div className="cursor-pointer">
+                            <MapPin className="w-8 h-8 text-blue-600 fill-blue-600 drop-shadow-lg" />
+                        </div>
+                    </Marker>
                 )}
 
-                {/* Render Property Markers */}
-                {!selectionMode && displayProperties.map((prop) => {
-                    // Skip if no coordinates and not in demo mode (though we fallback to random for demo)
-                    // For this implementation, we'll use 0,0 or skip if missing, 
-                    // but for existing data without coords we might want to keep the random offset logic 
-                    // OR just show nothing. Let's keep the random offset for now to avoid empty maps 
-                    // for existing demo data, but strictly use real coords if available.
+                {/* Property Markers */}
+                {!selectionMode && markers}
 
-                    const hasCoords = prop.latitude && prop.longitude;
-                    const lat = hasCoords ? prop.latitude : (mapCenter[0] + (Math.random() - 0.5) * 0.02);
-                    const lng = hasCoords ? prop.longitude : (mapCenter[1] + (Math.random() - 0.5) * 0.02);
-
-                    return (
-                        <Marker
-                            key={prop.id}
-                            position={[lat, lng]}
-                            eventHandlers={{
-                                click: () => {
-                                    setActiveProperty(prop);
-                                    trackEvent('map_marker_clicked', {
-                                        property_id: prop.id,
-                                        location: prop.location
-                                    });
-                                },
+                {/* Popup */}
+                {popupInfo && (
+                    <Popup
+                        anchor="top"
+                        longitude={popupInfo.longitude || (center[1] + (Math.random() - 0.5) * 0.02)} // Fallback logic same as marker
+                        latitude={popupInfo.latitude || (center[0] + (Math.random() - 0.5) * 0.02)}
+                        onClose={() => setPopupInfo(null)}
+                        maxWidth="300px"
+                        className="rounded-xl"
+                    >
+                        <div
+                            className="cursor-pointer p-1"
+                            onClick={() => {
+                                trackEvent('property_card_clicked', {
+                                    property_id: popupInfo.id,
+                                    source: 'map_popup'
+                                });
+                                navigate(`/properties/${popupInfo.id}`, { state: { property: popupInfo } });
                             }}
                         >
-                            <Popup className="min-w-[250px]">
-                                <div
-                                    className="cursor-pointer"
-                                    onClick={() => {
-                                        trackEvent('property_card_clicked', {
-                                            property_id: prop.id,
-                                            source: 'map_popup'
-                                        });
-                                        navigate(`/properties/${prop.id}`, { state: { property: prop } });
-                                    }}
-                                >
-                                    <div className="relative h-32 w-full mb-2 rounded-lg overflow-hidden">
-                                        <img
-                                            src={prop.images?.[0] || '/placeholder-house.jpg'}
-                                            alt={prop.title}
-                                            className="w-full h-full object-cover"
-                                        />
-                                        <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-xs font-bold shadow-sm">
-                                            ₦{prop.price?.toLocaleString()}
-                                        </div>
-                                    </div>
-                                    <h3 className="font-bold text-gray-900 truncate">{prop.title}</h3>
-                                    <div className="flex items-center text-sm text-gray-600 mt-1">
-                                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 mr-1" />
-                                        <span>4.8 (12)</span>
-                                        <span className="mx-1">•</span>
-                                        <span>{prop.property_type}</span>
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-1 truncate">{prop.location}</p>
+                            <div className="relative h-32 w-full mb-2 rounded-lg overflow-hidden">
+                                <img
+                                    src={popupInfo.images?.[0] || '/placeholder-house.jpg'}
+                                    alt={popupInfo.title}
+                                    className="w-full h-full object-cover"
+                                />
+                                <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-xs font-bold shadow-sm">
+                                    ₦{popupInfo.price?.toLocaleString()}
                                 </div>
-                            </Popup>
-                        </Marker>
-                    );
-                })}
-            </MapContainer>
+                            </div>
+                            <h3 className="font-bold text-gray-900 truncate text-sm">{popupInfo.title}</h3>
+                            <div className="flex items-center text-xs text-gray-600 mt-1">
+                                {popupInfo.rating ? (
+                                    <>
+                                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 mr-1" />
+                                        <span>{popupInfo.rating} ({popupInfo.reviews_count || 0})</span>
+                                        <span className="mx-1">•</span>
+                                    </>
+                                ) : null}
+                                <span>{popupInfo.property_type}</span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1 truncate">{popupInfo.location}</p>
+                        </div>
+                    </Popup>
+                )}
+            </Map>
         </div>
     );
 };
