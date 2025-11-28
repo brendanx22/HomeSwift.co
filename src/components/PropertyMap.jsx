@@ -1,18 +1,10 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { Viewer, Entity, CameraFlyTo, Globe } from 'resium';
-import {
-    Cartesian3,
-    Cartesian2,
-    Color
-} from 'cesium';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Viewer, Cartesian3, Color, Entity, ScreenSpaceEventType, defined } from 'cesium';
 import { trackEvent } from '../lib/posthog';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
-// CesiumJS is 100% FREE - no API token needed for default assets!
-// Ion token is optional - only needed for premium Cesium Ion assets
-// Default Bing Maps imagery is free
-
+// 100% FREE CesiumJS - No API keys needed!
 const PropertyMap = ({
     properties = [],
     property = null,
@@ -24,130 +16,123 @@ const PropertyMap = ({
     height = "h-[calc(100vh-180px)]"
 }) => {
     const navigate = useNavigate();
+    const viewerRef = useRef(null);
+    const containerRef = useRef(null);
     const [selectedProperty, setSelectedProperty] = useState(null);
 
-    // Normalize properties input
-    const displayProperties = useMemo(() => {
-        if (property) return [property];
-        return properties;
-    }, [property, properties]);
+    // Initialize Cesium Viewer
+    useEffect(() => {
+        if (!containerRef.current || viewerRef.current) return;
 
-    // Calculate camera position based on zoom level
-    // Zoom 11 ≈ 50km altitude, zoom 14 ≈ 15km altitude
-    const getAltitudeFromZoom = (zoomLevel) => {
-        return Math.pow(2, 20 - zoomLevel) * 156543.03392 / 2;
-    };
+        try {
+            const viewer = new Viewer(containerRef.current, {
+                animation: false,
+                baseLayerPicker: true,
+                timeline: false,
+                geocoder: false,
+                homeButton: true,
+                navigationHelpButton: false,
+                sceneModePicker: true,
+                selectionIndicator: false,
+                infoBox: false,
+            });
 
-    const cameraPosition = useMemo(() => {
-        const altitude = getAltitudeFromZoom(property ? 14 : zoom);
-        return Cartesian3.fromDegrees(center[1], center[0], altitude);
-    }, [center, zoom, property]);
+            // Enable lighting for better globe appearance
+            viewer.scene.globe.enableLighting = true;
+            viewer.scene.globe.showGroundAtmosphere = true;
 
-    const handlePropertyClick = useCallback((prop) => {
-        setSelectedProperty(prop);
-        trackEvent('map_marker_clicked', {
-            property_id: prop.id,
-            location: prop.location
-        });
+            viewerRef.current = viewer;
+
+            // Set initial camera position
+            const altitude = Math.pow(2, 20 - (property ? 14 : zoom)) * 156543.03392 / 2;
+            viewer.camera.setView({
+                destination: Cartesian3.fromDegrees(center[1], center[0], altitude)
+            });
+
+        } catch (error) {
+            console.error('Error initializing Cesium:', error);
+        }
+
+        return () => {
+            if (viewerRef.current) {
+                viewerRef.current.destroy();
+                viewerRef.current = null;
+            }
+        };
     }, []);
 
-    const handlePropertyNavigate = useCallback((prop) => {
+    // Add property markers
+    useEffect(() => {
+        const viewer = viewerRef.current;
+        if (!viewer) return;
+
+        // Clear existing entities
+        viewer.entities.removeAll();
+
+        // Add property markers
+        const displayProperties = property ? [property] : properties;
+
+        displayProperties.forEach((prop) => {
+            if (!prop.latitude || !prop.longitude) return;
+
+            viewer.entities.add({
+                id: prop.id,
+                position: Cartesian3.fromDegrees(prop.longitude, prop.latitude),
+                point: {
+                    pixelSize: 12,
+                    color: Color.fromCssColorString('#FF6B35'),
+                    outlineColor: Color.WHITE,
+                    outlineWidth: 2,
+                },
+                properties: prop
+            });
+        });
+
+        // Add selection marker if in selection mode
+        if (selectionMode && selectedLocation) {
+            viewer.entities.add({
+                id: 'selection-marker',
+                position: Cartesian3.fromDegrees(selectedLocation.lng, selectedLocation.lat),
+                point: {
+                    pixelSize: 15,
+                    color: Color.fromCssColorString('#2563eb'),
+                    outlineColor: Color.WHITE,
+                    outlineWidth: 3,
+                },
+            });
+        }
+
+        // Handle entity clicks
+        const handler = viewer.screenSpaceEventHandler;
+        handler.setInputAction((click) => {
+            const pickedObject = viewer.scene.pick(click.position);
+
+            if (defined(pickedObject) && pickedObject.id) {
+                const entity = pickedObject.id;
+                if (entity.properties) {
+                    const prop = entity.properties.getValue(viewer.clock.currentTime);
+                    setSelectedProperty(prop);
+                    trackEvent('map_marker_clicked', {
+                        property_id: prop.id,
+                        location: prop.location
+                    });
+                }
+            }
+        }, ScreenSpaceEventType.LEFT_CLICK);
+
+    }, [properties, property, selectedLocation, selectionMode]);
+
+    const handlePropertyNavigate = (prop) => {
         trackEvent('property_card_clicked', {
             property_id: prop.id,
             source: 'map_popup'
         });
         navigate(`/properties/${prop.id}`, { state: { property: prop } });
-    }, [navigate]);
+    };
 
     return (
         <div className={`${height} w-full rounded-xl overflow-hidden shadow-lg border border-gray-200 relative`}>
-            <Viewer
-                full
-                animation={false}
-                baseLayerPicker={true}
-                timeline={false}
-                geocoder={false}
-                homeButton={true}
-                navigationHelpButton={false}
-                sceneModePicker={true}
-                selectionIndicator={false}
-                infoBox={false}
-                style={{ width: '100%', height: '100%' }}
-            >
-                {/* Globe with terrain */}
-                <Globe
-                    enableLighting={true}
-                    showGroundAtmosphere={true}
-                    atmosphereHueShift={0.0}
-                    atmosphereSaturationShift={0.0}
-                    atmosphereBrightnessShift={0.0}
-                />
-
-                {/* Fly to initial position */}
-                <CameraFlyTo
-                    destination={cameraPosition}
-                    duration={0}
-                />
-
-                {/* Property Markers */}
-                {!selectionMode && displayProperties.map((prop) => {
-                    const hasCoords = prop.latitude && prop.longitude;
-                    if (!hasCoords) return null;
-
-                    const position = Cartesian3.fromDegrees(
-                        prop.longitude,
-                        prop.latitude,
-                        0
-                    );
-
-                    return (
-                        <Entity
-                            key={prop.id}
-                            position={position}
-                            point={{
-                                pixelSize: 12,
-                                color: Color.fromCssColorString('#FF6B35'),
-                                outlineColor: Color.WHITE,
-                                outlineWidth: 2,
-                                heightReference: 0, // CLAMP_TO_GROUND
-                            }}
-                            label={selectedProperty?.id === prop.id ? {
-                                text: `${prop.title}\n₦${prop.price?.toLocaleString()}`,
-                                font: '14px sans-serif',
-                                fillColor: Color.WHITE,
-                                outlineColor: Color.BLACK,
-                                outlineWidth: 2,
-                                style: 0, // FILL
-                                verticalOrigin: 1, // BOTTOM
-                                pixelOffset: new Cartesian2(0, -20),
-                                showBackground: true,
-                                backgroundColor: Color.fromCssColorString('rgba(0,0,0,0.7)'),
-                                backgroundPadding: new Cartesian2(8, 4),
-                            } : undefined}
-                            onClick={() => handlePropertyClick(prop)}
-                            onDoubleClick={() => handlePropertyNavigate(prop)}
-                        />
-                    );
-                })}
-
-                {/* Selection Marker */}
-                {selectionMode && selectedLocation && (
-                    <Entity
-                        position={Cartesian3.fromDegrees(
-                            selectedLocation.lng,
-                            selectedLocation.lat,
-                            0
-                        )}
-                        point={{
-                            pixelSize: 15,
-                            color: Color.fromCssColorString('#2563eb'),
-                            outlineColor: Color.WHITE,
-                            outlineWidth: 3,
-                            heightReference: 0,
-                        }}
-                    />
-                )}
-            </Viewer>
+            <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 
             {/* Property Info Popup Overlay */}
             {selectedProperty && (
