@@ -6,7 +6,7 @@ import { trackEvent } from '../lib/posthog';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 // Mapbox Token
-const MAPBOX_TOKEN = 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbTFrOXo0bW4wNHVqMmtzNHRqN2VlcWJnIn0.r7l1-TSHXWKQ2NNFUwFCfA';
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
 const PropertyMap = ({
     properties = [],

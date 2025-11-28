@@ -124,7 +124,7 @@ export default defineConfig(({ command, mode }) => {
       react(),
       VitePWA({
         registerType: "prompt", // Changed from autoUpdate to prompt users for updates
-        injectRegister: "auto",
+        injectRegister: null, // Disable auto-injection of registration script
         devOptions: {
           enabled: false, // Disable PWA in development
         },

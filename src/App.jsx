@@ -651,7 +651,7 @@ const App = () => {
     }
 
     // Register service worker for PWA functionality in production
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       const handleUpdateAvailable = () => {
         console.log('Service Worker: Update available, reloading...');
         window.location.reload();

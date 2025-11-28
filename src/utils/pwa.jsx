@@ -308,7 +308,7 @@ export const CacheManager = () => {
 // Service Worker Registration
 export const registerServiceWorker = async (onUpdate) => {
   // Skip in development or if not in browser
-  if (process.env.NODE_ENV !== 'production' || typeof window === 'undefined') {
+  if (!import.meta.env.PROD || typeof window === 'undefined') {
     console.log('Service Worker: Skipping in development or server-side');
     return null;
   }

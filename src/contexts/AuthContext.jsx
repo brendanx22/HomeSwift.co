@@ -613,10 +613,10 @@ export const AuthProvider = ({ children }) => {
                 // If we're on the login page, redirect based on role
                 if (window.location.pathname.includes('/login') || window.location.pathname.includes('/landlord/login')) {
                   // Always prioritize the pendingUserType if it exists
-                  const targetRole = pendingUserType || userType || 'landlord';
+                  const targetRole = pendingUserType || user.user_metadata?.user_type || 'landlord';
                   console.log(`🔄 Login redirect: ${window.location.pathname} -> ${targetRole === 'renter' ? '/chat' : '/landlord/dashboard'}`, {
                     pendingUserType,
-                    userType,
+                    userType: user.user_metadata?.user_type,
                     currentPath: window.location.pathname
                   });
 
