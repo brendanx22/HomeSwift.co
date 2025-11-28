@@ -18,10 +18,16 @@ const PropertyMap = ({
 }) => {
     const navigate = useNavigate();
     const [popupInfo, setPopupInfo] = useState(null);
+
+    // Calculate initial zoom based on whether we're showing a single property or list
+    const initialZoom = property ? 12 : (properties.length > 0 ? 8 : 2);
+
     const [viewState, setViewState] = useState({
         latitude: center[0],
         longitude: center[1],
-        zoom: zoom
+        zoom: initialZoom,
+        pitch: 0, // Tilt angle (0-85)
+        bearing: 0 // Rotation angle
     });
 
     // Normalize properties input
@@ -75,8 +81,18 @@ const PropertyMap = ({
                 mapStyle="https://demotiles.maplibre.org/style.json"
                 projection="globe" // 3D globe projection
                 onClick={onMapClick}
-                minZoom={1} // Allow zooming out to see full globe
+                minZoom={0.5} // Allow zooming out to see full globe
                 maxZoom={20}
+                maxPitch={85}
+                terrain={{ source: 'terrainSource', exaggeration: 1.5 }}
+                fog={{
+                    range: [0.5, 10],
+                    color: '#def',
+                    'horizon-blend': 0.1,
+                    'high-color': '#245bde',
+                    'space-color': '#000',
+                    'star-intensity': 0.15
+                }}
             >
                 <NavigationControl position="top-right" showCompass={true} showZoom={true} />
                 <FullscreenControl position="top-right" />
