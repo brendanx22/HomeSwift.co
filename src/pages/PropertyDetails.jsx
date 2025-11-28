@@ -1,4 +1,9 @@
-import { trackListingViewed, trackEvent } from '../lib/posthog';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { PropertyAPI } from '../lib/propertyAPI';
+import { useAuth } from '../contexts/AuthContext';
+import { useMessaging } from '../contexts/MessagingContext';
 import {
   ChevronLeft,
   ChevronRight,
@@ -39,6 +44,7 @@ import { createNewInquiryNotification } from '../services/notificationService';
 import { supabase } from '../lib/supabaseClient';
 import PropertyReviews from '../components/PropertyReviews';
 import PropertyMap from '../components/PropertyMap';
+import { trackListingViewed, trackEvent } from '../lib/posthog';
 
 export default function PropertyDetails() {
   const { id } = useParams();
