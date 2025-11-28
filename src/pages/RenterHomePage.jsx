@@ -485,26 +485,15 @@ const RenterHomePage = () => {
     priceRange,
   ]);
 
-  const getUserInitial = () => {
-    if (realtimeUserProfile?.full_name) {
-      const firstName = realtimeUserProfile.full_name.split(' ')[0];
-      return firstName.charAt(0).toUpperCase();
-    }
-    if (user?.email) {
-      return user.email.charAt(0).toUpperCase();
-    }
-    return "U";
-  };
 
-  const getUserFirstName = () => {
-    if (realtimeUserProfile?.full_name) {
-      return realtimeUserProfile.full_name.split(' ')[0];
-    }
-    return "";
+
+  const getUserInitial = () => {
+    const name = realtimeUserProfile?.full_name || user?.user_metadata?.full_name || user?.email || "";
+    return name ? name.charAt(0).toUpperCase() : "?";
   };
 
   const getUserAvatar = () => {
-    return realtimeUserProfile?.profile_image || null;
+    return realtimeUserProfile?.profile_image || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
   };
 
   const scroll = (locationName, direction) => {
@@ -613,9 +602,9 @@ const RenterHomePage = () => {
                     title="Saved Properties"
                   >
                     <Heart className="w-5 h-5" />
-                    {realtimeSavedCount > 0 && (
+                    {(realtimeSavedCount > 0 || savedProperties.size > 0) && (
                       <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white text-xs font-bold rounded-full flex items-center justify-center">
-                        {realtimeSavedCount}
+                        {realtimeSavedCount || savedProperties.size}
                       </span>
                     )}
                   </Link>
