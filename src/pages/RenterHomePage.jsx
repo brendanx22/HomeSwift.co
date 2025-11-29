@@ -327,22 +327,21 @@ const RenterHomePage = () => {
   };
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       console.log('👤 User loaded, loading user data...', user.id);
       loadData();
-      // Note: loadConversations is already being called by MessagingContext
-      // when user is authenticated, so we don't need to call it here
+      // Note: MessagingContext handles loadConversations automatically
     } else {
       console.log('❌ User not loaded yet');
     }
-  }, [user]);
+  }, [user?.id, loadData]);
 
   // Calculate unread messages
   useEffect(() => {
     if (conversations && user) {
       const unread = conversations.filter(
         (conv) =>
-          conv.unreadCount > 0 && conv.last_message?.sender_id !== user.id,
+          conv.unread_count > 0 && conv.last_message?.sender_id !== user.id,
       ).length;
       console.log('📊 Unread count calculated:', { unread, conversations: conversations.length });
       setUnreadCount(unread);
@@ -620,18 +619,18 @@ const RenterHomePage = () => {
               {user && (
                 <>
                   {/* Saved Properties */}
-                    <Link
-                      to="/saved"
-                      className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
-                      title="Saved Properties"
-                    >
-                      <Heart className="w-5 h-5" />
-                      {user && (realtimeSavedCount > 0 || savedProperties.size > 0) && (
-                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white text-xs font-bold rounded-full flex items-center justify-center">
-                          {realtimeSavedCount > 0 ? realtimeSavedCount : savedProperties.size}
-                        </span>
-                      )}
-                    </Link>
+                  <Link
+                    to="/saved"
+                    className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+                    title="Saved Properties"
+                  >
+                    <Heart className="w-5 h-5" />
+                    {user && (realtimeSavedCount > 0 || savedProperties.size > 0) && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white text-xs font-bold rounded-full flex items-center justify-center">
+                        {realtimeSavedCount > 0 ? realtimeSavedCount : savedProperties.size}
+                      </span>
+                    )}
+                  </Link>
 
                   {/* Messages */}
                   <Link

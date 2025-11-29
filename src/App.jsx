@@ -96,6 +96,12 @@ const AppLayout = () => {
     if (isAuthenticated && user) {
       const publicRoutes = ['/', '/login', '/signup', '/user-type', '/forgot-password', '/reset-password', '/landlord/login'];
 
+      // IMPORTANT: Don't redirect if we're processing OAuth callback
+      if (path === '/auth/callback') {
+        console.log('🔄 On OAuth callback page, skipping redirects to let AuthCallback handle it');
+        return;
+      }
+
       // Get user data from multiple sources for consistency
       const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
       const userType = user?.user_metadata?.user_type || storedUser?.user_metadata?.user_type || storedUser?.user_type;
@@ -141,7 +147,7 @@ const AppLayout = () => {
 
       // If user is on a landlord route but not a landlord, redirect to renter dashboard
       // Exclude signup pages from this check since they should be accessible to unauthenticated users
-      if (isLandlordRoute && detectedRole !== 'landlord' && !path.includes('/signup')) {
+      if (isLandlordRoute && detectedRole !== 'landlord' && !path.includes('signup')) {
         // console.log('Not a landlord, redirecting to chat');
         navigate('/chat', { replace: true });
         return;
