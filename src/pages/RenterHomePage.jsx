@@ -318,7 +318,11 @@ const RenterHomePage = () => {
       if (saved) {
         const savedIds = new Set(saved.map(item => item.property_id));
         console.log('✅ Loaded saved properties IDs for PropertyCards:', savedIds.size);
+        console.log('🔍 Saved properties data:', saved);
         setSavedProperties(savedIds);
+      } else {
+        console.log('ℹ️ No saved properties found for user');
+        setSavedProperties(new Set());
       }
     } catch (error) {
       console.error('❌ Error loading saved properties IDs:', error);
@@ -484,7 +488,12 @@ const RenterHomePage = () => {
       userDataLoading,
       savedPropertiesSize: savedProperties.size,
       unreadCount,
-      isAuthenticated: !!user
+      isAuthenticated: !!user,
+      // Check the actual values
+      shouldShowSavedBadge: user && (realtimeSavedCount > 0 || savedProperties.size > 0),
+      shouldShowMessagesBadge: user && unreadCount > 0,
+      savedBadgeValue: realtimeSavedCount > 0 ? realtimeSavedCount : savedProperties.size,
+      messagesBadgeValue: unreadCount
     });
 
     // Check localStorage for debugging

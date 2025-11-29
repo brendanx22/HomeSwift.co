@@ -24,6 +24,7 @@ const NotificationCenter = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🔔 NotificationCenter useEffect:', { isAuthenticated, userId: user?.id });
     if (isAuthenticated && user?.id) {
       loadNotifications();
 
@@ -53,6 +54,7 @@ const NotificationCenter = () => {
 
   const loadNotifications = async () => {
     try {
+      console.log('🔔 Loading notifications for user:', user?.id);
       setLoading(true);
 
       // Fetch real notifications from database
@@ -66,10 +68,13 @@ const NotificationCenter = () => {
       if (error) {
         console.error("Error fetching notifications:", error);
         // Fallback to mock data if database query fails
+        console.log('🔔 Using mock notifications due to error');
         setNotifications(getMockNotifications());
         setUnreadCount(3); // Mock unread count
         return;
       }
+
+      console.log('🔔 Notifications loaded:', notificationsData?.length || 0);
 
       // Transform database data to match component format
       const transformedNotifications =
@@ -86,7 +91,9 @@ const NotificationCenter = () => {
         })) || [];
 
       setNotifications(transformedNotifications);
-      setUnreadCount(transformedNotifications.filter((n) => !n.read).length);
+      const unreadCount = transformedNotifications.filter((n) => !n.read).length;
+      console.log('🔔 Unread count calculated:', { total: transformedNotifications.length, unread: unreadCount });
+      setUnreadCount(unreadCount);
     } catch (error) {
       console.error("Error loading notifications:", error);
       // Fallback to mock data on error
@@ -239,6 +246,9 @@ const NotificationCenter = () => {
 
   return (
     <div className="relative">
+      {/* Debug log */}
+      {console.log('🔔 NotificationCenter render:', { unreadCount, notificationsLength: notifications.length, loading })}
+      
       {/* Notification Bell */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -246,7 +256,7 @@ const NotificationCenter = () => {
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white text-xs font-bold rounded-full flex items-center justify-center">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}

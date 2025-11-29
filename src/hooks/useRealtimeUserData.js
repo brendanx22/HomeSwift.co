@@ -41,6 +41,10 @@ export const useRealtimeUserData = (userId) => {
       }
 
       console.log("✅ Saved properties count loaded:", count);
+      console.log("🔍 Saved properties count details:", {
+        count,
+        error: savedError,
+      });
       setSavedPropertiesCount(count || 0);
 
       // Load user profile
