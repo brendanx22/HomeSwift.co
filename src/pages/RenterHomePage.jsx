@@ -305,9 +305,9 @@ const RenterHomePage = () => {
         return;
       }
 
-      console.log('🔍 Loading saved properties data for user:', user.id);
+      console.log('🔍 Loading saved properties IDs for navbar display:', user.id);
 
-      // Load saved properties IDs only (profile is handled by real-time hook)
+      // Load saved properties IDs only for the PropertyCard components (profile is handled by real-time hook)
       const { data: saved, error: savedError } = await supabase
         .from('saved_properties')
         .select('property_id')
@@ -317,11 +317,11 @@ const RenterHomePage = () => {
 
       if (saved) {
         const savedIds = new Set(saved.map(item => item.property_id));
-        console.log('✅ Loaded saved properties:', savedIds.size);
+        console.log('✅ Loaded saved properties IDs for PropertyCards:', savedIds.size);
         setSavedProperties(savedIds);
       }
     } catch (error) {
-      console.error('❌ Error loading saved properties:', error);
+      console.error('❌ Error loading saved properties IDs:', error);
       toast.error('Failed to load saved properties');
     }
   };
@@ -472,6 +472,18 @@ const RenterHomePage = () => {
     filterProperties();
   }, [filterProperties]);
 
+  // Debug: Track real-time data state
+  useEffect(() => {
+    console.log('📊 Navbar Real-time Data State:', {
+      userId: user?.id,
+      realtimeSavedCount,
+      userProfile: realtimeUserProfile?.full_name,
+      userDataLoading,
+      savedPropertiesSize: savedProperties.size,
+      unreadCount
+    });
+  }, [user?.id, realtimeSavedCount, realtimeUserProfile, userDataLoading, savedProperties.size, unreadCount]);
+
   // Debug: Track all state changes
   useEffect(() => {
     console.log("📊 STATE UPDATE:", {
@@ -608,16 +620,18 @@ const RenterHomePage = () => {
               {user && (
                 <>
                   {/* Saved Properties */}
-                  <Link
-                    to="/saved"
-                    className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
-                    title="Saved Properties"
-                  >
-                    <Heart className="w-5 h-5" />
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white text-xs font-bold rounded-full flex items-center justify-center">
-                      {realtimeSavedCount || savedProperties.size || 0}
-                    </span>
-                  </Link>
+                    <Link
+                      to="/saved"
+                      className="relative w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+                      title="Saved Properties"
+                    >
+                      <Heart className="w-5 h-5" />
+                      {user && (realtimeSavedCount > 0 || savedProperties.size > 0) && (
+                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white text-xs font-bold rounded-full flex items-center justify-center">
+                          {realtimeSavedCount > 0 ? realtimeSavedCount : savedProperties.size}
+                        </span>
+                      )}
+                    </Link>
 
                   {/* Messages */}
                   <Link
@@ -626,9 +640,11 @@ const RenterHomePage = () => {
                     title="Messages"
                   >
                     <MessageSquare className="w-5 h-5" />
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white text-xs font-bold rounded-full flex items-center justify-center">
-                      {unreadCount || 0}
-                    </span>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white text-xs font-bold rounded-full flex items-center justify-center">
+                        {unreadCount}
+                      </span>
+                    )}
                   </Link>
 
                   {/* Notifications */}

@@ -2,8 +2,7 @@
 import { supabase } from "./supabaseClient";
 
 // Ensure the API base URL includes the /api prefix
-const API_BASE_URL =
-  `${import.meta.env.VITE_API_URL}/api` || "http://localhost:5000/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://api.homeswift.co";
 
 /**
  * Property Management API
@@ -16,7 +15,7 @@ export class PropertyAPI {
    */
   static async getAllProperties() {
     try {
-      const response = await fetch(`${API_BASE_URL}/properties`);
+      const response = await fetch(`${API_BASE_URL}/api/properties`);
       const result = await response.json();
 
       if (!response.ok) {
