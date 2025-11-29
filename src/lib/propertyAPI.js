@@ -197,6 +197,11 @@ export class PropertyAPI {
     try {
       console.log("🔍 [getSavedProperties] Starting fetch for user:", userId);
 
+      // CRITICAL: Ensure Supabase session is loaded before making queries
+      const { ensureSession } = await import('./supabaseClient');
+      await ensureSession();
+      console.log("✅ [Session] Supabase session ready");
+
       // Step 1: Get saved property IDs
       console.log("📋 [Step 1] Fetching saved property IDs...");
       const { data: savedData, error: savedError } = await supabase

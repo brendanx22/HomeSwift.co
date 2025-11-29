@@ -25,8 +25,47 @@ const initSupabase = () => {
       storage: window.localStorage,
       storageKey: 'supabase.auth.token',
       flowType: 'pkce'
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'homeswift-web'
+      }
+    },
+    db: {
+      schema: 'public'
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 10
+      }
     }
   })
 }
 
 export const supabase = initSupabase()
+
+/**
+ * Ensure Supabase session is loaded before making queries
+ * This fixes hanging queries that happen before auth is ready
+ */
+let sessionPromise = null;
+
+export const ensureSession = async () => {
+  if (sessionPromise) return sessionPromise;
+
+  sessionPromise = supabase.auth.getSession().then(({ data: { session }, error }) => {
+    if (error) {
+      console.error('❌ Error getting Supabase session:', error);
+    } else if (session) {
+      console.log('✅ Supabase session loaded:', session.user.id);
+    } else {
+      console.log('ℹ️ No active Supabase session');
+    }
+    return session;
+  });
+
+  return sessionPromise;
+}
+
+// Call ensureSession immediately to pre-load the session
+ensureSession();
