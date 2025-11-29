@@ -71,11 +71,15 @@ export const AuthProvider = ({ children }) => {
           console.log('✅ Active Supabase session matches localStorage user');
           setUser(sessionData.session.user);
           setIsAuthenticated(true);
+          setLoading(false);
         } else {
           console.log('⚠️ No active Supabase session or mismatch, using localStorage data');
           setUser(userData);
           setIsAuthenticated(true);
         }
+
+        // Set loading to false since we have user data
+        setLoading(false);
 
         // Handle roles
         if (savedRolesString) {
@@ -100,6 +104,7 @@ export const AuthProvider = ({ children }) => {
         if (savedCurrentRole) {
           console.log('🔄 Using saved currentRole from localStorage:', savedCurrentRole);
           setCurrentRole(savedCurrentRole);
+          setLoading(false);
           return true;
         }
 
@@ -107,6 +112,7 @@ export const AuthProvider = ({ children }) => {
         const userType = userData.user_metadata?.user_type;
         if (userType && ['landlord', 'renter'].includes(userType)) {
           console.log('✅ Found required role in user metadata, allowing access');
+          setLoading(false);
           if (userType === 'landlord' && !currentRole) {
             console.log('🔄 User has landlord metadata but no role assigned, assigning landlord role...');
             try {
@@ -745,8 +751,10 @@ export const AuthProvider = ({ children }) => {
         }
 
         if (!session) {
-          console.log('❌ No initial session found');
-          if (isMounted) {
+          console.log('❌ No initial session found, checking localStorage...');
+          // Try to load user data from localStorage even if no Supabase session
+          const hasLocalData = await loadUserData();
+          if (!hasLocalData && isMounted) {
             setLoading(false);
             setIsAuthenticated(false);
           }
@@ -754,7 +762,8 @@ export const AuthProvider = ({ children }) => {
         }
 
         console.log('✅ Initial session found, auth state listener will handle it');
-        // The auth state listener will handle the session via INITIAL_SESSION event
+        // Also try to load user data from localStorage as backup
+        await loadUserData();
       } catch (error) {
         console.error('💥 Initial session check error:', error);
         clearTimeout(loadingTimeout);

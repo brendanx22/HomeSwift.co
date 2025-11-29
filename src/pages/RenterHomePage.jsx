@@ -477,13 +477,24 @@ const RenterHomePage = () => {
   useEffect(() => {
     console.log('📊 Navbar Real-time Data State:', {
       userId: user?.id,
+      userEmail: user?.email,
+      userMetadata: user?.user_metadata,
       realtimeSavedCount,
       userProfile: realtimeUserProfile?.full_name,
       userDataLoading,
       savedPropertiesSize: savedProperties.size,
-      unreadCount
+      unreadCount,
+      isAuthenticated: !!user
     });
-  }, [user?.id, realtimeSavedCount, realtimeUserProfile, userDataLoading, savedProperties.size, unreadCount]);
+
+    // Check localStorage for debugging
+    const localUser = localStorage.getItem('user');
+    console.log('🔍 LocalStorage User Data:', {
+      hasLocalUser: !!localUser,
+      localUserLength: localUser?.length || 0,
+      parsedUser: localUser ? JSON.parse(localUser) : null
+    });
+  }, [user?.id, user?.email, user?.user_metadata, realtimeSavedCount, realtimeUserProfile, userDataLoading, savedProperties.size, unreadCount]);
 
   // Debug: Track all state changes
   useEffect(() => {
