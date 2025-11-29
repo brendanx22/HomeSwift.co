@@ -1,5 +1,5 @@
 // src/lib/propertyAPI.js
-import { supabase } from "./supabaseClient";
+import { supabase, ensureSession } from "./supabaseClient";
 
 // Ensure the API base URL includes the /api prefix
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://api.homeswift.co";
@@ -198,7 +198,6 @@ export class PropertyAPI {
       console.log("🔍 [getSavedProperties] Starting fetch for user:", userId);
 
       // CRITICAL: Ensure Supabase session is loaded before making queries
-      const { ensureSession } = await import('./supabaseClient');
       await ensureSession();
       console.log("✅ [Session] Supabase session ready");
 
