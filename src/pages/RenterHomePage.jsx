@@ -614,11 +614,9 @@ const RenterHomePage = () => {
                     title="Saved Properties"
                   >
                     <Heart className="w-5 h-5" />
-                    {(realtimeSavedCount > 0 || savedProperties.size > 0) && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white text-xs font-bold rounded-full flex items-center justify-center">
-                        {realtimeSavedCount || savedProperties.size}
-                      </span>
-                    )}
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {realtimeSavedCount || savedProperties.size || 0}
+                    </span>
                   </Link>
 
                   {/* Messages */}
@@ -628,11 +626,9 @@ const RenterHomePage = () => {
                     title="Messages"
                   >
                     <MessageSquare className="w-5 h-5" />
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white text-xs font-bold rounded-full flex items-center justify-center">
-                        {unreadCount}
-                      </span>
-                    )}
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {unreadCount || 0}
+                    </span>
                   </Link>
 
                   {/* Notifications */}
