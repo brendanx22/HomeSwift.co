@@ -18,6 +18,7 @@ export const useRealtimeUserData = (userId) => {
     // Function to load initial data
     const loadInitialData = useCallback(async () => {
         if (!userId) {
+            console.log('❌ No userId provided to useRealtimeUserData');
             setLoading(false);
             return;
         }
@@ -26,6 +27,8 @@ export const useRealtimeUserData = (userId) => {
             setLoading(true);
             setError(null);
 
+            console.log('🔍 Loading initial data for userId:', userId);
+
             // Load saved properties count
             const { count, error: savedError } = await supabase
                 .from('saved_properties')
@@ -33,10 +36,11 @@ export const useRealtimeUserData = (userId) => {
                 .eq('user_id', userId);
 
             if (savedError) {
-                console.error('Error loading saved properties count:', savedError);
+                console.error('❌ Error loading saved properties count:', savedError);
                 throw savedError;
             }
 
+            console.log('✅ Saved properties count loaded:', count);
             setSavedPropertiesCount(count || 0);
 
             // Load user profile
@@ -47,24 +51,27 @@ export const useRealtimeUserData = (userId) => {
                 .single();
 
             if (profileError && profileError.code !== 'PGRST116') {
-                console.error('Error loading user profile:', profileError);
+                console.error('❌ Error loading user profile:', profileError);
                 // Don't throw - profile might not exist yet
             }
 
             if (profile) {
+                console.log('✅ User profile loaded:', profile.full_name);
                 setUserProfile(profile);
             }
 
             setLoading(false);
         } catch (err) {
-            console.error('Error loading initial user data:', err);
+            console.error('❌ Error loading initial user data:', err);
             setError(err);
             setLoading(false);
+            // Don't rethrow - we want the hook to work even if initial load fails
         }
     }, [userId]);
 
     // Load initial data on mount or when userId changes
     useEffect(() => {
+        console.log('🔄 loadInitialData effect triggered for userId:', userId);
         loadInitialData();
     }, [loadInitialData]);
 

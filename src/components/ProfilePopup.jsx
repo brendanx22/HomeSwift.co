@@ -258,7 +258,7 @@ const ProfilePopup = ({ isOpen, onClose, position = 'navbar', onAvatarUpdate }) 
             onClick={onClose}
             className="fixed inset-0 bg-black/20 z-40"
           />
-          
+
           {/* Popup */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: -10 }}
@@ -293,7 +293,7 @@ const ProfilePopup = ({ isOpen, onClose, position = 'navbar', onAvatarUpdate }) 
                   <Heart className="w-5 h-5 text-gray-700" />
                   <span className="text-sm font-medium text-gray-900">Saved Properties</span>
                 </button>
-                
+
                 <button
                   onClick={() => {
                     navigate('/message-center');
@@ -304,7 +304,7 @@ const ProfilePopup = ({ isOpen, onClose, position = 'navbar', onAvatarUpdate }) 
                   <MessageSquare className="w-5 h-5 text-gray-700" />
                   <span className="text-sm font-medium text-gray-900">Messages</span>
                 </button>
-                
+
                 <button
                   onClick={() => {
                     navigate('/chat');
@@ -332,7 +332,7 @@ const ProfilePopup = ({ isOpen, onClose, position = 'navbar', onAvatarUpdate }) 
                   <User className="w-5 h-5 text-gray-700" />
                   <span className="text-sm font-medium text-gray-900">Profile</span>
                 </button>
-                
+
                 <button
                   onClick={() => {
                     navigate('/settings');

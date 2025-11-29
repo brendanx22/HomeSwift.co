@@ -44,12 +44,13 @@ export const MessagingProvider = ({ children }) => {
     }
   };
 
-      // Load conversations
+  // Load conversations
   const loadConversations = async () => {
     try {
+      console.log('🔄 Loading conversations...');
       const token = await getAuthToken();
       if (!token) {
-        console.error('No auth token available for API call');
+        console.error('❌ No auth token available for API call');
         return;
       }
 
@@ -63,6 +64,7 @@ export const MessagingProvider = ({ children }) => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Conversations loaded:', data.length);
 
         // Enhance conversations with otherParticipant data from online users
         const enhancedConversations = data.map(conv => {
@@ -83,9 +85,11 @@ export const MessagingProvider = ({ children }) => {
         });
 
         setConversations(enhancedConversations);
+      } else {
+        console.error('❌ Failed to load conversations:', response.status);
       }
     } catch (error) {
-      console.error('Error loading conversations:', error);
+      console.error('❌ Error loading conversations:', error);
     }
   };
 
@@ -447,7 +451,7 @@ export const MessagingProvider = ({ children }) => {
         const message = await response.json();
         setMessages(prev => [...prev, message]);
         updateConversationLastMessage(conversationId, message);
-        
+
         // Track message sent event
         trackMessageSent({
           content: content,
@@ -455,7 +459,7 @@ export const MessagingProvider = ({ children }) => {
           userRole: user?.user_metadata?.user_type || 'unknown',
           attachments: false
         });
-        
+
         return message;
       }
     } catch (error) {
@@ -541,10 +545,10 @@ export const MessagingProvider = ({ children }) => {
       prev.map(conv =>
         conv.id === conversationId
           ? {
-              ...conv,
-              last_message: message.content,
-              last_message_at: message.created_at
-            }
+            ...conv,
+            last_message: message.content,
+            last_message_at: message.created_at
+          }
           : conv
       )
     );

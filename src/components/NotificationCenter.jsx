@@ -293,9 +293,8 @@ const NotificationCenter = () => {
                       key={notification.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                        !notification.read ? "bg-orange-50" : ""
-                      }`}
+                      className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${!notification.read ? "bg-orange-50" : ""
+                        }`}
                       onClick={() => {
                         if (!notification.read) {
                           markAsRead(notification.id);

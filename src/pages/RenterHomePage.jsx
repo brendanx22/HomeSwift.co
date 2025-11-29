@@ -300,7 +300,12 @@ const RenterHomePage = () => {
 
   const loadData = async () => {
     try {
-      if (!user) return;
+      if (!user) {
+        console.log('❌ No user, skipping loadData');
+        return;
+      }
+
+      console.log('🔍 Loading saved properties data for user:', user.id);
 
       // Load saved properties IDs only (profile is handled by real-time hook)
       const { data: saved, error: savedError } = await supabase
@@ -312,27 +317,38 @@ const RenterHomePage = () => {
 
       if (saved) {
         const savedIds = new Set(saved.map(item => item.property_id));
+        console.log('✅ Loaded saved properties:', savedIds.size);
         setSavedProperties(savedIds);
       }
     } catch (error) {
-      console.error('Error loading saved properties:', error);
+      console.error('❌ Error loading saved properties:', error);
+      toast.error('Failed to load saved properties');
     }
   };
 
   useEffect(() => {
     if (user) {
+      console.log('👤 User loaded, loading user data and conversations...', user.id);
       loadData();
-      loadConversations();
+      if (loadConversations) {
+        console.log('📬 Loading conversations...');
+        loadConversations();
+      } else {
+        console.warn('⚠️ loadConversations function not available from MessagingContext');
+      }
+    } else {
+      console.log('❌ User not loaded yet');
     }
-  }, [user]);
+  }, [user, loadConversations]);
 
   // Calculate unread messages
   useEffect(() => {
     if (conversations && user) {
       const unread = conversations.filter(
         (conv) =>
-          conv.unread_count > 0 && conv.last_message?.sender_id !== user.id,
+          conv.unreadCount > 0 && conv.last_message?.sender_id !== user.id,
       ).length;
+      console.log('📊 Unread count calculated:', { unread, conversations: conversations.length });
       setUnreadCount(unread);
     }
   }, [conversations, user]);
@@ -1157,7 +1173,6 @@ const RenterHomePage = () => {
         isOpen={showProfilePopup}
         onClose={() => setShowProfilePopup(false)}
         position="navbar"
-        onAvatarUpdate={(newAvatarUrl) => setUserAvatar(newAvatarUrl)}
       />
 
       {/* Main Content */}
@@ -1275,7 +1290,7 @@ const RenterHomePage = () => {
       </main >
 
       {/* Floating Map Toggle Button */}
-      < div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-40" >
+      <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-40">
         <button
           onClick={() => {
             const newShowMap = !showMap;
@@ -1296,18 +1311,17 @@ const RenterHomePage = () => {
             </>
           )}
         </button>
-      </div >
+      </div>
 
       {/* Profile Popup */}
-      < ProfilePopup
+      <ProfilePopup
         isOpen={showProfilePopup}
         onClose={() => setShowProfilePopup(false)}
-        onAvatarUpdate={(newAvatarUrl) => setUserAvatar(newAvatarUrl)}
         position="navbar"
       />
 
       {/* Footer */}
-      < footer className="border-t bg-gray-50 mt-12" >
+      <footer className="border-t bg-gray-50 mt-12">
         <div className="px-4 sm:px-6 lg:px-10 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
             <div>
@@ -1367,8 +1381,8 @@ const RenterHomePage = () => {
             <p>© 2024 HomeSwift · Made with ❤️ in Nigeria</p>
           </div>
         </div>
-      </footer >
-    </div >
+      </footer>
+    </div>
   );
 };
 
