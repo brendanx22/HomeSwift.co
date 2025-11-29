@@ -328,18 +328,14 @@ const RenterHomePage = () => {
 
   useEffect(() => {
     if (user) {
-      console.log('👤 User loaded, loading user data and conversations...', user.id);
+      console.log('👤 User loaded, loading user data...', user.id);
       loadData();
-      if (loadConversations) {
-        console.log('📬 Loading conversations...');
-        loadConversations();
-      } else {
-        console.warn('⚠️ loadConversations function not available from MessagingContext');
-      }
+      // Note: loadConversations is already being called by MessagingContext
+      // when user is authenticated, so we don't need to call it here
     } else {
       console.log('❌ User not loaded yet');
     }
-  }, [user, loadConversations]);
+  }, [user]);
 
   // Calculate unread messages
   useEffect(() => {

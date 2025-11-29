@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { io } from 'socket.io-client';
 import { supabase } from '../lib/supabaseClient';
@@ -29,42 +29,54 @@ export const MessagingProvider = ({ children }) => {
   const localStream = useRef(null);
   const typingTimeout = useRef(null);
 
-  // Get the current Supabase session token
-  const getAuthToken = async () => {
+  // Get the current Supabase session token (memoized to prevent infinite loops)
+  const getAuthToken = useCallback(async () => {
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
-        console.error('Error getting Supabase session:', error);
+        console.error('❌ Error getting Supabase session:', error);
         return null;
       }
-      return session?.access_token || null;
+      if (!session?.access_token) {
+        console.warn('⚠️ No Supabase access token available');
+        return null;
+      }
+      console.log('✅ Supabase access token retrieved');
+      return session.access_token;
     } catch (error) {
-      console.error('Error getting auth token:', error);
+      console.error('❌ Error getting auth token:', error);
       return null;
     }
-  };
+  }, []);
 
-  // Load conversations
-  const loadConversations = async () => {
+  // Load conversations (memoized to prevent infinite loops)
+  const loadConversations = useCallback(async () => {
     try {
       console.log('🔄 Loading conversations...');
       const token = await getAuthToken();
       if (!token) {
         console.error('❌ No auth token available for API call');
+        console.log('⚠️ User might not be authenticated yet');
         return;
       }
 
       // Force HTTPS to avoid mixed content errors
       const apiUrl = 'https://api.homeswift.co';
+      console.log('📡 Fetching from:', `${apiUrl}/api/messages/conversations`);
+      
       const response = await fetch(`${apiUrl}/api/messages/conversations`, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
 
+      console.log('📊 Response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Conversations loaded:', data.length);
+        console.log('✅ Conversations loaded:', data.length, 'conversations');
 
         // Enhance conversations with otherParticipant data from online users
         const enhancedConversations = data.map(conv => {
@@ -84,14 +96,16 @@ export const MessagingProvider = ({ children }) => {
           return conv;
         });
 
+        console.log('📝 Setting enhanced conversations:', enhancedConversations.length);
         setConversations(enhancedConversations);
       } else {
-        console.error('❌ Failed to load conversations:', response.status);
+        const errorText = await response.text();
+        console.error('❌ Failed to load conversations:', response.status, errorText);
       }
     } catch (error) {
       console.error('❌ Error loading conversations:', error);
     }
-  };
+  }, [getAuthToken, onlineUsers]);
 
   // Initialize Socket.IO connection
   useEffect(() => {
@@ -554,12 +568,16 @@ export const MessagingProvider = ({ children }) => {
     );
   };
 
-  // Load conversations on mount
+  // Load conversations on mount and when authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    console.log('🔐 Auth state changed:', { isAuthenticated, hasUser: !!user });
+    if (isAuthenticated && user) {
+      console.log('✅ User authenticated, loading conversations for:', user.id);
       loadConversations();
+    } else {
+      console.log('❌ User not authenticated yet, conversations not loaded');
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user, loadConversations]);
 
   const value = {
     // Socket and connection
