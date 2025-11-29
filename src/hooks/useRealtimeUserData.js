@@ -30,6 +30,7 @@ export const useRealtimeUserData = (userId) => {
       console.log("🔍 Loading initial data for userId:", userId);
 
       // Load saved properties count
+      console.log("🔍 Loading saved properties count for userId:", userId);
       const { count, error: savedError } = await supabase
         .from("saved_properties")
         .select("*", { count: "exact", head: true })
@@ -37,6 +38,10 @@ export const useRealtimeUserData = (userId) => {
 
       if (savedError) {
         console.error("❌ Error loading saved properties count:", savedError);
+        console.error(
+          "❌ Full error details:",
+          JSON.stringify(savedError, null, 2)
+        );
         throw savedError;
       }
 

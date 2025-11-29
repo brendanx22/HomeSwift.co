@@ -40,6 +40,28 @@ const MessageCenter = () => {
     setSelectedUser
   } = useMessaging();
 
+  // Debug: Track authentication and messaging state
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    if (user !== undefined && user !== null) {
+      setAuthReady(true);
+      console.log('✅ MessageCenter: User data available, setting authReady=true');
+    }
+  }, [user]);
+
+  useEffect(() => {
+    console.log('💬 MessageCenter State:', {
+      userId: user?.id,
+      userEmail: user?.email,
+      hasUser: !!user,
+      authReady,
+      conversationsCount: conversations?.length || 0,
+      activeConversationId: activeConversation?.id,
+      messagesCount: messages?.length || 0
+    });
+  }, [user?.id, user?.email, authReady, conversations?.length, activeConversation?.id, messages?.length]);
+
   // WebRTC hook for handling incoming calls
   const { incomingCall } = useWebRTC(null);
 
@@ -117,7 +139,7 @@ const MessageCenter = () => {
     if (!searchTerm) return true;
     const otherUser = conv.otherParticipant;
     return otherUser?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           otherUser?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      otherUser?.email?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   return (
@@ -193,9 +215,8 @@ const MessageCenter = () => {
 
       <div className="flex h-[calc(100vh-64px)] md:h-[calc(100vh-76px)]">
         {/* Conversations Sidebar - Always visible on mobile */}
-        <div className={`w-full md:w-1/3 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ${
-          activeConversation ? 'hidden md:flex' : 'flex'
-        }`}>
+        <div className={`w-full md:w-1/3 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ${activeConversation ? 'hidden md:flex' : 'flex'
+          }`}>
           {/* Conversations List */}
           <div className="flex-1 overflow-y-auto">
             <AnimatePresence>
@@ -217,11 +238,10 @@ const MessageCenter = () => {
                         loadMessages(conversation.id);
                         setShowMobileNav(false);
                       }}
-                      className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gradient-to-r hover:from-[#FF6B35]/5 hover:to-transparent transition-all duration-200 ${
-                        activeConversation === conversation.id
+                      className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gradient-to-r hover:from-[#FF6B35]/5 hover:to-transparent transition-all duration-200 ${activeConversation === conversation.id
                           ? 'bg-gradient-to-r from-[#FF6B35]/10 to-[#FF6B35]/5 border-r-2 border-r-[#FF6B35]'
                           : ''
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center space-x-3">
                         <div className="relative">
@@ -279,11 +299,10 @@ const MessageCenter = () => {
                           </div>
 
                           <div className="flex items-center space-x-2 mt-2">
-                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                              otherUser?.user_type === 'landlord'
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${otherUser?.user_type === 'landlord'
                                 ? 'bg-blue-100 text-blue-800'
                                 : 'bg-green-100 text-green-800'
-                            }`}>
+                              }`}>
                               {otherUser?.user_type}
                             </span>
                             {isOnline && (
@@ -318,9 +337,8 @@ const MessageCenter = () => {
         </div>
 
         {/* Chat Area - Always visible */}
-        <div className={`flex-1 flex flex-col transition-all duration-300 ${
-          activeConversation ? 'flex' : 'hidden md:flex'
-        }`}>
+        <div className={`flex-1 flex flex-col transition-all duration-300 ${activeConversation ? 'flex' : 'hidden md:flex'
+          }`}>
           {/* Mobile Chat Header - Adjusts height for mobile */}
           {activeConversation && (
             <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 h-[60px] flex items-center">
@@ -433,11 +451,10 @@ const MessageCenter = () => {
                             {selectedUser?.full_name || selectedUser?.email}
                           </h3>
                           <div className="flex items-center space-x-2">
-                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                              selectedUser?.user_type === 'landlord'
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${selectedUser?.user_type === 'landlord'
                                 ? 'bg-blue-100 text-blue-800'
                                 : 'bg-green-100 text-green-800'
-                            }`}>
+                              }`}>
                               {selectedUser?.user_type}
                             </span>
                             {onlineUsers.has(selectedUser?.id) && (
@@ -516,15 +533,13 @@ const MessageCenter = () => {
                           )}
 
                           <div className={`relative group ${isOwn ? 'mr-2' : 'ml-2'}`}>
-                            <div className={`rounded-2xl px-4 py-3 shadow-sm ${
-                              isOwn
+                            <div className={`rounded-2xl px-4 py-3 shadow-sm ${isOwn
                                 ? 'bg-gradient-to-r from-[#FF6B35] to-orange-500 text-white'
                                 : 'bg-white border border-gray-200 text-gray-900'
-                            }`}>
-                              <p className="text-sm leading-relaxed">{message.content}</p>
-                              <p className={`text-xs mt-1.5 ${
-                                isOwn ? 'text-orange-100' : 'text-gray-500'
                               }`}>
+                              <p className="text-sm leading-relaxed">{message.content}</p>
+                              <p className={`text-xs mt-1.5 ${isOwn ? 'text-orange-100' : 'text-gray-500'
+                                }`}>
                                 {new Date(message.created_at).toLocaleTimeString([], {
                                   hour: '2-digit',
                                   minute: '2-digit'
@@ -533,22 +548,19 @@ const MessageCenter = () => {
                             </div>
 
                             {/* Message tail */}
-                            <div className={`absolute bottom-0 ${
-                              isOwn
+                            <div className={`absolute bottom-0 ${isOwn
                                 ? 'right-0 translate-x-1/2'
                                 : 'left-0 -translate-x-1/2'
-                            }`}>
-                              <div className={`w-3 h-3 rotate-45 ${
-                                isOwn
+                              }`}>
+                              <div className={`w-3 h-3 rotate-45 ${isOwn
                                   ? 'bg-gradient-to-r from-[#FF6B35] to-orange-500'
                                   : 'bg-white border-l border-b border-gray-200'
-                              }`}></div>
+                                }`}></div>
                             </div>
 
                             {/* Hover actions */}
-                            <div className={`absolute top-0 ${
-                              isOwn ? 'left-0 -translate-x-full' : 'right-0 translate-x-full'
-                            } opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
+                            <div className={`absolute top-0 ${isOwn ? 'left-0 -translate-x-full' : 'right-0 translate-x-full'
+                              } opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
                               <div className="bg-white rounded-full shadow-lg p-1">
                                 <button className="p-1 text-gray-400 hover:text-gray-600">
                                   <MoreVertical className="w-3 h-3" />
@@ -626,11 +638,10 @@ const MessageCenter = () => {
                   <button
                     type="submit"
                     disabled={!newMessage.trim()}
-                    className={`p-3 rounded-full transition-all duration-200 flex-shrink-0 ${
-                      newMessage.trim()
+                    className={`p-3 rounded-full transition-all duration-200 flex-shrink-0 ${newMessage.trim()
                         ? 'bg-gradient-to-r from-[#FF6B35] to-orange-500 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
+                      }`}
                   >
                     <Send className="w-5 h-5" />
                   </button>
@@ -728,11 +739,10 @@ const MessageCenter = () => {
                           {onlineUser.full_name || onlineUser.email}
                         </h4>
                         <div className="flex items-center space-x-2 mt-1">
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                            onlineUser.user_type === 'landlord'
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${onlineUser.user_type === 'landlord'
                               ? 'bg-blue-100 text-blue-800'
                               : 'bg-green-100 text-green-800'
-                          }`}>
+                            }`}>
                             {onlineUser.user_type}
                           </span>
                           <span className="text-xs text-green-600 font-medium">● Online</span>

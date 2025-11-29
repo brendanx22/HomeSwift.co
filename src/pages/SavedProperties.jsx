@@ -25,11 +25,35 @@ export default function SavedProperties() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Debug: Track authentication state
+  useEffect(() => {
+    console.log('💾 SavedProperties Auth State:', {
+      isAuthenticated,
+      userId: user?.id,
+      userEmail: user?.email,
+      hasUser: !!user
+    });
+  }, [isAuthenticated, user?.id, user?.email]);
+
+  // Wait for user data to be available before attempting to load
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    if (user !== undefined && user !== null) {
+      setAuthReady(true);
+      console.log('✅ User data available, setting authReady=true');
+    }
+  }, [user]);
+
   // ---------------------------------------------------------------------
   // Real‑time subscription – keep UI in sync when user saves/unsaves.
   // ---------------------------------------------------------------------
   useEffect(() => {
-    if (!isAuthenticated || !user?.id) return;
+    if (!authReady || !isAuthenticated || !user?.id) {
+      console.log('⏸️ Skipping subscription setup - authReady:', authReady, 'isAuthenticated:', isAuthenticated, 'userId:', user?.id);
+      return;
+    }
+    console.log('📡 Setting up real-time subscription for user:', user.id);
     const channel = supabase
       .channel('saved_properties_changes')
       .on('postgres_changes', {
@@ -38,7 +62,7 @@ export default function SavedProperties() {
         table: 'saved_properties',
         filter: `user_id=eq.${user.id}`,
       }, payload => {
-        console.log('� Real‑time saved‑properties update', payload);
+        console.log('📡 Real‑time saved‑properties update', payload);
         loadSavedProperties();
       })
       .subscribe();
@@ -46,20 +70,28 @@ export default function SavedProperties() {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, user?.id]);
+  }, [authReady, isAuthenticated, user?.id]);
 
   // ---------------------------------------------------------------------
   // Load saved properties from the API.
   // ---------------------------------------------------------------------
   const loadSavedProperties = async () => {
-    if (!user?.id) return;
+    console.log('💾 loadSavedProperties called:', { userId: user?.id, isAuthenticated, authReady });
+    if (!authReady || !user?.id) {
+      console.log('❌ No user ID or auth not ready, skipping loadSavedProperties');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
+      console.log('💾 Calling PropertyAPI.getSavedProperties for user:', user.id);
       const result = await PropertyAPI.getSavedProperties(user.id);
+      console.log('💾 PropertyAPI result:', result);
       if (result.success) {
+        console.log('✅ Saved properties loaded successfully:', result.savedProperties?.length || 0);
         setSavedProperties(result.savedProperties || []);
       } else {
+        console.error('❌ PropertyAPI failed:', result);
         setError(result.error || 'Failed to load saved properties');
         toast.error(result.error || 'Failed to load saved properties');
       }
@@ -76,9 +108,12 @@ export default function SavedProperties() {
   // Initial fetch.
   // ---------------------------------------------------------------------
   useEffect(() => {
-    if (isAuthenticated && user?.id) loadSavedProperties();
+    console.log('📡 Initial fetch effect triggered - authReady:', authReady, 'isAuthenticated:', isAuthenticated, 'userId:', user?.id);
+    if (authReady && isAuthenticated && user?.id) {
+      loadSavedProperties();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, user?.id]);
+  }, [authReady, isAuthenticated, user?.id]);
 
   // ---------------------------------------------------------------------
   // Remove a property from saved list.

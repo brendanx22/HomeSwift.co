@@ -58,6 +58,7 @@ const NotificationCenter = () => {
       setLoading(true);
 
       // Fetch real notifications from database
+      console.log('🔔 Fetching notifications from database for user:', user.id);
       const { data: notificationsData, error } = await supabase
         .from("notifications")
         .select("*")
@@ -66,7 +67,8 @@ const NotificationCenter = () => {
         .limit(50);
 
       if (error) {
-        console.error("Error fetching notifications:", error);
+        console.error("❌ Error fetching notifications:", error);
+        console.error("❌ Full error details:", JSON.stringify(error, null, 2));
         // Fallback to mock data if database query fails
         console.log('🔔 Using mock notifications due to error');
         setNotifications(getMockNotifications());
@@ -247,7 +249,7 @@ const NotificationCenter = () => {
   return (
     <div className="relative">
       {/* Debug log */}
-      {console.log('🔔 NotificationCenter render:', { unreadCount, notificationsLength: notifications.length, loading })}
+      {console.log('🔔 NotificationCenter render:', JSON.stringify({ unreadCount, notificationsLength: notifications.length, loading }, null, 2))}
       
       {/* Notification Bell */}
       <button

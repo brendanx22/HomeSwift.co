@@ -479,7 +479,7 @@ const RenterHomePage = () => {
 
   // Debug: Track real-time data state
   useEffect(() => {
-    console.log('📊 Navbar Real-time Data State:', {
+    const debugData = {
       userId: user?.id,
       userEmail: user?.email,
       userMetadata: user?.user_metadata,
@@ -494,7 +494,9 @@ const RenterHomePage = () => {
       shouldShowMessagesBadge: user && unreadCount > 0,
       savedBadgeValue: realtimeSavedCount > 0 ? realtimeSavedCount : savedProperties.size,
       messagesBadgeValue: unreadCount
-    });
+    };
+    
+    console.log('📊 Navbar Real-time Data State:', JSON.stringify(debugData, null, 2));
 
     // Check localStorage for debugging
     const localUser = localStorage.getItem('user');
