@@ -298,7 +298,7 @@ const RenterHomePage = () => {
     loadProperties();
   }, []);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       if (!user) {
         console.log('❌ No user, skipping loadData');
@@ -324,8 +324,9 @@ const RenterHomePage = () => {
       console.error('❌ Error loading saved properties IDs:', error);
       toast.error('Failed to load saved properties');
     }
-  };
+  }, [user]);
 
+  // Load saved properties on mount
   useEffect(() => {
     if (user?.id) {
       console.log('👤 User loaded, loading user data...', user.id);
@@ -334,7 +335,8 @@ const RenterHomePage = () => {
     } else {
       console.log('❌ User not loaded yet');
     }
-  }, [user?.id, loadData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // loadData not needed as dependency since it's memoized with [user]
 
   // Calculate unread messages
   useEffect(() => {
