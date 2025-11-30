@@ -184,4 +184,5 @@ self.addEventListener('message', (event) => {
 });
 
 // Placeholder for Workbox injection (required by VitePWA injectManifest strategy)
-self.__WB_MANIFEST;
+// Assign to variable to prevent tree-shaking removal during Vite build
+self.__precacheManifest = self.__WB_MANIFEST || [];
