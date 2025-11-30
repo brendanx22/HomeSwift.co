@@ -184,4 +184,4 @@ self.addEventListener('message', (event) => {
 });
 
 // Placeholder for Workbox injection (required by VitePWA injectManifest strategy)
-// self.__WB_MANIFEST;
+self.__WB_MANIFEST;
