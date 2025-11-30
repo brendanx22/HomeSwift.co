@@ -125,7 +125,7 @@ export default defineConfig(({ command, mode }) => {
       react(),
       VitePWA({
         strategies: 'injectManifest',
-        srcDir: 'public',
+        srcDir: 'src',
         filename: 'sw.js',
         registerType: "prompt", // Changed from autoUpdate to prompt users for updates
         injectRegister: null, // Disable auto-injection of registration script
