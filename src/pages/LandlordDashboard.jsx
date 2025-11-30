@@ -3,7 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, ensureSession } from '../lib/supabaseClient';
 import { formatDistanceToNow } from 'date-fns';
 import {
   Search,
@@ -242,7 +242,6 @@ const LandlordDashboard = () => {
       if (!user?.id) return;
 
       // Ensure Supabase session is ready
-      const { ensureSession } = await import('../lib/supabaseClient');
       await ensureSession();
       console.log('✅ [RecentData] Supabase session ready');
 
@@ -344,7 +343,6 @@ const LandlordDashboard = () => {
       if (!user?.id) return;
 
       // Ensure Supabase session is ready
-      const { ensureSession } = await import('../lib/supabaseClient');
       await ensureSession();
       console.log('✅ [Inquiries] Supabase session ready');
 
@@ -407,7 +405,6 @@ const LandlordDashboard = () => {
       if (!user?.id) return;
 
       // Ensure Supabase session is ready
-      const { ensureSession } = await import('../lib/supabaseClient');
       await ensureSession();
       console.log('✅ [Dashboard] Supabase session ready');
 
