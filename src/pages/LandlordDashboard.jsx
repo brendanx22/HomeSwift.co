@@ -203,11 +203,24 @@ const LandlordDashboard = () => {
           // If we get here, user is authenticated and has landlord role
           console.log('✅ User is authenticated and has landlord role, loading dashboard data');
 
-          // Load dashboard data in parallel
+          // Load dashboard data in parallel with timeout protection
+          const loadWithTimeout = (promise, name) => {
+            return Promise.race([
+              promise,
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error(`${name} timed out`)), 10000)
+              )
+            ]).catch(error => {
+              console.error(`❌ ${name} failed:`, error);
+              // Don't throw - let dashboard load with partial data
+              return null;
+            });
+          };
+
           await Promise.all([
-            loadDashboardData(),
-            loadRecentData(),
-            loadAllInquiries()
+            loadWithTimeout(loadDashboardData(), 'loadDashboardData'),
+            loadWithTimeout(loadRecentData(), 'loadRecentData'),
+            loadWithTimeout(loadAllInquiries(), 'loadAllInquiries')
           ]);
 
           console.log('✅ Dashboard data loaded successfully');
@@ -999,8 +1012,8 @@ const LandlordDashboard = () => {
                       key={item.id}
                       onClick={() => handleNavigation(item.id)}
                       className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
-                          ? 'text-white'
-                          : 'text-[#2C3E50] hover:bg-gray-600 '
+                        ? 'text-white'
+                        : 'text-[#2C3E50] hover:bg-gray-600 '
                         } ${compactMode ? 'justify-center px-2' : ''}`}
                       style={isActive ? { backgroundColor: '#FF6B35' } : {}}
                       whileHover={{ scale: 1.02 }}
@@ -1090,8 +1103,8 @@ const LandlordDashboard = () => {
                   key={item.id}
                   onClick={() => handleNavigation(item.id)}
                   className={`relative flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 min-w-0 flex-1 ${isActive
-                      ? 'text-white'
-                      : 'text-gray-600 hover:bg-gray-50 active:bg-gray-100'
+                    ? 'text-white'
+                    : 'text-gray-600 hover:bg-gray-50 active:bg-gray-100'
                     }`}
                   style={isActive ? { backgroundColor: '#FF6B35' } : {}}
                   whileTap={{ scale: 0.95 }}
@@ -1124,8 +1137,8 @@ const LandlordDashboard = () => {
               <motion.button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className={`relative flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 ${mobileMenuOpen
-                    ? 'text-white'
-                    : 'text-gray-600 hover:bg-gray-50 active:bg-gray-100'
+                  ? 'text-white'
+                  : 'text-gray-600 hover:bg-gray-50 active:bg-gray-100'
                   }`}
                 style={mobileMenuOpen ? { backgroundColor: '#FF6B35' } : {}}
                 whileTap={{ scale: 0.95 }}
@@ -1716,8 +1729,8 @@ const LandlordDashboard = () => {
                                 <span>{lead.phone}</span>
                               </span>
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${lead.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  lead.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                    'bg-red-100 text-red-800'
+                                lead.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                  'bg-red-100 text-red-800'
                                 }`}>
                                 {lead.status}
                               </span>
