@@ -58,7 +58,7 @@ const formatTimeAgo = (date) => {
 };
 
 const LandlordDashboard = () => {
-  const { user, isAuthenticated, loading: authLoading, logout, hasRole } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, logout, hasRole, authReady } = useAuth();
   const navigate = useNavigate();
 
   // All hooks must be at the top, before any conditional logic
@@ -116,125 +116,27 @@ const LandlordDashboard = () => {
   const [allInquiries, setAllInquiries] = useState([]);
   const [loadingInquiries, setLoadingInquiries] = useState(false);
 
-  // Check if user is authenticated and has landlord role
+  // Wait for auth to be fully ready before loading data
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        if (!authLoading) {
-          if (!isAuthenticated) {
-            navigate('/landlord/login', {
-              state: { from: '/landlord/dashboard' }
-            });
-            setLoading(false);
-            return;
-          }
+    if (!authReady) {
+      console.log("⏳ Dashboard waiting for auth readiness...");
+      return;
+    }
 
-          // Check if user has landlord role - use localStorage for consistency
-          const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-          const userType = storedUser?.user_metadata?.user_type || storedUser?.user_type;
-          const storedRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
-          const currentRole = storedRoles.find(r => r.is_primary)?.role || storedRoles[0]?.role || userType || 'renter';
-
-          console.log('🔍 Dashboard Auth Check:', {
-            currentRole,
-            userType,
-            storedRoles,
-            userId: user?.id,
-            isAuthenticated,
-            authLoading
-          });
-
-          // More robust role checking - create landlord role if user has properties
-          if (currentRole !== 'landlord' && user?.id) {
-            // Double-check by looking at user metadata or trying to load dashboard data
-            // If they have properties in the database, they're likely a landlord
-            try {
-              const { data: properties, error } = await supabase
-                .from('properties')
-                .select('id')
-                .eq('landlord_id', user.id)
-                .limit(1);
-
-              if (!error && properties && properties.length > 0) {
-                // User has properties, create/update landlord role
-                console.log('✅ User has properties, creating landlord role');
-
-                // Update user metadata to include landlord role
-                const { error: updateError } = await supabase
-                  .from('user_profiles')
-                  .upsert({
-                    id: user.id,
-                    user_type: 'landlord',
-                    updated_at: new Date().toISOString()
-                  });
-
-                if (updateError) {
-                  console.error('❌ Error updating user role:', updateError);
-                } else {
-                  // Update localStorage with new role
-                  const updatedUser = {
-                    ...storedUser,
-                    user_metadata: {
-                      ...storedUser.user_metadata,
-                      user_type: 'landlord'
-                    }
-                  };
-                  localStorage.setItem('user', JSON.stringify(updatedUser));
-
-                  // Update roles array
-                  const updatedRoles = [{ role: 'landlord', is_primary: true }];
-                  localStorage.setItem('userRoles', JSON.stringify(updatedRoles));
-                  console.log('✅ Landlord role created successfully');
-                }
-              } else {
-                console.log('❌ No properties found, redirecting to chat');
-                navigate('/chat');
-                setLoading(false);
-                return;
-              }
-            } catch (err) {
-              console.error('❌ Error checking properties:', err);
-              navigate('/chat');
-              setLoading(false);
-              return;
-            }
-          }
-
-          // If we get here, user is authenticated and has landlord role
-          console.log('✅ User is authenticated and has landlord role, loading dashboard data');
-
-          // Load dashboard data in parallel with timeout protection
-          const loadWithTimeout = (promise, name) => {
-            return Promise.race([
-              promise,
-              new Promise((_, reject) =>
-                setTimeout(() => reject(new Error(`${name} timed out`)), 10000)
-              )
-            ]).catch(error => {
-              console.error(`❌ ${name} failed:`, error);
-              // Don't throw - let dashboard load with partial data
-              return null;
-            });
-          };
-
-          await Promise.all([
-            loadWithTimeout(loadDashboardData(), 'loadDashboardData'),
-            loadWithTimeout(loadRecentData(), 'loadRecentData'),
-            loadWithTimeout(loadAllInquiries(), 'loadAllInquiries')
-          ]);
-
-          console.log('✅ Dashboard data loaded successfully');
-        }
-      } catch (error) {
-        console.error('❌ Error in auth check:', error);
-      } finally {
-        // Always ensure loading is set to false
-        setLoading(false);
-      }
+    console.log("🚀 Dashboard ready — loading data");
+    
+    // Load dashboard data in parallel
+    const loadData = async () => {
+      await Promise.all([
+        loadDashboardData(),
+        loadRecentData(),
+        loadAllInquiries()
+      ]);
+      setLoading(false);
     };
 
-    checkAuth();
-  }, [isAuthenticated, authLoading, navigate]);
+    loadData();
+  }, [authReady]);
 
   // Load recent properties and leads
   const loadRecentData = async () => {

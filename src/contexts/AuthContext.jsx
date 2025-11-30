@@ -14,6 +14,10 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [, forceUpdate] = useState(); // Add forceUpdate hook
 
+  // Derived state for full auth readiness - prevents race conditions
+  // Only true when we have a user, roles are loaded, and current role is set
+  const authReady = isAuthenticated && user && roles.length > 0 && currentRole;
+
   // Load user data from localStorage (for both regular login and OAuth)
   const loadUserData = useCallback(async () => {
     try {
@@ -724,63 +728,7 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // Initial session check (auth state listener will handle the rest)
-  useEffect(() => {
-    let isMounted = true; // Declare isMounted at the top of the effect
 
-    // Safety timeout to ensure loading is always set to false
-    const loadingTimeout = setTimeout(() => {
-      console.log('⏱️ Loading timeout reached, forcing loading to false');
-      if (isMounted) {
-        setLoading(false);
-      }
-    }, 10000); // 10 second timeout
-
-    const checkInitialSession = async () => {
-      try {
-        console.log('🔍 Checking initial session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-
-        if (error) {
-          console.error('❌ Error getting session:', error);
-          if (isMounted) {
-            setLoading(false);
-            setError(error.message);
-          }
-          return;
-        }
-
-        if (!session) {
-          console.log('❌ No initial session found, checking localStorage...');
-          // Try to load user data from localStorage even if no Supabase session
-          const hasLocalData = await loadUserData();
-          if (!hasLocalData && isMounted) {
-            setLoading(false);
-            setIsAuthenticated(false);
-          }
-          return;
-        }
-
-        console.log('✅ Initial session found, auth state listener will handle it');
-        // Also try to load user data from localStorage as backup
-        await loadUserData();
-      } catch (error) {
-        console.error('💥 Initial session check error:', error);
-        clearTimeout(loadingTimeout);
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    checkInitialSession();
-
-    // Cleanup function
-    return () => {
-      isMounted = false;
-      clearTimeout(loadingTimeout);
-    };
-  }, []);
 
   // Add a new role to the current user
   const addRole = async (role, userId = null) => {
@@ -1317,6 +1265,7 @@ export const AuthProvider = ({ children }) => {
       value={{
         user,
         loading,
+        authReady, // Expose authReady for components to wait on
         isAuthenticated,
         currentRole,
         roles,
