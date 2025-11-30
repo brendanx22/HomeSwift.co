@@ -241,6 +241,11 @@ const LandlordDashboard = () => {
     try {
       if (!user?.id) return;
 
+      // Ensure Supabase session is ready
+      const { ensureSession } = await import('../lib/supabaseClient');
+      await ensureSession();
+      console.log('✅ [RecentData] Supabase session ready');
+
       // Fetch recent properties (last 5)
       const { data: properties, error: propertiesError } = await supabase
         .from('properties')
@@ -338,6 +343,11 @@ const LandlordDashboard = () => {
     try {
       if (!user?.id) return;
 
+      // Ensure Supabase session is ready
+      const { ensureSession } = await import('../lib/supabaseClient');
+      await ensureSession();
+      console.log('✅ [Inquiries] Supabase session ready');
+
       setLoadingInquiries(true);
 
       const { data: bookings, error } = await supabase
@@ -395,6 +405,11 @@ const LandlordDashboard = () => {
   const loadDashboardData = async () => {
     try {
       if (!user?.id) return;
+
+      // Ensure Supabase session is ready
+      const { ensureSession } = await import('../lib/supabaseClient');
+      await ensureSession();
+      console.log('✅ [Dashboard] Supabase session ready');
 
       // console.log('🔍 Loading dashboard data for user:', user.id);
 
