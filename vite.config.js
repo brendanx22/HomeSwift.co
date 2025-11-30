@@ -124,6 +124,9 @@ export default defineConfig(({ command, mode }) => {
     plugins: [
       react(),
       VitePWA({
+        strategies: 'injectManifest',
+        srcDir: 'public',
+        filename: 'sw.js',
         registerType: "prompt", // Changed from autoUpdate to prompt users for updates
         injectRegister: null, // Disable auto-injection of registration script
         devOptions: {
@@ -146,52 +149,6 @@ export default defineConfig(({ command, mode }) => {
               src: "/icons/icon-512x512.png",
               sizes: "512x512",
               type: "image/png",
-            },
-          ],
-        },
-        workbox: {
-          // Aggressive cache cleanup
-          cleanupOutdatedCaches: true,
-          skipWaiting: true,
-          clientsClaim: true,
-
-          // Only cache static assets, NOT JavaScript files
-          globPatterns: [
-            "**/*.{css,html,ico,png,svg,jpg,jpeg,gif,woff,woff2,ttf,eot}",
-          ],
-
-          // Explicitly exclude JS files from caching
-          globIgnores: ["**/*.js", "**/*.jsx", "**/node_modules/**"],
-
-          // Don't cache these routes
-          navigateFallbackDenylist: [/^\/api/, /^\/socket\.io/],
-
-          runtimeCaching: [
-            {
-              // Network-first for API calls
-              urlPattern: /^https:\/\/api\.homeswift\.co\//,
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "api-cache",
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 300, // 5 minutes
-                },
-                networkTimeoutSeconds: 10,
-              },
-            },
-            {
-              // Network-first for Supabase
-              urlPattern: /^https:\/\/[^/]+\.supabase\.co\//,
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "supabase-api-cache",
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 300, // 5 minutes only
-                },
-                networkTimeoutSeconds: 10,
-              },
             },
           ],
         },
