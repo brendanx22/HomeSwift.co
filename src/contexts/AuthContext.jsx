@@ -563,8 +563,18 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(true);
           setUser(session.user);
 
-          // Always fetch roles after a valid session
-          await fetchUserRoles(session.user.id);
+          // Always fetch roles after a valid session, with timeout protection
+          try {
+            await Promise.race([
+              fetchUserRoles(session.user.id),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Role fetch timeout')), 5000)
+              )
+            ]);
+          } catch (roleError) {
+            console.error("⚠️ Role fetch failed or timed out:", roleError);
+            // Continue anyway - roles might load later via other mechanisms
+          }
 
           // Resolve metadata userType → currentRole
           const stored = localStorage.getItem("currentRole");
