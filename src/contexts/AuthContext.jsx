@@ -559,24 +559,29 @@ export const AuthProvider = ({ children }) => {
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
         if (!session?.user) return;
 
-        setIsAuthenticated(true);
-        setUser(session.user);
+        try {
+          setIsAuthenticated(true);
+          setUser(session.user);
 
-        // Always fetch roles after a valid session
-        await fetchUserRoles(session.user.id);
+          // Always fetch roles after a valid session
+          await fetchUserRoles(session.user.id);
 
-        // Resolve metadata userType → currentRole
-        const stored = localStorage.getItem("currentRole");
-        const fallback = session.user.user_metadata?.user_type;
+          // Resolve metadata userType → currentRole
+          const stored = localStorage.getItem("currentRole");
+          const fallback = session.user.user_metadata?.user_type;
 
-        if (stored) {
-          setCurrentRole(stored);
-        } else if (fallback) {
-          setCurrentRole(fallback);
-          localStorage.setItem("currentRole", fallback);
+          if (stored) {
+            setCurrentRole(stored);
+          } else if (fallback) {
+            setCurrentRole(fallback);
+            localStorage.setItem("currentRole", fallback);
+          }
+
+          setLoading(false);
+        } catch (error) {
+          console.error("❌ Error in auth state handler:", error);
+          setLoading(false); // Always set loading to false even on error
         }
-
-        setLoading(false);
       }
 
       if (event === "SIGNED_OUT") {
