@@ -1226,10 +1226,13 @@ export const AuthProvider = ({ children }) => {
 
     } catch (error) {
       console.error('Login error:', error);
+      setLoading(false);
       return {
         success: false,
-        error: 'An unexpected error occurred. Please try again later.'
+        error: error.message || 'An unexpected error occurred. Please try again later.'
       };
+    } finally {
+      setLoading(false);
     }
   };
 
