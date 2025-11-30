@@ -549,182 +549,57 @@ export const AuthProvider = ({ children }) => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Listen to Supabase auth state changes to prevent hard refreshes
+  // Clean and safe Supabase auth listener
   useEffect(() => {
-    console.log('🔄 Setting up Supabase auth state listener...');
-    let isMounted = true;
-    let loadingTimeout;
+    console.log("🔄 Initializing lightweight auth listener...");
 
     const handleAuthStateChange = async (event, session) => {
-      console.log(`🔄 Auth state changed: ${event}`, session ? 'Session exists' : 'No session');
+      console.log("🔐 Auth event:", event);
 
-      try {
-        // Always clear any existing loading timeout
-        clearTimeout(loadingTimeout);
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
+        if (!session?.user) return;
 
-        // Handle all events that indicate a valid session
-        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session) {
-          console.log('✅ User session active, updating auth state');
-          const user = session.user;
+        setIsAuthenticated(true);
+        setUser(session.user);
 
-          // Check if we're in the middle of an OAuth flow with a pending user type
-          const pendingUserType = localStorage.getItem('pendingUserType');
+        // Always fetch roles after a valid session
+        await fetchUserRoles(session.user.id);
 
-          // If there's a pending user type and we're on the callback page, let AuthCallback handle it
-          if (pendingUserType && window.location.pathname === '/auth/callback') {
-            console.log('🔄 OAuth flow in progress with pending type:', pendingUserType, '- letting AuthCallback handle it');
-            if (isMounted) {
-              setUser(user);
-              setIsAuthenticated(true);
-              setLoading(false);
-            }
-            return; // Exit early, let AuthCallback handle role creation
-          }
+        // Resolve metadata userType → currentRole
+        const stored = localStorage.getItem("currentRole");
+        const fallback = session.user.user_metadata?.user_type;
 
-          // Update auth state
-          if (isMounted) {
-            try {
-              setIsAuthenticated(true);
-              setUser(user);
-
-              // Store in localStorage
-              const userData = {
-                ...user,
-                avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
-                user_metadata: user.user_metadata
-              };
-              localStorage.setItem('user', JSON.stringify(userData));
-
-              // Fetch user roles and wait for completion
-              console.log('🔄 Fetching user roles...');
-              const rolesResult = await fetchUserRoles(user.id);
-
-              if (!isMounted) return;
-
-              // Get the latest roles from localStorage (updated by fetchUserRoles)
-              const roles = JSON.parse(localStorage.getItem('userRoles') || '[]');
-              const currentStoredRole = localStorage.getItem('currentRole');
-
-              console.log('🔍 Role check after fetch:', {
-                roles,
-                currentStoredRole,
-                hasRoles: roles.length > 0,
-                pendingUserType
-              });
-
-              // If we have a pending user type from login, ensure it's set as primary
-              if (pendingUserType && roles.some(r => r.role === pendingUserType)) {
-                console.log(`🔄 Found pending user type: ${pendingUserType}, setting as primary`);
-                await updatePrimaryRole(user.id, pendingUserType);
-                localStorage.removeItem('pendingUserType');
-                // Track login event
-                trackLogin(user, pendingUserType);
-
-                // If we're on the login page, redirect based on role
-                if (window.location.pathname.includes('/login') || window.location.pathname.includes('/landlord/login')) {
-                  // Always prioritize the pendingUserType if it exists
-                  const targetRole = pendingUserType || user.user_metadata?.user_type || 'landlord';
-                  console.log(`🔄 Login redirect: ${window.location.pathname} -> ${targetRole === 'renter' ? '/chat' : '/landlord/dashboard'}`, {
-                    pendingUserType,
-                    userType: user.user_metadata?.user_type,
-                    currentPath: window.location.pathname
-                  });
-
-                  // Force redirect to landlord dashboard for landlord login
-                  if (window.location.pathname.includes('/landlord/login')) {
-                    console.log('🔵 Forcing redirect to landlord dashboard');
-                    window.location.href = '/landlord/dashboard';
-                  } else {
-                    // Redirect renters to /chat, landlords to /landlord/dashboard
-                    window.location.href = targetRole === 'renter' ? '/chat' : '/landlord/dashboard';
-                  }
-                  return;
-                }
-
-                // Mark loading as complete
-                setLoading(false);
-                console.log('✅ Auth state update complete');
-              }
-            } catch (error) {
-              console.error('❌ Error in auth state update:', error);
-              if (isMounted) {
-                setLoading(false);
-              }
-            }
-          }
-        } else if (event === 'SIGNED_OUT') {
-          console.log('👋 User signed out, clearing auth state');
-          if (isMounted) {
-            setUser(null);
-            setIsAuthenticated(false);
-            setRoles([]);
-            setCurrentRole(null);
-            setLoading(false);
-
-            // Clear auth-related localStorage
-            localStorage.removeItem('user');
-            localStorage.removeItem('userRoles');
-            localStorage.removeItem('currentRole');
-            localStorage.removeItem('pendingUserType');
-          }
-        } else if (event === 'USER_UPDATED' && session) {
-          console.log('🔄 User updated, refreshing data');
-          if (isMounted) {
-            const userData = {
-              id: session.user.id,
-              email: session.user.email,
-              full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.name,
-              avatar_url: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
-              user_metadata: session.user.user_metadata
-            };
-            setUser(session.user);
-            localStorage.setItem('user', JSON.stringify(userData));
-            await fetchUserRoles(session.user.id);
-          }
-        } else if (!session) {
-          // No session at all
-          console.log('❌ No session found');
-          if (isMounted) {
-            setLoading(false);
-          }
+        if (stored) {
+          setCurrentRole(stored);
+        } else if (fallback) {
+          setCurrentRole(fallback);
+          localStorage.setItem("currentRole", fallback);
         }
-      } catch (error) {
-        console.error('❌ Error in auth state change handler:', error);
-        if (isMounted) {
-          setLoading(false);
-        }
+
+        setLoading(false);
+      }
+
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        setRoles([]);
+        setCurrentRole(null);
+        setIsAuthenticated(false);
+        setLoading(false);
+
+        localStorage.removeItem("user");
+        localStorage.removeItem("userRoles");
+        localStorage.removeItem("currentRole");
+        localStorage.removeItem("pendingUserType");
       }
     };
 
-    // Set up the auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
+    const { data: { subscription } } =
+      supabase.auth.onAuthStateChange(handleAuthStateChange);
 
-    // Initial session check
-    const checkInitialSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session && isMounted) {
-          await handleAuthStateChange('INITIAL_SESSION', session);
-        } else if (isMounted) {
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('❌ Error checking initial session:', error);
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
+    // Do not manually re-check session — Supabase will call INITIAL_SESSION automatically
 
-    checkInitialSession();
-
-    // Cleanup function
     return () => {
-      console.log('🧹 Cleaning up auth state listener');
-      isMounted = false;
-      if (subscription?.unsubscribe) {
-        subscription.unsubscribe();
-      }
+      subscription?.unsubscribe();
     };
   }, []);
 
