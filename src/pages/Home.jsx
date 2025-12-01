@@ -18,13 +18,8 @@ const Home = () => {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (searchText.trim()) {
-      // Navigate to property browse page with search query
-      navigate(`/properties?search=${encodeURIComponent(searchText.trim())}`);
-    } else {
-      // If empty search, just go to properties page
-      navigate('/properties');
-    }
+    // Navigate to user-type page when search is submitted
+    navigate('/user-type');
   };
 
   const handleLoginClick = (e) => {
@@ -229,7 +224,7 @@ const Home = () => {
                       handleGetStartedClick(e);
                       setShowMobileMenu(false);
                     }}
-                    className="w-full flex items-center justify-center space-x-2 bg-[#FF6B35] text-white px-6 py-4 rounded-2xl font-semibold hover:bg-[#FF7B45] transition-colors shadow-lg"
+                    className="w-full flex items-center justify-center space-x-2 bg-[#FF6B35] text-white px-6 py-3 rounded-2xl font-semibold hover:bg-[#FF7B45] transition-colors shadow-lg"
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -248,7 +243,7 @@ const Home = () => {
                       handleLoginClick(e);
                       setShowMobileMenu(false);
                     }}
-                    className="w-full bg-transparent border border-[#2C3E50] text-[#2C3E50] px-6 py-4 rounded-2xl font-semibold hover:bg-[#2C3E50]/5 transition-colors"
+                    className="w-full bg-transparent border border-[#2C3E50] text-[#2C3E50] px-6 py-3 rounded-2xl font-semibold hover:bg-[#2C3E50]/5 transition-colors"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -258,7 +253,7 @@ const Home = () => {
                   <motion.a
                     href="/waitlist"
                     onClick={() => setShowMobileMenu(false)}
-                    className="w-full bg-[#2C3E50] text-white px-6 py-4 rounded-2xl font-semibold hover:bg-[#1E2B38] transition-colors flex items-center justify-center space-x-2 shadow-lg"
+                    className="w-full bg-[#2C3E50] text-white px-6 py-3 rounded-2xl font-semibold hover:bg-[#1E2B38] transition-colors flex items-center justify-center space-x-2 shadow-lg"
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -284,7 +279,7 @@ const Home = () => {
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 text-center">
         {/* Feature Tag */}
         <motion.div
-          className="flex items-center space-x-2 bg-[#FF6B35] rounded-[2rem] px-6 py-3 mb-6"
+          className="flex items-center space-x-2 bg-[#FF6B35] rounded-[2rem] px-6 py-3 mb-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
@@ -322,7 +317,7 @@ const Home = () => {
 
         {/* Search Input */}
         <motion.div
-          className="w-full max-w-xl"
+          className="w-full max-w-2xl"
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
@@ -334,18 +329,18 @@ const Home = () => {
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 placeholder="Describe your ideal home (e.g., '3-bedroom apartment in Lagos with balcony')"
-                className="w-full bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full px-6 py-4 text-[#2C3E50] text-md placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] focus:bg-white focus:shadow-lg transition-all duration-300"
+                className="w-full bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full px-8 py-6 text-[#2C3E50] text-lg placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] focus:bg-white focus:shadow-xl transition-all duration-300"
               />
               <motion.button
                 type="submit"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#FF6B35] text-white p-3 rounded-full hover:bg-[#FF7B45] transition-colors shadow-md"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-[#FF6B35] text-white p-4 rounded-full hover:bg-[#FF7B45] transition-colors shadow-lg"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <ArrowUp size={20} className="rotate-45" />
+                <ArrowUp size={24} className="rotate-45" />
               </motion.button>
             </div>
-            <p className="mt-2 text-sm text-[#2C3E50]/60 text-center">
+            <p className="mt-3 text-sm text-[#2C3E50]/60 text-center">
               Try: "cozy apartment near university" or "family house with garden"
             </p>
           </form>
