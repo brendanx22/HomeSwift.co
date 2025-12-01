@@ -557,7 +557,13 @@ export const AuthProvider = ({ children }) => {
       console.log("🔐 Auth event:", event);
 
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
-        if (!session?.user) return;
+        // If no user, set loading to false and return
+        if (!session?.user) {
+          console.log("ℹ️ No user in session, setting loading to false");
+          setLoading(false);
+          setIsAuthenticated(false);
+          return;
+        }
 
         try {
           setIsAuthenticated(true);

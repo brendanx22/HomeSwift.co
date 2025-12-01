@@ -71,7 +71,12 @@ self.addEventListener('activate', (event) => {
             await Promise.all(
                 keys.filter(k => ![STATIC_CACHE, ROUTE_CACHE].includes(k)).map(k => caches.delete(k))
             );
-            await self.clients.claim();
+            // Claim clients - wrap in try-catch to handle race conditions
+            try {
+                await self.clients.claim();
+            } catch (err) {
+                console.warn('clients.claim() called before worker active:', err);
+            }
         })()
     );
 });
