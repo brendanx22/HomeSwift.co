@@ -845,7 +845,7 @@ const LandlordDashboard = () => {
                       <img
                         src={userAvatar}
                         alt="Profile"
-                        className="w-full h-full object-cover rounded-full"
+                        className="w-full h-full object-cover"
                         onLoad={() => console.log('🔍 LandlordDashboard - Navbar avatar loaded:', userAvatar)}
                         onError={() => console.log('❌ LandlordDashboard - Navbar avatar failed to load:', userAvatar)}
                       />
@@ -964,7 +964,7 @@ const LandlordDashboard = () => {
                       <img
                         src={userAvatar}
                         alt="Profile"
-                        className="w-full h-full object-cover rounded-full"
+                        className="w-full h-full object-cover"
                         onLoad={() => console.log('🔍 LandlordDashboard - Sidebar avatar loaded:', userAvatar)}
                         onError={() => console.log('❌ LandlordDashboard - Sidebar avatar failed to load:', userAvatar)}
                       />
