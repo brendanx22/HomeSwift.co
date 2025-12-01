@@ -284,7 +284,7 @@ const Home = () => {
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 text-center">
         {/* Feature Tag */}
         <motion.div
-          className="flex items-center space-x-2 bg-[#FF6B35] rounded-[2rem] px-6 py-3 mb-4"
+          className="flex items-center space-x-2 bg-[#FF6B35] rounded-[2rem] px-6 py-3 mb-2"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
