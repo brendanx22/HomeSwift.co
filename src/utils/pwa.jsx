@@ -313,6 +313,10 @@ export const registerServiceWorker = async (onUpdate) => {
     return null;
   }
 
+  // Temporarily disable service worker to debug JavaScript loading issues
+  console.log('Service Worker: Temporarily disabled to debug JS loading issues');
+  return null;
+
   if (!('serviceWorker' in navigator)) {
     console.warn('Service Worker: Not supported in this browser');
     return null;
