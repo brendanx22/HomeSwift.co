@@ -47,6 +47,7 @@ const ComparisonHistory = React.lazy(() => import('./pages/ComparisonHistory'));
 const LandlordProperties = React.lazy(() => import('./pages/LandlordProperties'));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
 const RenterHomePage = React.lazy(() => import('./pages/RenterHomePage'));
+const WaitlistPage = React.lazy(() => import('./pages/WaitlistPage'));
 
 const Settings = React.lazy(() => import('./pages/Settings'));
 const EditPropertyForm = React.lazy(() => import('./pages/EditPropertyForm'));
@@ -94,7 +95,7 @@ const AppLayout = () => {
 
     // Handle authenticated users
     if (isAuthenticated && user) {
-      const publicRoutes = ['/', '/login', '/signup', '/user-type', '/forgot-password', '/reset-password', '/landlord/login'];
+      const publicRoutes = ['/', '/login', '/signup', '/user-type', '/forgot-password', '/reset-password', '/landlord/login', '/faq', '/about', '/waitlist'];
 
       // IMPORTANT: Don't redirect if we're processing OAuth callback
       if (path === '/auth/callback') {
@@ -582,6 +583,11 @@ const AppLayout = () => {
             <Route
               path="/faq"
               element={<FAQ />}
+            />
+
+            <Route
+              path="/waitlist"
+              element={<WaitlistPage />}
             />
 
             {/* Legal Pages */}
