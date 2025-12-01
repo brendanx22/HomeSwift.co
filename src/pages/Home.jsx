@@ -18,8 +18,13 @@ const Home = () => {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    // Navigate to user-type page when search is submitted
-    navigate('/user-type');
+    if (searchText.trim()) {
+      // Navigate to user type page with search query
+      navigate(`/user-type?search=${encodeURIComponent(searchText.trim())}`);
+    } else {
+      // If empty search, just go to user type page
+      navigate('/user-type');
+    }
   };
 
   const handleLoginClick = (e) => {
@@ -329,7 +334,7 @@ const Home = () => {
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 placeholder="Describe your ideal home (e.g., '3-bedroom apartment in Lagos with balcony')"
-                className="w-full bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full px-8 py-6 text-[#2C3E50] text-lg placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] focus:bg-white focus:shadow-xl transition-all duration-300"
+                className="w-full bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full px-8 py-5 text-[#2C3E50] text-lg placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] focus:bg-white focus:shadow-xl transition-all duration-300"
               />
               <motion.button
                 type="submit"
