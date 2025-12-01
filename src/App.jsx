@@ -202,9 +202,10 @@ const AppLayout = () => {
     // Handle unauthenticated users
     else {
       const authPages = ['/login', '/landlord/login', '/signup', '/landlord/signup', '/forgot-password', '/reset-password', '/user-type', '/auth/callback'];
+      const publicPages = ['/', '/faq', '/about', '/waitlist'];
 
-      // If not on an auth page and not on the home page, redirect to login
-      if (!authPages.includes(path) && path !== '/') {
+      // If not on an auth page and not on a public page, redirect to login
+      if (!authPages.includes(path) && !publicPages.includes(path)) {
         // For landlord routes, redirect to landlord login, otherwise regular login
         const loginPath = isLandlordRoute ? '/landlord/login' : '/login';
         // console.log('Unauthenticated user, redirecting to:', loginPath, 'from path:', path);
