@@ -5,7 +5,7 @@ import { Star, MapPin, Layers } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-// Map style options - using simple raster tiles for reliability
+// Map style options - using completely free Thunderforest service
 const mapStyles = [
     { 
         id: 'streets', 
@@ -13,14 +13,19 @@ const mapStyles = [
         url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
     },
     { 
-        id: 'carto', 
-        name: 'CartoDB Light', 
-        url: 'https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png'
+        id: 'cycle', 
+        name: 'Cycle', 
+        url: 'https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=free'
     },
     { 
-        id: 'voyager', 
-        name: 'CartoDB Voyager', 
-        url: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+        id: 'outdoors', 
+        name: 'Outdoors', 
+        url: 'https://{s}.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=free'
+    },
+    { 
+        id: 'transport', 
+        name: 'Transport', 
+        url: 'https://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=free'
     }
 ];
 
@@ -92,7 +97,26 @@ const PropertyMap = ({
                 {...viewState}
                 onMove={evt => setViewState(evt.viewState)}
                 style={{ width: '100%', height: '100%' }}
-                mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+                mapStyle={{
+                    version: 8,
+                    sources: {
+                        'raster-tiles': {
+                            type: 'raster',
+                            tiles: [mapStyles[currentMapStyle].url],
+                            tileSize: 256,
+                            attribution: '© OpenStreetMap contributors © Thunderforest'
+                        }
+                    },
+                    layers: [
+                        {
+                            id: 'simple-tiles',
+                            type: 'raster',
+                            source: 'raster-tiles',
+                            minzoom: 0,
+                            maxzoom: 19
+                        }
+                    ]
+                }}
                 onClick={onMapClick}
                 minZoom={1}
                 maxZoom={18}
@@ -101,8 +125,8 @@ const PropertyMap = ({
                 <FullscreenControl position="top-right" />
                 <ScaleControl />
 
-                {/* Map Style Switcher - Temporarily Disabled for Testing */}
-                {/* <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-2 z-10">
+                {/* Map Style Switcher */}
+                <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-2 z-10">
                     <div className="flex items-center space-x-2 text-xs">
                         <Layers className="w-4 h-4 text-gray-600" />
                         <select
@@ -123,7 +147,7 @@ const PropertyMap = ({
                             ))}
                         </select>
                     </div>
-                </div> */}
+                </div>
 
                 {/* Selection Marker */}
                 {selectionMode && selectedLocation && (
