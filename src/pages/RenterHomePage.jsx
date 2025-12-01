@@ -671,7 +671,7 @@ const RenterHomePage = () => {
                   </Link>
 
                   {/* Notifications */}
-                  <div className="relative group">
+                  <div className="relative group flex justify-center sm:justify-start">
                     <NotificationCenter />
                   </div>
                 </>
@@ -694,13 +694,13 @@ const RenterHomePage = () => {
                           key={getUserAvatar()} // Force reload if URL changes
                           src={getUserAvatar()}
                           alt="Profile"
-                          className="absolute inset-0 w-full h-full object-cover"
+                          className="absolute inset-0 w-full h-full object-cover z-10"
                           onError={(e) => {
                             e.target.style.display = 'none';
                             e.target.onerror = null; // Prevent infinite loop
                           }}
                         />
-                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] -z-10">
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#FF6B35] to-[#e85e2f]">
                           <span className="text-white text-sm font-bold">
                             {getUserInitial()}
                           </span>
