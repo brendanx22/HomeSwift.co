@@ -120,9 +120,9 @@ const AppLayout = () => {
       const primaryRole = allRoles.find(r => r.is_primary)?.role;
       const firstRole = allRoles[0]?.role;
       
-      // During login flow, prioritize pendingUserType above all else
+      // During login flow, prioritize pendingUserType and login page context
       const detectedRole = (isLoginPage || isLandlordLoginPage) ? 
-                          (pendingUserType || currentRole || primaryRole || firstRole || userType || 'renter') :
+                          (isLandlordLoginPage ? 'landlord' : pendingUserType || currentRole || primaryRole || firstRole || userType || 'renter') :
                           (currentRole || pendingUserType || primaryRole || firstRole || userType || 'renter');
 
       // Enhanced debug logging

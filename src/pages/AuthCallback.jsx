@@ -347,7 +347,7 @@ const AuthCallback = () => {
 
               // Try backend token
               try {
-                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/auth/token`, {
+                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://api.homeswift.co'}/api/auth/token`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ user_id: user.id }),

@@ -540,7 +540,8 @@ const RenterHomePage = () => {
   };
 
   const getUserAvatar = () => {
-    return realtimeUserProfile?.profile_image || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+    // Prioritize Google avatar URL, then real-time profile image, then fallback
+    return user?.user_metadata?.avatar_url || user?.user_metadata?.picture || realtimeUserProfile?.profile_image || null;
   };
 
   // Stable avatar state to prevent flickering
