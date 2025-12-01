@@ -108,7 +108,23 @@ const AppLayout = () => {
       const storedRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
       const authContextRoles = roles || [];
       const allRoles = authContextRoles.length > 0 ? authContextRoles : storedRoles;
-      const detectedRole = currentRole || allRoles.find(r => r.is_primary)?.role || allRoles[0]?.role || userType || 'renter';
+      
+      // Priority order for role detection:
+      // 1. currentRole from AuthContext (most reliable)
+      // 2. pendingUserType (set during login flow)
+      // 3. primary role from roles array
+      // 4. fallback to user_type metadata
+      // 5. default to 'renter' as last resort
+      const pendingUserType = localStorage.getItem('pendingUserType');
+      const primaryRole = allRoles.find(r => r.is_primary)?.role;
+      const firstRole = allRoles[0]?.role;
+      
+      const detectedRole = currentRole || 
+                          pendingUserType || 
+                          primaryRole || 
+                          firstRole || 
+                          userType || 
+                          'renter';
 
       // Enhanced debug logging
       console.log('AppLayout Auth Debug:', {
@@ -119,6 +135,9 @@ const AppLayout = () => {
         authContextRoles,
         allRoles,
         currentRole,
+        pendingUserType,
+        primaryRole,
+        firstRole,
         detectedRole,
         path,
         isLandlordLoginPage,
@@ -128,7 +147,14 @@ const AppLayout = () => {
       // If we're on a login page, redirect to the appropriate dashboard
       if (isLoginPage || isLandlordLoginPage) {
         const dashboardPath = detectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
-        // console.log('Redirecting from login to:', dashboardPath, 'based on role:', detectedRole);
+        console.log('🔄 Redirecting from login to:', dashboardPath, 'based on detectedRole:', detectedRole);
+        
+        // Clear pendingUserType after using it for redirection
+        if (pendingUserType) {
+          localStorage.removeItem('pendingUserType');
+          console.log('🧹 Cleared pendingUserType after redirection');
+        }
+        
         if (path !== dashboardPath) {
           navigate(dashboardPath, { replace: true });
         }
@@ -138,7 +164,13 @@ const AppLayout = () => {
       // For other public routes when authenticated
       if (publicRoutes.includes(path)) {
         const dashboardPath = detectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
-        // console.log('Redirecting from public route to:', dashboardPath);
+        console.log('🔄 Redirecting from public route to:', dashboardPath, 'based on detectedRole:', detectedRole);
+        
+        // Clear pendingUserType if present
+        if (pendingUserType) {
+          localStorage.removeItem('pendingUserType');
+        }
+        
         if (path !== dashboardPath) {
           navigate(dashboardPath, { replace: true });
         }
@@ -204,7 +236,7 @@ const AppLayout = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-4"
+        className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br from-white via-gray-50 to-white p-4"
       >
         <div className="relative">
           {/* Animated logo */}
@@ -244,7 +276,7 @@ const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-      <main className="flex-grow">
+      <main className="grow">
         <Toaster position="top-right" />
         <Suspense
           fallback={
@@ -252,7 +284,7 @@ const AppLayout = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-4"
+              className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br from-white via-gray-50 to-white p-4"
             >
               <div className="relative">
                 {/* Animated logo */}
@@ -302,10 +334,8 @@ const AppLayout = () => {
               element={
                 !isAuthenticated || new URLSearchParams(location.search).get('from') === 'logout' ? (
                   <LoginPage />
-                ) : user?.user_type === 'landlord' ? (
-                  <Navigate to="/landlord/dashboard" replace />
                 ) : (
-                  <Navigate to="/chat" replace />
+                  <Navigate to={currentRole === 'landlord' ? '/landlord/dashboard' : '/chat'} replace />
                 )
               }
             />
@@ -315,10 +345,8 @@ const AppLayout = () => {
               element={
                 !isAuthenticated ? (
                   <SignupPage />
-                ) : user?.user_type === 'landlord' ? (
-                  <Navigate to="/landlord/dashboard" replace />
                 ) : (
-                  <Navigate to="/chat" replace />
+                  <Navigate to={currentRole === 'landlord' ? '/landlord/dashboard' : '/chat'} replace />
                 )
               }
             />

@@ -607,25 +607,8 @@ export const AuthProvider = ({ children }) => {
 
           setLoading(false);
 
-          // If we're on a login page, redirect based on role
-          if (window.location.pathname.includes('/login')) {
-            // Prioritize pendingUserType (set during login), then stored, then fallback
-            const targetRole = pendingUserType || stored || fallback || 'renter';
-            console.log(`🔄 Login detected, redirecting ${targetRole} to dashboard`);
-            
-            // Clear pendingUserType after using it
-            if (pendingUserType) {
-              localStorage.removeItem('pendingUserType');
-            }
-            
-            // Redirect to appropriate dashboard
-            if (targetRole === 'landlord') {
-              window.location.href = '/landlord/dashboard';
-            } else {
-              window.location.href = '/chat';
-            }
-            return;
-          }
+          // Note: Role-based redirection is handled by AppLayout useEffect
+          // This prevents conflicts between multiple redirection logic
         } catch (error) {
           console.error("❌ Error in auth state handler:", error);
           setLoading(false); // Always set loading to false even on error
