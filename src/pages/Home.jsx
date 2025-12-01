@@ -10,31 +10,21 @@ const Home = () => {
   const mouseY = useMotionValue(0);
   const [searchText, setSearchText] = useState('');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleGetStartedClick = (e) => {
     e.preventDefault();
     navigate('/user-type');
   };
 
-  const handleSearchSubmit = async (e) => {
+  const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (!searchText.trim()) return;
-    
-    setIsSubmitting(true);
-    
-    // Simulate search processing
-    setTimeout(() => {
-      console.log('Searching for:', searchText);
-      // Here you would typically navigate to search results
-      // navigate(`/search?q=${encodeURIComponent(searchText)}`);
-      setIsSubmitting(false);
-      
-      // Show success feedback
-      setSearchText('');
-      // You could add a toast notification here
-    }, 1000);
+    if (searchText.trim()) {
+      // Navigate to property browse page with search query
+      navigate(`/properties?search=${encodeURIComponent(searchText.trim())}`);
+    } else {
+      // If empty search, just go to properties page
+      navigate('/properties');
+    }
   };
 
   const handleLoginClick = (e) => {
@@ -69,7 +59,7 @@ const Home = () => {
             background-attachment: scroll !important;
           }
           .logo-img {
-            width: 100px !important;
+            width: 120px !important;
             height: auto !important;
           }
         }
@@ -83,7 +73,7 @@ const Home = () => {
       >
         {/* Logo */}
         <div className="flex items-center">
-          <img src="/images/logo.png" alt="HomeSwift Logo" className="logo-img w-40 sm:w-48 h-auto object-contain" />
+          <img src="/images/logo.png" alt="HomeSwift Logo" className="logo-img w-48 sm:w-60 h-10 rounded-lg object-cover" />
         </div>
 
         {/* Desktop Navigation */}
@@ -166,51 +156,126 @@ const Home = () => {
         </motion.button>
       </motion.header>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {showMobileMenu && (
           <>
-            {/* Backdrop overlay */}
+            {/* Backdrop */}
             <motion.div
-              className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-15"
+              className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-20"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={() => setShowMobileMenu(false)}
             />
+            
+            {/* Mobile Menu Panel */}
             <motion.div
-              className="md:hidden absolute top-12 left-0 right-0 bg-[#FF6B35]/90 backdrop-blur-md border-t border-gray-400/50 z-20"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="md:hidden fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-30 overflow-y-auto"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             >
-          <div className="px-6 py-6 space-y-6">
-            <div className="space-y-4">
-              <a href="#" className="block text-white text-lg font-medium border-b-2 border-white pb-1 w-fit">Home</a>
-              <a href="#" className="block text-gray-300 text-lg hover:text-white transition-colors">FAQs</a>
-              <a href="#" className="block text-gray-300 text-lg hover:text-white transition-colors">About Us</a>
-            </div>
-            <div className="pt-4 space-y-3">
-              <button
-                onClick={handleGetStartedClick}
-                className="w-full flex items-center justify-center space-x-2 bg-white text-[#2C3E50] px-4 py-2 rounded-2xl font-medium hover:bg-gray-100 transition-colors"
-              >
-                <span>Get Started</span>
-                <div className="w-6 h-6 bg-[#FF6B35] rounded-full flex items-center justify-center">
-                  <ArrowRight size={10} className="text-white" />
+              {/* Menu Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <div className="flex items-center">
+                  <img src="/images/logo.png" alt="HomeSwift Logo" className="w-32 h-8 object-cover rounded-lg" />
                 </div>
-              </button>
-              <button
-                onClick={handleLoginClick}
-                className="w-full bg-transparent border border-gray-400 text-white px-6 py-2 rounded-2xl font-medium hover:bg-white/10 transition-colors"
-              >
-                Login
-              </button>
-            </div>
-          </div>
-          </motion.div>
+                <motion.button
+                  onClick={() => setShowMobileMenu(false)}
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <X size={24} className="text-[#2C3E50]" />
+                </motion.button>
+              </div>
+
+              {/* Menu Content */}
+              <div className="p-6 space-y-8">
+                {/* Navigation Links */}
+                <nav className="space-y-6">
+                  <div className="space-y-4">
+                    <a 
+                      href="#" 
+                      className="block text-[#2C3E50] text-lg font-semibold border-b-2 border-[#FF6B35] pb-2 w-fit"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      Home
+                    </a>
+                    <a 
+                      href="#" 
+                      className="block text-[#2C3E50]/70 text-lg hover:text-[#FF6B35] transition-colors"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      FAQs
+                    </a>
+                    <a 
+                      href="#" 
+                      className="block text-[#2C3E50]/70 text-lg hover:text-[#FF6B35] transition-colors"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      About Us
+                    </a>
+                  </div>
+                </nav>
+
+                {/* Action Buttons */}
+                <div className="space-y-4">
+                  <motion.button
+                    onClick={(e) => {
+                      handleGetStartedClick(e);
+                      setShowMobileMenu(false);
+                    }}
+                    className="w-full flex items-center justify-center space-x-2 bg-[#FF6B35] text-white px-6 py-4 rounded-2xl font-semibold hover:bg-[#FF7B45] transition-colors shadow-lg"
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <span>Get Started</span>
+                    <motion.div 
+                      className="w-6 h-6 bg-white text-[#2C3E50] rounded-full flex items-center justify-center"
+                      whileHover={{ rotate: 360 }}
+                      transition={{ duration: 0.6 }}
+                    >
+                      <ArrowRight size={14} className="text-[#2C3E50]" />
+                    </motion.div>
+                  </motion.button>
+                  
+                  <motion.button
+                    onClick={(e) => {
+                      handleLoginClick(e);
+                      setShowMobileMenu(false);
+                    }}
+                    className="w-full bg-transparent border border-[#2C3E50] text-[#2C3E50] px-6 py-4 rounded-2xl font-semibold hover:bg-[#2C3E50]/5 transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Login
+                  </motion.button>
+                  
+                  <motion.a
+                    href="/waitlist"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="w-full bg-[#2C3E50] text-white px-6 py-4 rounded-2xl font-semibold hover:bg-[#1E2B38] transition-colors flex items-center justify-center space-x-2 shadow-lg"
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <span>Join Waitlist</span>
+                    <Sparkles size={16} className="text-[#FF6B35]" />
+                  </motion.a>
+                </div>
+
+                {/* Contact Info */}
+                <div className="pt-6 border-t border-gray-100">
+                  <div className="text-center text-[#2C3E50]/60 text-sm">
+                    <p>© 2024 HomeSwift</p>
+                    <p className="mt-1">Made with ❤️ in Nigeria</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </>
         )}
       </AnimatePresence>
@@ -219,7 +284,7 @@ const Home = () => {
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 text-center">
         {/* Feature Tag */}
         <motion.div
-          className="flex items-center space-x-2 bg-[#2C3E50] rounded-[2rem] px-6 py-3 mb-6"
+          className="flex items-center space-x-2 bg-[#FF6B35] rounded-[2rem] px-6 py-3 mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
@@ -247,7 +312,7 @@ const Home = () => {
 
         {/* Sub-headline */}
         <motion.p
-          className="text-sm md:text-sm text-[#2C3E50]/80 mb-8 sm:mb-12 max-w-2xl leading-relaxed"
+          className="text-sm md:text-sm text-[#FF6B35] mb-8 sm:mb-12 max-w-2xl leading-relaxed"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 }}
@@ -263,45 +328,26 @@ const Home = () => {
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
         >
           <form onSubmit={handleSearchSubmit} className="relative">
-            <div className={`relative transition-all duration-300 ${isFocused ? 'scale-[1.02]' : ''}`}>
+            <div className="relative group">
               <input
                 type="text"
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                placeholder="Describe your ideal home..."
-                disabled={isSubmitting}
-                className={`w-full bg-white/90 backdrop-blur-sm border-2 rounded-full px-6 py-4 text-[#2C3E50] text-lg placeholder-gray-400 focus:outline-none focus:border-[#FF6B35] focus:bg-white focus:shadow-lg transition-all duration-300 ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
+                placeholder="Describe your ideal home (e.g., '3-bedroom apartment in Lagos with balcony')"
+                className="w-full bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full px-6 py-4 text-[#2C3E50] text-md placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] focus:bg-white focus:shadow-lg transition-all duration-300"
               />
               <motion.button
                 type="submit"
-                disabled={!searchText.trim() || isSubmitting}
-                className={`absolute right-2 top-1/2 transform -translate-y-1/2 text-white px-4 py-2 rounded-full transition-all duration-300 ${searchText.trim() && !isSubmitting ? 'bg-[#FF6B35] hover:bg-[#FF7B45] shadow-lg' : 'bg-gray-400 cursor-not-allowed'}`}
-                whileHover={searchText.trim() && !isSubmitting ? { scale: 1.05 } : {}}
-                whileTap={searchText.trim() && !isSubmitting ? { scale: 0.95 } : {}}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#FF6B35] text-white p-3 rounded-full hover:bg-[#FF7B45] transition-colors shadow-md"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
               >
-                {isSubmitting ? (
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  >
-                    <ArrowUp size={20} />
-                  </motion.div>
-                ) : (
-                  <ArrowUp size={20} />
-                )}
+                <ArrowUp size={20} className="rotate-45" />
               </motion.button>
             </div>
-            {searchText && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="absolute left-6 -bottom-6 text-sm text-gray-500"
-              >
-                {searchText.length} characters
-              </motion.div>
-            )}
+            <p className="mt-2 text-sm text-[#2C3E50]/60 text-center">
+              Try: "cozy apartment near university" or "family house with garden"
+            </p>
           </form>
         </motion.div>
       </main>
