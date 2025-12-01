@@ -5,12 +5,23 @@ import { Star, MapPin, Layers } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-// Map style options
+// Map style options - using simple raster tiles for reliability
 const mapStyles = [
-    { id: 'streets', name: 'Streets', url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json' },
-    { id: 'dark', name: 'Dark', url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' },
-    { id: 'voyager', name: 'Voyager', url: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json' },
-    { id: 'osm', name: 'OpenStreetMap', url: 'https://tiles.openfreemap.org/styles/liberty' }
+    { 
+        id: 'streets', 
+        name: 'Streets', 
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+    },
+    { 
+        id: 'carto', 
+        name: 'CartoDB Light', 
+        url: 'https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png'
+    },
+    { 
+        id: 'voyager', 
+        name: 'CartoDB Voyager', 
+        url: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+    }
 ];
 
 // 100% FREE MapLibre - No API keys needed!
@@ -81,7 +92,7 @@ const PropertyMap = ({
                 {...viewState}
                 onMove={evt => setViewState(evt.viewState)}
                 style={{ width: '100%', height: '100%' }}
-                mapStyle={mapStyles[currentMapStyle].url}
+                mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
                 onClick={onMapClick}
                 minZoom={1}
                 maxZoom={18}
@@ -90,8 +101,8 @@ const PropertyMap = ({
                 <FullscreenControl position="top-right" />
                 <ScaleControl />
 
-                {/* Map Style Switcher */}
-                <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-2 z-10">
+                {/* Map Style Switcher - Temporarily Disabled for Testing */}
+                {/* <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-2 z-10">
                     <div className="flex items-center space-x-2 text-xs">
                         <Layers className="w-4 h-4 text-gray-600" />
                         <select
@@ -112,7 +123,7 @@ const PropertyMap = ({
                             ))}
                         </select>
                     </div>
-                </div>
+                </div> */}
 
                 {/* Selection Marker */}
                 {selectionMode && selectedLocation && (
