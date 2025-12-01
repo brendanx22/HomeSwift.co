@@ -686,33 +686,31 @@ const RenterHomePage = () => {
                 <div className="relative" title={user.email}>
                   <button
                     onClick={() => setShowProfilePopup(true)}
-                    className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] hover:shadow-md transition-all transform hover:scale-105 relative"
+                    className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center bg-linear-to-br from-[#FF6B35] to-[#e85e2f] hover:shadow-md transition-all transform hover:scale-105 relative"
                   >
                     {getUserAvatar() ? (
-                      <>
-                        <img
-                          key={getUserAvatar()} // Force reload if URL changes
-                          src={getUserAvatar()}
-                          alt="Profile"
-                          className="absolute inset-0 w-full h-full object-cover z-10"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.onerror = null; // Prevent infinite loop
-                          }}
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#FF6B35] to-[#e85e2f]">
-                          <span className="text-white text-sm font-bold">
-                            {getUserInitial()}
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-white text-sm font-bold">
-                          {getUserInitial()}
-                        </span>
-                      </div>
-                    )}
+                      <img
+                        key={getUserAvatar()} // Force reload if URL changes
+                        src={getUserAvatar()}
+                        alt="Profile"
+                        className="absolute inset-0 w-full h-full object-cover z-10"
+                        onError={(e) => {
+                          // Don't hide the image, let the fallback gradient show through
+                          // The gradient is already positioned behind the image
+                          console.log('Avatar failed to load, showing fallback');
+                          e.target.onerror = null; // Prevent infinite loop
+                        }}
+                        onLoad={() => {
+                          console.log('Avatar loaded successfully');
+                        }}
+                      />
+                    ) : null}
+                    {/* Always show the fallback gradient with initials */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#FF6B35] to-[#e85e2f]">
+                      <span className="text-white text-sm font-bold">
+                        {getUserInitial()}
+                      </span>
+                    </div>
                   </button>
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center bg-red-500 text-white text-xs font-semibold rounded-full border-2 border-white">
