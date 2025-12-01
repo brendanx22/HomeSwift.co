@@ -78,9 +78,9 @@ const Home = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
-          <a href="#" className="text-[#2C3E50] text-md font-medium border-b-2 border-[#FF6B35] pb-1">Home</a>
-          <a href="#" className="text-[#2C3E50]/80 text-md hover:text-[#FF6B35] transition-colors">FAQs</a>
-          <a href="#" className="text-[#2C3E50]/80 text-md hover:text-[#FF6B35] transition-colors">About Us</a>
+          <a href="/" className="text-[#2C3E50] text-md font-medium border-b-2 border-[#FF6B35] pb-1">Home</a>
+          <a href="/faq" className="text-[#2C3E50]/80 text-md hover:text-[#FF6B35] transition-colors">FAQs</a>
+          <a href="/about" className="text-[#2C3E50]/80 text-md hover:text-[#FF6B35] transition-colors">About Us</a>
         </nav>
 
         {/* Action Buttons */}
@@ -198,21 +198,21 @@ const Home = () => {
                 {/* Navigation Links */}
                 <nav className="space-y-2">
                   <a 
-                    href="#" 
+                    href="/" 
                     className="block px-4 py-3 text-[#2C3E50] text-lg font-semibold bg-[#FF6B35]/10 rounded-lg border-l-4 border-[#FF6B35] hover:bg-[#FF6B35]/20 transition-colors"
                     onClick={() => setShowMobileMenu(false)}
                   >
                     Home
                   </a>
                   <a 
-                    href="#" 
+                    href="/faq" 
                     className="block px-4 py-3 text-[#2C3E50]/70 text-lg hover:text-[#FF6B35] hover:bg-gray-50 rounded-lg transition-colors"
                     onClick={() => setShowMobileMenu(false)}
                   >
                     FAQs
                   </a>
                   <a 
-                    href="#" 
+                    href="/about" 
                     className="block px-4 py-3 text-[#2C3E50]/70 text-lg hover:text-[#FF6B35] hover:bg-gray-50 rounded-lg transition-colors"
                     onClick={() => setShowMobileMenu(false)}
                   >
