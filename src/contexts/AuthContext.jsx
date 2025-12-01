@@ -565,6 +565,18 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
+        // Check if we're in the middle of an OAuth flow with a pending user type
+        const pendingUserType = localStorage.getItem('pendingUserType');
+        
+        // If there's a pending user type and we're on the callback page, let AuthCallback handle it
+        if (pendingUserType && window.location.pathname === '/auth/callback') {
+          console.log('🔄 OAuth flow in progress with pending type:', pendingUserType, '- letting AuthCallback handle it');
+          setUser(session.user);
+          setIsAuthenticated(true);
+          setLoading(false);
+          return; // Exit early, let AuthCallback handle role creation
+        }
+
         try {
           setIsAuthenticated(true);
           setUser(session.user);
