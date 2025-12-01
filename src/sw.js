@@ -115,16 +115,22 @@ self.addEventListener('fetch', (event) => {
                     const response = await fetchWithTimeout(request, 12);
                     // Update route cache with latest navigation response
                     const cache = await caches.open(ROUTE_CACHE);
-                    // Clone response for cache/storage
-                    cache.put(request, response.clone().catch(() => { })).catch(() => { });
+                    // Cache the response (don't await, let it happen in background)
+                    cache.put(request, response.clone()).catch(() => {
+                        console.warn('Failed to cache navigation response');
+                    });
                     return response;
                 } catch (err) {
                     // On failure, return cached index.html or other fallback
                     const cache = await caches.open(STATIC_CACHE);
-                    const fallback = await cache.match('/index.html') || cache.match('/');
+                    const fallback = await cache.match('/index.html') || await cache.match('/');
                     if (fallback) return fallback;
-                    // As last resort, try network without timeout
-                    return fetch(request).catch(e => new Response('Offline', { status: 503, statusText: 'Offline' }));
+                    // As last resort, return offline response
+                    return new Response('Offline', { 
+                        status: 503, 
+                        statusText: 'Service Unavailable',
+                        headers: new Headers({ 'Content-Type': 'text/html' })
+                    });
                 }
             })()
         );
@@ -149,7 +155,10 @@ self.addEventListener('fetch', (event) => {
 
                     if (shouldCache) {
                         const cache = await caches.open(STATIC_CACHE);
-                        cache.put(request, response.clone().catch(() => { })).catch(() => { });
+                        // Cache in background, don't await
+                        cache.put(request, response.clone()).catch(() => {
+                            console.warn('Failed to cache resource');
+                        });
                     }
                 }
                 return response;
@@ -164,12 +173,12 @@ self.addEventListener('fetch', (event) => {
                 const rCached = await routeCache.match(request);
                 if (rCached) return rCached;
 
-                // If nothing matches, fallback to fetch without timeout (best-effort)
-                try {
-                    return await fetch(request);
-                } catch (finalErr) {
-                    return new Response('Service Unavailable', { status: 503, statusText: 'Service Unavailable' });
-                }
+                // If nothing matches, return error response
+                return new Response('Service Unavailable', { 
+                    status: 503, 
+                    statusText: 'Service Unavailable',
+                    headers: new Headers({ 'Content-Type': 'text/plain' })
+                });
             }
         })()
     );
