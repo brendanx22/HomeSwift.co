@@ -196,40 +196,38 @@ const Home = () => {
               {/* Menu Content */}
               <div className="p-6 space-y-8">
                 {/* Navigation Links */}
-                <nav className="space-y-6">
-                  <div className="space-y-4">
-                    <a 
-                      href="#" 
-                      className="block text-[#2C3E50] text-lg font-semibold border-b-2 border-[#FF6B35] pb-2 w-fit"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      Home
-                    </a>
-                    <a 
-                      href="#" 
-                      className="block text-[#2C3E50]/70 text-lg hover:text-[#FF6B35] transition-colors"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      FAQs
-                    </a>
-                    <a 
-                      href="#" 
-                      className="block text-[#2C3E50]/70 text-lg hover:text-[#FF6B35] transition-colors"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      About Us
-                    </a>
-                  </div>
+                <nav className="space-y-2">
+                  <a 
+                    href="#" 
+                    className="block px-4 py-3 text-[#2C3E50] text-lg font-semibold bg-[#FF6B35]/10 rounded-lg border-l-4 border-[#FF6B35] hover:bg-[#FF6B35]/20 transition-colors"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    Home
+                  </a>
+                  <a 
+                    href="#" 
+                    className="block px-4 py-3 text-[#2C3E50]/70 text-lg hover:text-[#FF6B35] hover:bg-gray-50 rounded-lg transition-colors"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    FAQs
+                  </a>
+                  <a 
+                    href="#" 
+                    className="block px-4 py-3 text-[#2C3E50]/70 text-lg hover:text-[#FF6B35] hover:bg-gray-50 rounded-lg transition-colors"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    About Us
+                  </a>
                 </nav>
 
                 {/* Action Buttons */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <motion.button
                     onClick={(e) => {
                       handleGetStartedClick(e);
                       setShowMobileMenu(false);
                     }}
-                    className="w-full flex items-center justify-center space-x-2 bg-[#FF6B35] text-white px-6 py-3 rounded-2xl font-semibold hover:bg-[#FF7B45] transition-colors shadow-lg"
+                    className="w-full flex items-center justify-center space-x-2 bg-linear-to-r from-[#FF6B35] to-[#FF7B45] text-white px-6 py-3 rounded-xl font-semibold hover:from-[#FF7B45] hover:to-[#FF8B55] transition-all duration-300 shadow-lg"
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -248,7 +246,7 @@ const Home = () => {
                       handleLoginClick(e);
                       setShowMobileMenu(false);
                     }}
-                    className="w-full bg-transparent border border-[#2C3E50] text-[#2C3E50] px-6 py-3 rounded-2xl font-semibold hover:bg-[#2C3E50]/5 transition-colors"
+                    className="w-full bg-white border-2 border-[#2C3E50] text-[#2C3E50] px-6 py-3 rounded-xl font-semibold hover:bg-[#2C3E50] hover:text-white transition-all duration-300"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -258,21 +256,13 @@ const Home = () => {
                   <motion.a
                     href="/waitlist"
                     onClick={() => setShowMobileMenu(false)}
-                    className="w-full bg-[#2C3E50] text-white px-6 py-3 rounded-2xl font-semibold hover:bg-[#1E2B38] transition-colors flex items-center justify-center space-x-2 shadow-lg"
+                    className="w-full bg-[#2C3E50] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#1E2B38] transition-colors flex items-center justify-center space-x-2 shadow-lg"
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <span>Join Waitlist</span>
                     <Sparkles size={16} className="text-[#FF6B35]" />
                   </motion.a>
-                </div>
-
-                {/* Contact Info */}
-                <div className="pt-6 border-t border-gray-100">
-                  <div className="text-center text-[#2C3E50]/60 text-sm">
-                    <p>© 2024 HomeSwift</p>
-                    <p className="mt-1">Made with ❤️ in Nigeria</p>
-                  </div>
                 </div>
               </div>
             </motion.div>
