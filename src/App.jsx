@@ -162,6 +162,13 @@ const AppLayout = () => {
 
       // For other public routes when authenticated
       if (publicRoutes.includes(path)) {
+        // Allow authenticated users to access FAQ, About, and Waitlist pages
+        const allowedPublicPages = ['/faq', '/about', '/waitlist'];
+        if (allowedPublicPages.includes(path)) {
+          console.log('✅ Allowing authenticated user to access public page:', path);
+          return;
+        }
+        
         const dashboardPath = detectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
         console.log('🔄 Redirecting from public route to:', dashboardPath, 'based on detectedRole:', detectedRole);
         
