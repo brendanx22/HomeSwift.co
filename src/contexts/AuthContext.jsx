@@ -609,8 +609,14 @@ export const AuthProvider = ({ children }) => {
 
           // If we're on a login page, redirect based on role
           if (window.location.pathname.includes('/login')) {
-            const targetRole = stored || fallback || 'renter';
+            // Prioritize pendingUserType (set during login), then stored, then fallback
+            const targetRole = pendingUserType || stored || fallback || 'renter';
             console.log(`🔄 Login detected, redirecting ${targetRole} to dashboard`);
+            
+            // Clear pendingUserType after using it
+            if (pendingUserType) {
+              localStorage.removeItem('pendingUserType');
+            }
             
             // Redirect to appropriate dashboard
             if (targetRole === 'landlord') {
