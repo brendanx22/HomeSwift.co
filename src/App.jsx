@@ -109,22 +109,20 @@ const AppLayout = () => {
       const authContextRoles = roles || [];
       const allRoles = authContextRoles.length > 0 ? authContextRoles : storedRoles;
       
-      // Priority order for role detection:
-      // 1. currentRole from AuthContext (most reliable)
-      // 2. pendingUserType (set during login flow)
-      // 3. primary role from roles array
+      // Priority order for role detection during login:
+      // 1. pendingUserType (highest priority during login flow)
+      // 2. currentRole from AuthContext
+      // 3. primary role from roles array  
       // 4. fallback to user_type metadata
       // 5. default to 'renter' as last resort
       const pendingUserType = localStorage.getItem('pendingUserType');
       const primaryRole = allRoles.find(r => r.is_primary)?.role;
       const firstRole = allRoles[0]?.role;
       
-      const detectedRole = currentRole || 
-                          pendingUserType || 
-                          primaryRole || 
-                          firstRole || 
-                          userType || 
-                          'renter';
+      // During login flow, prioritize pendingUserType above all else
+      const detectedRole = (isLoginPage || isLandlordLoginPage) ? 
+                          (pendingUserType || currentRole || primaryRole || firstRole || userType || 'renter') :
+                          (currentRole || pendingUserType || primaryRole || firstRole || userType || 'renter');
 
       // Enhanced debug logging
       console.log('AppLayout Auth Debug:', {
@@ -149,7 +147,7 @@ const AppLayout = () => {
         const dashboardPath = detectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
         console.log('🔄 Redirecting from login to:', dashboardPath, 'based on detectedRole:', detectedRole);
         
-        // Clear pendingUserType after using it for redirection
+        // Clear pendingUserType after successful redirection
         if (pendingUserType) {
           localStorage.removeItem('pendingUserType');
           console.log('🧹 Cleared pendingUserType after redirection');
