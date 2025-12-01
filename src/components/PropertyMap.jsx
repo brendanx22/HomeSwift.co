@@ -72,25 +72,7 @@ const PropertyMap = ({
                 {...viewState}
                 onMove={evt => setViewState(evt.viewState)}
                 style={{ width: '100%', height: '100%' }}
-                mapStyle={{
-                    version: 8,
-                    sources: {
-                        'satellite': {
-                            type: 'raster',
-                            tiles: [
-                                'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-                            ],
-                            tileSize: 256
-                        }
-                    },
-                    layers: [
-                        {
-                            id: 'satellite',
-                            type: 'raster',
-                            source: 'satellite'
-                        }
-                    ]
-                }}
+                mapStyle="https://tiles.openfreemap.org/styles/liberty"
                 projection="globe" // 3D globe projection
                 onClick={onMapClick}
                 minZoom={1}
