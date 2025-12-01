@@ -10,24 +10,31 @@ const Home = () => {
   const mouseY = useMotionValue(0);
   const [searchText, setSearchText] = useState('');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleGetStartedClick = (e) => {
     e.preventDefault();
     navigate('/user-type');
   };
 
-  const handleSearchSubmit = (e) => {
+  const handleSearchSubmit = async (e) => {
     e.preventDefault();
-    if (searchText.trim()) {
-      // Handle search logic here - navigate to properties with search query
+    if (!searchText.trim()) return;
+    
+    setIsSubmitting(true);
+    
+    // Simulate search processing
+    setTimeout(() => {
       console.log('Searching for:', searchText);
-      navigate(`/properties?search=${encodeURIComponent(searchText.trim())}`);
-      // Clear input after search
+      // Here you would typically navigate to search results
+      // navigate(`/search?q=${encodeURIComponent(searchText)}`);
+      setIsSubmitting(false);
+      
+      // Show success feedback
       setSearchText('');
-    } else {
-      // Show feedback for empty search
-      console.log('Please enter a description of your ideal home');
-    }
+      // You could add a toast notification here
+    }, 1000);
   };
 
   const handleLoginClick = (e) => {
@@ -62,7 +69,7 @@ const Home = () => {
             background-attachment: scroll !important;
           }
           .logo-img {
-            width: 120px !important;
+            width: 100px !important;
             height: auto !important;
           }
         }
@@ -76,12 +83,7 @@ const Home = () => {
       >
         {/* Logo */}
         <div className="flex items-center">
-          <img 
-            src="/images/logo.png" 
-            alt="HomeSwift Logo" 
-            className="logo-img w-40 sm:w-48 h-auto object-contain"
-            style={{ maxHeight: '48px' }}
-          />
+          <img src="/images/logo.png" alt="HomeSwift Logo" className="logo-img w-40 sm:w-48 h-auto object-contain" />
         </div>
 
         {/* Desktop Navigation */}
@@ -95,19 +97,14 @@ const Home = () => {
         <div className="hidden md:flex items-center space-x-4">
           <motion.button
             onClick={handleGetStartedClick}
-            className="relative flex items-center space-x-2 bg-[#FF6B35] text-white px-6 py-3 rounded-full font-medium hover:bg-[#FF7B45] transition-all duration-300 overflow-hidden group"
+            className="flex items-center space-x-2 bg-[#FF6B35] text-white px-6 py-2 rounded-full font-medium hover:bg-[#FF7B45] transition-colors"
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <motion.div
-              className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent -skew-x-12"
-              animate={{ x: ['-100%', '200%'] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            />
-            <span className="relative z-10">Get Started</span>
+            <span>Get Started</span>
             <motion.div 
-              className="relative z-10 w-6 h-6 bg-white text-[#2C3E50] rounded-full flex items-center justify-center"
+              className="w-6 h-6 bg-white text-[#2C3E50] rounded-full flex items-center justify-center"
               whileHover={{ rotate: 360 }}
               transition={{ duration: 0.6 }}
             >
@@ -116,40 +113,22 @@ const Home = () => {
           </motion.button>
           <motion.button
             onClick={handleLoginClick}
-            className="relative bg-transparent border-2 border-[#2C3E50] text-[#2C3E50] px-6 py-3 rounded-full font-medium hover:bg-[#2C3E50] hover:text-white transition-all duration-300 overflow-hidden group"
+            className="bg-transparent border border-gray-400 text-[#2C3E50] px-6 py-2 rounded-full font-medium hover:bg-white/10 transition-colors"
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <motion.div
-              className="absolute inset-0 bg-[#2C3E50]"
-              initial={{ x: '100%' }}
-              whileHover={{ x: '0%' }}
-              transition={{ duration: 0.3 }}
-            />
-            <span className="relative z-10">Login</span>
+            Login
           </motion.button>
           <motion.a
             href="/waitlist"
-            className="relative flex items-center space-x-2 bg-[#2C3E50] text-white px-6 py-3 rounded-full font-medium hover:bg-[#1E2B38] transition-all duration-300 overflow-hidden group"
+            className="bg-[#2C3E50] text-white px-6 py-2 rounded-full font-medium hover:bg-[#1E2B38] transition-colors flex items-center space-x-2"
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <motion.div
-              className="absolute inset-0 bg-linear-to-r from-[#FF6B35] to-[#FF7B45]"
-              initial={{ x: '-100%' }}
-              whileHover={{ x: '0%' }}
-              transition={{ duration: 0.3 }}
-            />
-            <span className="relative z-10">Join Waitlist</span>
-            <motion.div 
-              className="relative z-10"
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-            >
-              <Sparkles size={16} className="text-white" />
-            </motion.div>
+            <span>Join Waitlist</span>
+            <Sparkles size={16} className="text-[#FF6B35]" />
           </motion.a>
         </div>
       
@@ -191,63 +170,47 @@ const Home = () => {
       <AnimatePresence>
         {showMobileMenu && (
           <>
-            {/* Overlay backdrop */}
+            {/* Backdrop overlay */}
             <motion.div
-              className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-20"
+              className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-15"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
               onClick={() => setShowMobileMenu(false)}
             />
             <motion.div
-              className="md:hidden fixed top-0 left-0 right-0 bg-[#FF6B35]/95 backdrop-blur-md border-t border-gray-400/50 z-30"
+              className="md:hidden absolute top-12 left-0 right-0 bg-[#FF6B35]/90 backdrop-blur-md border-t border-gray-400/50 z-20"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
             >
-              {/* Close button at top */}
-              <div className="flex justify-end p-4">
-                <motion.button
-                  onClick={() => setShowMobileMenu(false)}
-                  className="text-white p-2 rounded-full hover:bg-white/20 transition-colors"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <X size={24} />
-                </motion.button>
-              </div>
-              <div className="px-6 pb-6 space-y-6">
-                <div className="space-y-4">
-                  <a href="#" className="block text-white text-lg font-medium border-b-2 border-white pb-1 w-fit">Home</a>
-                  <a href="#" className="block text-gray-300 text-lg hover:text-white transition-colors">FAQs</a>
-                  <a href="#" className="block text-gray-300 text-lg hover:text-white transition-colors">About Us</a>
+          <div className="px-6 py-6 space-y-6">
+            <div className="space-y-4">
+              <a href="#" className="block text-white text-lg font-medium border-b-2 border-white pb-1 w-fit">Home</a>
+              <a href="#" className="block text-gray-300 text-lg hover:text-white transition-colors">FAQs</a>
+              <a href="#" className="block text-gray-300 text-lg hover:text-white transition-colors">About Us</a>
+            </div>
+            <div className="pt-4 space-y-3">
+              <button
+                onClick={handleGetStartedClick}
+                className="w-full flex items-center justify-center space-x-2 bg-white text-[#2C3E50] px-4 py-2 rounded-2xl font-medium hover:bg-gray-100 transition-colors"
+              >
+                <span>Get Started</span>
+                <div className="w-6 h-6 bg-[#FF6B35] rounded-full flex items-center justify-center">
+                  <ArrowRight size={10} className="text-white" />
                 </div>
-                <div className="pt-4 space-y-3">
-                  <button
-                    onClick={() => {
-                      handleGetStartedClick();
-                      setShowMobileMenu(false);
-                    }}
-                    className="w-full flex items-center justify-center space-x-2 bg-white text-[#2C3E50] px-4 py-3 rounded-2xl font-medium hover:bg-gray-100 transition-colors"
-                  >
-                    <span>Get Started</span>
-                    <div className="w-6 h-6 bg-[#FF6B35] rounded-full flex items-center justify-center">
-                      <ArrowRight size={10} className="text-white" />
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleLoginClick();
-                      setShowMobileMenu(false);
-                    }}
-                    className="w-full bg-transparent border border-gray-400 text-white px-6 py-3 rounded-2xl font-medium hover:bg-white/10 transition-colors"
-                  >
-                    Login
-                  </button>
-                </div>
-              </div>
-            </motion.div>
+              </button>
+              <button
+                onClick={handleLoginClick}
+                className="w-full bg-transparent border border-gray-400 text-white px-6 py-2 rounded-2xl font-medium hover:bg-white/10 transition-colors"
+              >
+                Login
+              </button>
+            </div>
+          </div>
+          </motion.div>
           </>
         )}
       </AnimatePresence>
@@ -256,7 +219,7 @@ const Home = () => {
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 text-center">
         {/* Feature Tag */}
         <motion.div
-          className="inline-flex items-center space-x-2 bg-[#2C3E50] rounded-[2rem] px-6 py-3 mb-6"
+          className="flex items-center space-x-2 bg-[#2C3E50] rounded-[2rem] px-6 py-3 mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
@@ -266,7 +229,7 @@ const Home = () => {
             animate={{ rotate: [0, 360] }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           >
-            <Sparkles className="w-4 h-4 text-[#FF6B35]" />
+            <Sparkles className="w-4 h-4 text-white" />
           </motion.div>
           <span className="text-white text-sm font-medium">Smarter, faster, simpler home search</span>
         </motion.div>
@@ -284,7 +247,7 @@ const Home = () => {
 
         {/* Sub-headline */}
         <motion.p
-          className="text-sm md:text-sm text-[#FF6B35] mb-8 sm:mb-12 max-w-2xl leading-relaxed"
+          className="text-sm md:text-sm text-[#2C3E50]/80 mb-8 sm:mb-12 max-w-2xl leading-relaxed"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 }}
@@ -300,33 +263,45 @@ const Home = () => {
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
         >
           <form onSubmit={handleSearchSubmit} className="relative">
-            <div className="relative group">
+            <div className={`relative transition-all duration-300 ${isFocused ? 'scale-[1.02]' : ''}`}>
               <input
                 type="text"
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Describe your ideal home (e.g., '3-bedroom apartment in Lagos with balcony')"
-                className="w-full bg-white/90 backdrop-blur-sm border-2 border-[#2C3E50]/20 rounded-full px-6 py-4 text-[#2C3E50] text-base placeholder-[#2C3E50]/60 focus:outline-none focus:border-[#FF6B35] focus:bg-white focus:shadow-lg focus:shadow-[#FF6B35]/20 transition-all duration-300"
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                placeholder="Describe your ideal home..."
+                disabled={isSubmitting}
+                className={`w-full bg-white/90 backdrop-blur-sm border-2 rounded-full px-6 py-4 text-[#2C3E50] text-lg placeholder-gray-400 focus:outline-none focus:border-[#FF6B35] focus:bg-white focus:shadow-lg transition-all duration-300 ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
               />
               <motion.button
                 type="submit"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#FF6B35] text-white p-3 rounded-full hover:bg-[#FF7B45] transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                disabled={!searchText.trim()}
+                disabled={!searchText.trim() || isSubmitting}
+                className={`absolute right-2 top-1/2 transform -translate-y-1/2 text-white px-4 py-2 rounded-full transition-all duration-300 ${searchText.trim() && !isSubmitting ? 'bg-[#FF6B35] hover:bg-[#FF7B45] shadow-lg' : 'bg-gray-400 cursor-not-allowed'}`}
+                whileHover={searchText.trim() && !isSubmitting ? { scale: 1.05 } : {}}
+                whileTap={searchText.trim() && !isSubmitting ? { scale: 0.95 } : {}}
               >
-                <ArrowUp size={20} className="transform rotate-45" />
+                {isSubmitting ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  >
+                    <ArrowUp size={20} />
+                  </motion.div>
+                ) : (
+                  <ArrowUp size={20} />
+                )}
               </motion.button>
             </div>
-            {/* Search hint text */}
-            <motion.p
-              className="mt-2 text-sm text-[#2C3E50]/60 text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-            >
-              Try: "modern 2-bedroom flat", "quiet neighborhood", "pet-friendly house"
-            </motion.p>
+            {searchText && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute left-6 -bottom-6 text-sm text-gray-500"
+              >
+                {searchText.length} characters
+              </motion.div>
+            )}
           </form>
         </motion.div>
       </main>
