@@ -208,7 +208,7 @@ const AppLayout = () => {
         }
       }
     }
-  }, [user, loading, isAuthenticated, location.pathname, navigate, roles, currentRole]);
+  }, [user, loading, isAuthenticated, location.pathname, roles, currentRole]);
 
   // Initialize PostHog
   useEffect(() => {

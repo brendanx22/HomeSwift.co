@@ -132,7 +132,7 @@ export const PWAInstallPrompt = () => {
       className="fixed bottom-4 left-4 right-4 z-50 bg-white rounded-lg shadow-2xl border border-gray-200 p-6 max-w-sm mx-auto"
     >
       <div className="flex items-start space-x-3">
-        <div className="w-10 h-10 bg-[#FF6B35] rounded-lg flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 bg-[#FF6B35] rounded-lg flex items-center justify-center shrink-0">
           <Smartphone className="w-5 h-5 text-white" />
         </div>
 
@@ -325,34 +325,46 @@ export const registerServiceWorker = async (onUpdate) => {
   }
 
   try {
-    // Clear existing registrations
+    // Check for existing service workers but don't aggressively unregister them
     console.log('Service Worker: Checking for existing service workers...');
     const registrations = await navigator.serviceWorker.getRegistrations();
 
-    // Only unregister if we have registrations
+    // Only unregister if we have conflicting registrations (different scope)
     if (registrations.length > 0) {
       console.log(`Service Worker: Found ${registrations.length} existing registration(s)`);
-      await Promise.all(registrations.map(reg => {
-        console.log('Service Worker: Unregistering service worker:', reg.scope);
-        return reg.unregister();
-      }));
+      
+      // Check if any registration has a different scope
+      const hasConflictingScope = registrations.some(reg => reg.scope !== window.location.origin + '/');
+      
+      if (hasConflictingScope) {
+        console.log('Service Worker: Found conflicting scopes, cleaning up...');
+        await Promise.all(registrations.map(reg => {
+          console.log('Service Worker: Unregistering service worker:', reg.scope);
+          return reg.unregister();
+        }));
+      } else {
+        console.log('Service Worker: Existing registrations have compatible scope, keeping them');
+        // Don't unregister if scopes are compatible
+      }
     } else {
       console.log('Service Worker: No existing registrations found');
     }
 
-    // Clear all caches
-    if ('caches' in window) {
-      try {
-        const cacheNames = await caches.keys();
-        console.log(`Service Worker: Found ${cacheNames.length} caches`);
-        await Promise.all(
-          cacheNames.map(cacheName => {
-            console.log('Service Worker: Deleting cache:', cacheName);
-            return caches.delete(cacheName);
-          })
-        );
-      } catch (cacheError) {
-        console.error('Service Worker: Error clearing caches:', cacheError);
+    // Only clear caches if we unregistered conflicting workers
+    if (registrations.length > 0 && registrations.some(reg => reg.scope !== window.location.origin + '/')) {
+      if ('caches' in window) {
+        try {
+          const cacheNames = await caches.keys();
+          console.log(`Service Worker: Found ${cacheNames.length} caches to clear`);
+          await Promise.all(
+            cacheNames.map(cacheName => {
+              console.log('Service Worker: Deleting cache:', cacheName);
+              return caches.delete(cacheName);
+            })
+          );
+        } catch (cacheError) {
+          console.error('Service Worker: Error clearing caches:', cacheError);
+        }
       }
     }
 
@@ -406,9 +418,14 @@ export const registerServiceWorker = async (onUpdate) => {
     });
 
     // Handle controller changes (when a new service worker takes over)
+    // Note: Removed automatic reload to prevent unwanted page refreshes
+    // Users will get update notification instead
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      console.log('Service Worker: Controller changed, reloading page...');
-      window.location.reload();
+      console.log('Service Worker: Controller changed, showing update notification...');
+      // The update will be handled by the UpdatePrompt component
+      if (onUpdate) {
+        onUpdate();
+      }
     });
 
     return registration;
