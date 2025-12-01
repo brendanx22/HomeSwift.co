@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import PropertyFeatures from './PropertyFeatures';
 import PropertyMap from '../components/PropertyMap';
+import PropertyImageUpload from './PropertyImageUpload';
 import { PropertyAPI } from '../lib/propertyAPI';
 import { useAuth } from '../contexts/AuthContext';
 
