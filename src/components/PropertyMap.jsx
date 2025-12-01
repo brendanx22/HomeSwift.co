@@ -1,9 +1,17 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl } from 'react-map-gl/maplibre';
 import { useNavigate } from 'react-router-dom';
-import { Star, MapPin } from 'lucide-react';
+import { Star, MapPin, Layers } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
 import 'maplibre-gl/dist/maplibre-gl.css';
+
+// Map style options
+const mapStyles = [
+    { id: 'streets', name: 'Streets', url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json' },
+    { id: 'dark', name: 'Dark', url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' },
+    { id: 'voyager', name: 'Voyager', url: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json' },
+    { id: 'osm', name: 'OpenStreetMap', url: 'https://tiles.openfreemap.org/styles/liberty' }
+];
 
 // 100% FREE MapLibre - No API keys needed!
 const PropertyMap = ({
@@ -18,6 +26,7 @@ const PropertyMap = ({
 }) => {
     const navigate = useNavigate();
     const [popupInfo, setPopupInfo] = useState(null);
+    const [currentMapStyle, setCurrentMapStyle] = useState(0); // Default to streets style
     const [viewState, setViewState] = useState({
         latitude: center[0],
         longitude: center[1],
@@ -72,7 +81,7 @@ const PropertyMap = ({
                 {...viewState}
                 onMove={evt => setViewState(evt.viewState)}
                 style={{ width: '100%', height: '100%' }}
-                mapStyle="https://tiles.openfreemap.org/styles/liberty"
+                mapStyle={mapStyles[currentMapStyle].url}
                 projection="globe" // 3D globe projection
                 onClick={onMapClick}
                 minZoom={1}
@@ -81,6 +90,30 @@ const PropertyMap = ({
                 <NavigationControl position="top-right" showCompass={true} showZoom={true} />
                 <FullscreenControl position="top-right" />
                 <ScaleControl />
+
+                {/* Map Style Switcher */}
+                <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-2 z-10">
+                    <div className="flex items-center space-x-2 text-xs">
+                        <Layers className="w-4 h-4 text-gray-600" />
+                        <select
+                            value={currentMapStyle}
+                            onChange={(e) => {
+                                const newStyleIndex = parseInt(e.target.value);
+                                setCurrentMapStyle(newStyleIndex);
+                                trackEvent('map_style_changed', {
+                                    style: mapStyles[newStyleIndex].id
+                                });
+                            }}
+                            className="text-xs border-none bg-transparent focus:outline-none cursor-pointer"
+                        >
+                            {mapStyles.map((style, index) => (
+                                <option key={style.id} value={index}>
+                                    {style.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
 
                 {/* Selection Marker */}
                 {selectionMode && selectedLocation && (

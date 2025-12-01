@@ -543,6 +543,18 @@ const RenterHomePage = () => {
     return realtimeUserProfile?.profile_image || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
   };
 
+  // Stable avatar state to prevent flickering
+  const [stableAvatar, setStableAvatar] = useState(null);
+  
+  useEffect(() => {
+    const currentAvatar = getUserAvatar();
+    if (currentAvatar && currentAvatar !== stableAvatar) {
+      setStableAvatar(currentAvatar);
+    } else if (!currentAvatar) {
+      setStableAvatar(null);
+    }
+  }, [realtimeUserProfile?.profile_image, user?.user_metadata?.avatar_url, user?.user_metadata?.picture]);
+
   const scroll = (locationName, direction) => {
     const container = scrollContainerRefs.current[locationName];
     if (container) {
@@ -686,28 +698,28 @@ const RenterHomePage = () => {
                 <div className="relative" title={user.email}>
                   <button
                     onClick={() => setShowProfilePopup(true)}
-                    className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] hover:shadow-md transition-all transform hover:scale-105 relative"
+                    className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center bg-linear-to-br from-[#FF6B35] to-[#e85e2f] hover:shadow-md transition-all transform hover:scale-105 relative"
                   >
-                    {getUserAvatar() ? (
+                    {stableAvatar ? (
                       <>
                         <img
-                          key={getUserAvatar()} // Force reload if URL changes
-                          src={getUserAvatar()}
+                          src={stableAvatar}
                           alt="Profile"
                           className="absolute inset-0 w-full h-full object-cover z-10"
                           onError={(e) => {
                             e.target.style.display = 'none';
                             e.target.onerror = null; // Prevent infinite loop
+                            setStableAvatar(null); // Clear stable avatar on error
                           }}
                         />
-                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#FF6B35] to-[#e85e2f]">
+                        <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-[#FF6B35] to-[#e85e2f]">
                           <span className="text-white text-sm font-bold">
                             {getUserInitial()}
                           </span>
                         </div>
                       </>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
+                      <div className="flex items-center justify-center bg-linear-to-br from-[#FF6B35] to-[#e85e2f] w-full h-full">
                         <span className="text-white text-sm font-bold">
                           {getUserInitial()}
                         </span>
