@@ -603,9 +603,11 @@ export default function PropertyDetails() {
                           <video
                             ref={el => videoRefs.current[index] = el}
                             src={item.url}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain bg-black"
                             loop
                             muted={videoMuted}
+                            playsInline
+                            autoPlay
                           />
                           {isCenter && (
                             <button
@@ -651,9 +653,11 @@ export default function PropertyDetails() {
                       <video
                         ref={el => videoRefs.current[currentImage] = el}
                         src={media[currentImage].url}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-black"
                         loop
                         muted={videoMuted}
+                        playsInline
+                        autoPlay
                       />
                       <button
                         onClick={() => setVideoMuted(!videoMuted)}

@@ -92,8 +92,8 @@ export default defineConfig(({ command, mode }) => {
       terserOptions: isProduction
         ? {
           compress: {
-            drop_console: false,  // Remove all console.* calls in production
-            drop_debugger: false,
+            drop_console: true,  // Remove all console.* calls in production
+            drop_debugger: true,
           },
         }
         : {},
