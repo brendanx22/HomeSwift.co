@@ -362,22 +362,7 @@ const LandlordSignupPage = () => {
     }
   };
 
- const handleGoogleSignUp = async () => {
-  console.log('🔐 Google signup initiated');
-  setGoogleLoading(true);
-  setErrors({});
 
-  try {
-    // Show toast notification that Google OAuth is not available
-    toast.error('Google sign-up is currently not available. Please use email and password to create your account.');
-
-    setGoogleLoading(false);
-  } catch (error) {
-    console.error('❌ Google signup failed:', error.message);
-    toast.error(error.message || 'Failed to sign in with Google');
-    setGoogleLoading(false);
-  }
-};
 
 const handleBackToHome = () => {
   navigate('/user-type');
