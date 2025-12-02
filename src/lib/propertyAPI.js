@@ -105,6 +105,9 @@ export class PropertyAPI {
    */
   static async createProperty(propertyData) {
     try {
+      // Ensure we have a valid session before making the request
+      await ensureSession();
+      
       const { data, error } = await supabase
         .from("properties")
         .insert([propertyData])
