@@ -5,7 +5,7 @@ import { Star, MapPin, Layers } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-// Map style options - using completely free Thunderforest service
+// Map style options - using reliable working sources
 const mapStyles = [
     { 
         id: 'streets', 
@@ -13,19 +13,14 @@ const mapStyles = [
         url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
     },
     { 
-        id: 'cycle', 
-        name: 'Cycle', 
-        url: 'https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=free'
+        id: 'carto-light', 
+        name: 'CartoDB Light', 
+        url: 'https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png'
     },
     { 
-        id: 'outdoors', 
-        name: 'Outdoors', 
-        url: 'https://{s}.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=free'
-    },
-    { 
-        id: 'transport', 
-        name: 'Transport', 
-        url: 'https://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=free'
+        id: 'carto-voyager', 
+        name: 'CartoDB Voyager', 
+        url: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
     }
 ];
 

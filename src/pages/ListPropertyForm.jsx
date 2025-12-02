@@ -5,8 +5,10 @@ import { motion } from 'framer-motion';
 import PropertyFeatures from './PropertyFeatures';
 import PropertyMap from '../components/PropertyMap';
 import PropertyImageUpload from './PropertyImageUpload';
+import PropertyVideoUpload from './PropertyVideoUpload';
 import { PropertyAPI } from '../lib/propertyAPI';
 import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 const inputBase = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:border-[#FF6B35] transition-colors';
 
@@ -27,7 +29,8 @@ const ListPropertyForm = ({ onSubmit, submitting = false, errorMessage, successM
     bathrooms: 1,
     description: '',
     amenities: [],
-    images: []
+    images: [],
+    videos: []
   });
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -118,6 +121,7 @@ const ListPropertyForm = ({ onSubmit, submitting = false, errorMessage, successM
             return filteredUrls;
           })
           : [], // Store actual uploaded images as data URLs
+        videos: values.videos || [], // Videos already uploaded to Storage
         landlord_id: user?.id,  // Add the current user's ID
       };
 
@@ -333,6 +337,18 @@ const ListPropertyForm = ({ onSubmit, submitting = false, errorMessage, successM
                 images={values.images}
                 onChange={(images) => setValues((v) => ({ ...v, images }))}
                 brand={{ primary }}
+              />
+            </div>
+
+            {/* Videos */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">Property Videos</label>
+              <p className="text-sm text-gray-600 mb-3">Upload videos to showcase your property (optional)</p>
+              <PropertyVideoUpload
+                videos={values.videos}
+                onChange={(videos) => setValues((v) => ({ ...v, videos }))}
+                brand={{ primary }}
+                userId={user?.id}
               />
             </div>
 

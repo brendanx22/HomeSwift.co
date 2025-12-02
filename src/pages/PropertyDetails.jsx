@@ -37,7 +37,10 @@ import {
   Camera,
   Grid3X3,
   MessageSquare,
-  Star
+  Star,
+  Volume2,
+  VolumeX,
+  Play
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { createNewInquiryNotification } from '../services/notificationService';
@@ -63,8 +66,16 @@ export default function PropertyDetails() {
   const [loading, setLoading] = useState(!preloadedProperty);
   const [error, setError] = useState(null);
 
-  // Derive images from property data
+  // Combine images and videos into media array
   const images = property?.images || [];
+  const videos = property?.videos || [];
+  const media = [
+    ...images.map(url => ({ type: 'image', url })),
+    ...videos.map(video => ({ type: 'video', ...video }))
+  ];
+
+  const [videoMuted, setVideoMuted] = useState(true);
+  const videoRefs = React.useRef({});
 
   React.useEffect(() => {
     // If we have a preloaded property that matches the ID, don't fetch
@@ -215,14 +226,25 @@ export default function PropertyDetails() {
   const features = (property?.amenities || []).map(amenity => getAmenityIcon(amenity));
 
   const nextImage = () => {
-    if (images.length === 0) return;
-    setCurrentImage((prev) => (prev + 1) % images.length);
+    if (media.length === 0) return;
+    setCurrentImage((prev) => (prev + 1) % media.length);
   };
 
   const prevImage = () => {
-    if (images.length === 0) return;
-    setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
+    if (media.length === 0) return;
+    setCurrentImage((prev) => (prev - 1 + media.length) % media.length);
   };
+
+  // Autoplay video when it becomes visible
+  useEffect(() => {
+    const currentMedia = media[currentImage];
+    if (currentMedia?.type === 'video') {
+      const videoElement = videoRefs.current[currentImage];
+      if (videoElement) {
+        videoElement.play().catch(err => console.log('Video autoplay failed:', err));
+      }
+    }
+  }, [currentImage, media]);
 
   const handleContact = () => {
     setShowBookingModal(true);
@@ -560,23 +582,47 @@ export default function PropertyDetails() {
             </button>
 
             <div className="flex gap-6 items-center justify-center">
-              {images.length > 0 ? (
+              {media.length > 0 ? (
                 [-1, 0, 1].map((offset) => {
-                  const index = (currentImage + offset + images.length) % images.length;
+                  const index = (currentImage + offset + media.length) % media.length;
                   const isCenter = offset === 0;
+                  const item = media[index];
+                  
+                  if (!item) return null;
+                  
                   return (
                     <div
                       key={`carousel-${offset}`}
-                      className={`transition-all duration-500 rounded-2xl overflow-hidden ${isCenter
+                      className={`transition-all duration-500 rounded-2xl overflow-hidden relative ${isCenter
                         ? "w-[420px] h-[260px] shadow-2xl scale-105 z-10"
                         : "w-[340px] h-[220px] opacity-40 blur-[2px]"
                         }`}
                     >
-                      <img
-                        src={images[index]}
-                        alt={`Property ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
+                      {item.type === 'video' ? (
+                        <>
+                          <video
+                            ref={el => videoRefs.current[index] = el}
+                            src={item.url}
+                            className="w-full h-full object-cover"
+                            loop
+                            muted={videoMuted}
+                          />
+                          {isCenter && (
+                            <button
+                              onClick={() => setVideoMuted(!videoMuted)}
+                              className="absolute bottom-3 right-3 bg-black/60 hover:bg-black/80 text-white rounded-full p-2"
+                            >
+                              {videoMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <img
+                          src={item.url}
+                          alt={`Property ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
                     </div>
                   );
                 })
@@ -598,13 +644,31 @@ export default function PropertyDetails() {
           {/* Mobile Carousel - Stacked layout */}
           <div className="lg:hidden">
             <div className="relative w-full max-w-full">
-              {images.length > 0 ? (
+              {media.length > 0 ? (
                 <div className="relative w-full h-[280px] rounded-2xl overflow-hidden">
-                  <img
-                    src={images[currentImage]}
-                    alt={`Property ${currentImage + 1}`}
-                    className="w-full h-full object-cover"
-                  />
+                  {media[currentImage]?.type === 'video' ? (
+                    <>
+                      <video
+                        ref={el => videoRefs.current[currentImage] = el}
+                        src={media[currentImage].url}
+                        className="w-full h-full object-cover"
+                        loop
+                        muted={videoMuted}
+                      />
+                      <button
+                        onClick={() => setVideoMuted(!videoMuted)}
+                        className="absolute bottom-4 right-4 bg-black/60 hover:bg-black/80 text-white rounded-full p-2"
+                      >
+                        {videoMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                      </button>
+                    </>
+                  ) : (
+                    <img
+                      src={media[currentImage]?.url}
+                      alt={`Property ${currentImage + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
 
                   {/* Navigation arrows for mobile */}
                   <button
@@ -629,9 +693,9 @@ export default function PropertyDetails() {
             </div>
 
             {/* Mobile image indicators */}
-            {images.length > 0 && (
+            {media.length > 0 && (
               <div className="flex justify-center gap-2 mt-4">
-                {images.map((_, index) => (
+                {media.map((_, index) => (
                   <div
                     key={`mobile-${index}`}
                     className={`h-1 rounded-full transition-all duration-300 ${index === currentImage ? "w-6 bg-[#FF6B35]" : "w-2 bg-gray-400"
@@ -642,10 +706,10 @@ export default function PropertyDetails() {
             )}
           </div>
 
-          {/* Desktop image indicators */}
-          {images.length > 0 && (
+          {/* Desktop media indicators */}
+          {media.length > 0 && (
             <div className="hidden lg:flex justify-center gap-2 mt-8">
-              {images.map((_, index) => (
+              {media.map((item, index) => (
                 <div
                   key={`desktop-${index}`}
                   className={`h-1 rounded-full transition-all duration-300 ${index === currentImage ? "w-9 bg-[#FF6B35]" : "w-2 bg-gray-400"
