@@ -3,7 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { ArrowLeft } from 'lucide-react';
 import PropertyImageUpload from './PropertyImageUpload';
+import PropertyVideoUpload from './PropertyVideoUpload';
 import PropertyFeatures from './PropertyFeatures';
+import { useAuth } from '../contexts/AuthContext';
 import { API } from '../api';
 
 const inputBase = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:border-[#FF6B35] transition-colors';
@@ -11,6 +13,7 @@ const inputBase = 'w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ou
 const EditPropertyForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   
@@ -25,7 +28,8 @@ const EditPropertyForm = () => {
     bathrooms: 1,
     description: '',
     amenities: [],
-    images: []
+    images: [],
+    videos: []
   });
 
   useEffect(() => {
@@ -48,7 +52,8 @@ const EditPropertyForm = () => {
           bathrooms: data.bathrooms || 1,
           description: data.description || '',
           amenities: data.amenities || [],
-          images: data.images || []
+          images: data.images || [],
+          videos: data.videos || []
         });
       } catch (error) {
         console.error('Error fetching property:', error);
@@ -93,7 +98,8 @@ const EditPropertyForm = () => {
         bathrooms: Number(values.bathrooms),
         amenities: values.amenities,
         description: values.description,
-        images: values.images
+        images: values.images,
+        videos: values.videos
       };
 
       let result;
@@ -265,6 +271,16 @@ const EditPropertyForm = () => {
             images={values.images}
             onChange={(images) => setValues(prev => ({ ...prev, images }))}
           />
+
+          <div>
+            <label className="block text-[#2C3E50] text-sm font-medium mb-2">Property Videos</label>
+            <p className="text-sm text-gray-600 mb-3">Upload videos to showcase your property (optional)</p>
+            <PropertyVideoUpload
+              videos={values.videos}
+              onChange={(videos) => setValues(prev => ({ ...prev, videos }))}
+              userId={user?.id}
+            />
+          </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4">
             <button
