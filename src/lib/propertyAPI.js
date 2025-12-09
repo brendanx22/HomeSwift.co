@@ -139,6 +139,12 @@ export class PropertyAPI {
 
       return { success: true, property: data };
     } catch (error) {
+      console.error("Error updating property:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Get saved properties for a user
    */
   static async getSavedProperties(userId) {
