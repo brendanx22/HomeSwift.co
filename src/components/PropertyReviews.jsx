@@ -41,82 +41,79 @@ const PropertyReviews = ({ propertyId, propertyTitle }) => {
 
   useEffect(() => {
     loadReviews();
+
+    // Subscribe to real-time review updates
+    const reviewsSubscription = supabase
+      .channel('property_reviews_channel')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'property_reviews',
+          filter: `property_id=eq.${propertyId}`
+        },
+        () => {
+          console.log('Review changed, reloading...');
+          loadReviews();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(reviewsSubscription);
+    };
   }, [propertyId]);
 
   const loadReviews = async () => {
     try {
       setIsLoading(true);
 
-      // Mock data for now - in real implementation, this would query a reviews table
-      const mockReviews = [
-        {
-          id: 1,
-          user_id: 'user1',
-          user_name: 'John Doe',
-          user_avatar: null,
-          rating: 5,
-          title: 'Excellent Property!',
-          comment: 'Beautiful apartment with great amenities. The location is perfect and the landlord was very responsive.',
-          pros: 'Great location, Modern amenities, Responsive landlord',
-          cons: 'Slightly expensive',
-          recommend: true,
-          helpful_votes: 12,
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7),
-          updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7),
-          verified: true
-        },
-        {
-          id: 2,
-          user_id: 'user2',
-          user_name: 'Jane Smith',
-          user_avatar: null,
-          rating: 4,
-          title: 'Good value for money',
-          comment: 'Nice place overall. Clean and well-maintained. Only minor issues with parking.',
-          pros: 'Clean, Well-maintained, Good value',
-          cons: 'Limited parking',
-          recommend: true,
-          helpful_votes: 8,
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14),
-          updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14),
-          verified: true
-        },
-        {
-          id: 3,
-          user_id: 'user3',
-          user_name: 'Mike Johnson',
-          user_avatar: null,
-          rating: 3,
-          title: 'Average experience',
-          comment: 'Property is okay but could use some improvements. Maintenance was slow to respond.',
-          pros: 'Decent location',
-          cons: 'Slow maintenance, Some wear and tear',
-          recommend: false,
-          helpful_votes: 3,
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 21),
-          updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 21),
-          verified: false
-        }
-      ];
+      // Fetch reviews with user profile data
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from('property_reviews')
+        .select(`
+          *,
+          user_profiles!property_reviews_user_id_fkey (
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('property_id', propertyId)
+        .order('created_at', { ascending: false });
 
-      setReviews(mockReviews);
+      if (reviewsError) {
+        console.error('Error loading reviews:', reviewsError);
+        throw reviewsError;
+      }
+
+      // Transform data to include user info
+      const transformedReviews = (reviewsData || []).map(review => ({
+        ...review,
+        user_name: review.user_profiles?.full_name || 'Anonymous User',
+        user_avatar: review.user_profiles?.avatar_url || null
+      }));
+
+      setReviews(transformedReviews);
 
       // Calculate average rating and distribution
-      const totalReviews = mockReviews.length;
-      const sumRatings = mockReviews.reduce((sum, review) => sum + review.rating, 0);
+      const totalReviews = transformedReviews.length;
+      const sumRatings = transformedReviews.reduce((sum, review) => sum + review.rating, 0);
       const avg = totalReviews > 0 ? sumRatings / totalReviews : 0;
 
       const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-      mockReviews.forEach(review => {
+      transformedReviews.forEach(review => {
         distribution[review.rating]++;
       });
 
       setAverageRating(avg);
       setRatingDistribution(distribution);
 
-      // Check if user already has a review
-      // In real implementation, this would check the database
-      // setUserReview(mockReviews.find(r => r.user_id === user?.id) || null);
+      // Check if current user already has a review
+      if (user?.id) {
+        const existingUserReview = transformedReviews.find(r => r.user_id === user.id);
+        setUserReview(existingUserReview || null);
+      }
 
     } catch (error) {
       console.error('Error loading reviews:', error);
@@ -133,25 +130,40 @@ const PropertyReviews = ({ propertyId, propertyTitle }) => {
         return;
       }
 
-      const newReview = {
-        id: Date.now(),
-        user_id: user.id,
-        user_name: `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`.trim() || 'Anonymous',
-        user_avatar: null,
-        rating: reviewForm.rating,
-        title: reviewForm.title,
-        comment: reviewForm.comment,
-        pros: reviewForm.pros,
-        cons: reviewForm.cons,
-        recommend: reviewForm.recommend,
-        helpful_votes: 0,
-        created_at: new Date(),
-        updated_at: new Date(),
-        verified: false
-      };
+      if (!user?.id) {
+        toast.error('You must be logged in to submit a review');
+        return;
+      }
 
-      setReviews(prev => [newReview, ...prev]);
-      setUserReview(newReview);
+      // Insert review into database
+      const { data: newReview, error: insertError } = await supabase
+        .from('property_reviews')
+        .insert({
+          property_id: propertyId,
+          user_id: user.id,
+          rating: reviewForm.rating,
+          title: reviewForm.title,
+          comment: reviewForm.comment,
+          pros: reviewForm.pros || null,
+          cons: reviewForm.cons || null,
+          recommend: reviewForm.recommend,
+          verified: false,
+          helpful_votes: 0
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        // Check if it's a duplicate review error
+        if (insertError.code === '23505') {
+          toast.error('You have already reviewed this property');
+        } else {
+          console.error('Error submitting review:', insertError);
+          toast.error('Failed to submit review');
+        }
+        return;
+      }
+
       setIsWritingReview(false);
 
       // Reset form
@@ -164,8 +176,8 @@ const PropertyReviews = ({ propertyId, propertyTitle }) => {
         recommend: true
       });
 
-      // Recalculate stats
-      loadReviews();
+      // Reload reviews to get the latest data
+      await loadReviews();
 
       trackEvent('review_submitted', {
         property_id: propertyId,
@@ -180,17 +192,62 @@ const PropertyReviews = ({ propertyId, propertyTitle }) => {
     }
   };
 
-  const handleHelpfulVote = async (reviewId, isHelpful) => {
+  const handleHelpfulVote = async (reviewId) => {
     try {
-      setReviews(prev =>
-        prev.map(review =>
-          review.id === reviewId
-            ? { ...review, helpful_votes: review.helpful_votes + (isHelpful ? 1 : -1) }
-            : review
-        )
-      );
+      if (!user?.id) {
+        toast.error('Please log in to vote on reviews');
+        return;
+      }
 
-      toast.success(isHelpful ? 'Marked as helpful' : 'Removed helpful mark');
+      // Check if user already voted on this review
+      const { data: existingVote, error: checkError } = await supabase
+        .from('review_helpful_votes')
+        .select('id')
+        .eq('review_id', reviewId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking vote status:', checkError);
+        toast.error('Failed to process vote');
+        return;
+      }
+
+      if (existingVote) {
+        // Remove vote
+        const { error: deleteError } = await supabase
+          .from('review_helpful_votes')
+          .delete()
+          .eq('id', existingVote.id);
+
+        if (deleteError) {
+          console.error('Error removing vote:', deleteError);
+          toast.error('Failed to remove vote');
+          return;
+        }
+
+        toast.success('Vote removed');
+      } else {
+        // Add vote
+        const { error: insertError } = await supabase
+          .from('review_helpful_votes')
+          .insert({
+            review_id: reviewId,
+            user_id: user.id
+          });
+
+        if (insertError) {
+          console.error('Error adding vote:', insertError);
+          toast.error('Failed to add vote');
+          return;
+        }
+
+        toast.success('Marked as helpful');
+      }
+
+      // Reload reviews to get updated counts
+      await loadReviews();
+
     } catch (error) {
       console.error('Error voting on review:', error);
       toast.error('Failed to update vote');
@@ -429,7 +486,9 @@ const PropertyReviews = ({ propertyId, propertyTitle }) => {
                     </div>
                     <div className="flex items-center space-x-2 text-sm text-gray-500">
                       <Calendar className="w-4 h-4" />
-                      <span>{review.created_at.toLocaleDateString()}</span>
+                      <span>
+                        {new Date(review.created_at).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -473,7 +532,7 @@ const PropertyReviews = ({ propertyId, propertyTitle }) => {
 
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => handleHelpfulVote(review.id, true)}
+                      onClick={() => handleHelpfulVote(review.id)}
                       className="flex items-center space-x-1 text-gray-500 hover:text-green-600 transition-colors"
                     >
                       <ThumbsUp className="w-4 h-4" />

@@ -14,7 +14,7 @@ export const useGoogleAuth = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin, // Redirect after successful login
+          redirectTo: `${window.location.origin}/auth/callback`, // Redirect to auth callback for proper user setup
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

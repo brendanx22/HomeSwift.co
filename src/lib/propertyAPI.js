@@ -139,60 +139,6 @@ export class PropertyAPI {
 
       return { success: true, property: data };
     } catch (error) {
-      console.error("Error updating property:", error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  /**
-   * Delete a property
-   */
-  static async deleteProperty(propertyId) {
-    try {
-      const { error } = await supabase
-        .from("properties")
-        .delete()
-        .eq("id", propertyId);
-
-      if (error) throw error;
-
-      return { success: true };
-    } catch (error) {
-      console.error("Error deleting property:", error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  /**
-   * Toggle property featured status
-   */
-  static async toggleFeatured(propertyId) {
-    try {
-      const { data: current, error: fetchError } = await supabase
-        .from("properties")
-        .select("is_featured")
-        .eq("id", propertyId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const { data, error } = await supabase
-        .from("properties")
-        .update({ is_featured: !current.is_featured })
-        .eq("id", propertyId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return { success: true, property: data };
-    } catch (error) {
-      console.error("Error toggling featured status:", error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  /**
    * Get saved properties for a user
    */
   static async getSavedProperties(userId) {
