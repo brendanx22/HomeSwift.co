@@ -359,6 +359,7 @@ const LandlordSettings = () => {
     } catch (err) {
       console.error('Error updating preferences:', err);
       toast.error('Failed to update preferences');
+    }
   };
 
   const handleSavePayoutDetails = async () => {
