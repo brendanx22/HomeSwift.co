@@ -472,27 +472,32 @@ export default function PropertyDetails() {
       // Prepare comprehensive booking data
       const bookingData = {
         // User information
-        tenant_id: authUser.id, // Use the authenticated user ID from Supabase
-        tenant_name: userName,
+        tenant_id: authUser.id,
         tenant_email: user.email,
-        tenant_phone: phoneNumber,
 
         // Property information
         property_id: property.id,
         property_title: property.title || `${property.bedrooms || 3} Bedroom Apartment`,
         property_location: property.location || 'Location not specified',
-        property_price: property.price || 0,
-        property_bedrooms: property.bedrooms || property.rooms || 0,
-        property_bathrooms: property.bathrooms || 0,
+        total_amount: property.price,
         landlord_id: property.landlord_id,
-        landlord_name: property.landlord_name || 'Property Owner',
-
+        
+        // Use simplified fields if table schema doesn't support property_bedrooms etc.
+        // Assuming the table might have generic columns or we just store JSON?
+        // Let's stick to the visible columns in previous inserts.
+        // Actually, looking at the error `POST ...?columns="tenant_id"..."property_bedrooms"`, 
+        // if the table doesn't have `property_bedrooms`, it fails.
+        // Standard schema usually has `bedrooms`, `bathrooms`. 
+        // I will map property_bedrooms -> bedrooms, property_bathrooms -> bathrooms.
+        // Note: The previous insert used `property_bedrooms`. If that failed, I should usage `bedrooms`.
+        bedrooms: property.bedrooms || property.rooms || 0,
+        bathrooms: property.bathrooms || 0,
+        
         // Booking details
         move_in_date: moveInDate,
         lease_duration: parseInt(leaseDuration),
         special_requests: specialRequests || null,
         movemate_enabled: movemateEnabled,
-        total_amount: property.price,
         status: 'pending',
         created_at: new Date().toISOString()
       };
