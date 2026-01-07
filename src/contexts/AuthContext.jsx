@@ -5,6 +5,8 @@ import { identifyUser, resetUser, trackLogin, trackSignup, trackRoleSwitch } fro
 
 export const AuthContext = createContext();
 
+const API_URL = import.meta.env.VITE_BACKEND_URL || 'https://api.homeswift.co';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [roles, setRoles] = useState([]);
@@ -167,6 +169,46 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
   }, []);
+
+  // Fetch backend JWT token for API calls
+  const fetchBackendToken = async (email, password = null, userId = null) => {
+    try {
+      console.log('🔐 Fetching backend JWT token...');
+      
+      let response;
+      if (password) {
+        // Signin with email and password
+        response = await fetch(`${API_URL}/api/auth/signin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+      } else if (userId) {
+        // Get token for existing user ID
+        response = await fetch(`${API_URL}/api/auth/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId })
+        });
+      } else {
+        throw new Error('Either password or userId must be provided to fetch token');
+      }
+
+      const data = await response.json();
+
+      if (response.ok && data.success && data.token) {
+        localStorage.setItem('backendToken', data.token);
+        console.log('✅ Backend JWT token stored');
+        return data.token;
+      } else {
+        console.warn('⚠️ Failed to get backend JWT token:', data.error || data.message || 'Unknown error');
+        return null;
+      }
+    } catch (error) {
+      console.warn('⚠️ Error getting backend JWT token:', error);
+      return null;
+    }
+  };
 
   // Update the primary role for a user
   const updatePrimaryRole = async (userId, role) => {
@@ -565,6 +607,14 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
+        try {
+          // Fetch backend token using user ID (since we don't have password here)
+          // Doing this BEFORE the OAuth early return to ensure all sign-ins get a token
+          await fetchBackendToken(session.user.email, null, session.user.id);
+        } catch (tokenError) {
+          console.error("⚠️ Backend token fetch failed during session change:", tokenError);
+        }
+
         // Check if we're in the middle of an OAuth flow with a pending user type
         const pendingUserType = localStorage.getItem('pendingUserType');
         
@@ -593,6 +643,7 @@ export const AuthProvider = ({ children }) => {
             console.error("⚠️ Role fetch failed or timed out:", roleError);
             // Continue anyway - roles might load later via other mechanisms
           }
+
 
           // Resolve metadata userType → currentRole
           const stored = localStorage.getItem("currentRole");
@@ -1042,34 +1093,8 @@ export const AuthProvider = ({ children }) => {
         setUser(user);
         setIsAuthenticated(true);
 
-        // Get backend JWT token for API calls
-        try {
-          console.log('🔐 Getting backend JWT token...');
-          // Force HTTPS to avoid mixed content errors
-          const apiUrl = 'https://api.homeswift.co';
-          const backendResponse = await fetch(`${apiUrl}/api/auth/signin`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: user.email,
-              password: credentials.password // Note: This is a security issue - should use a different approach
-            })
-          });
-
-          const backendData = await backendResponse.json();
-
-          if (backendResponse.ok && backendData.success) {
-            console.log('✅ Backend JWT token obtained:', backendData.token ? 'Token received' : 'No token in response');
-            // Store backend token in localStorage for API calls
-            localStorage.setItem('backendToken', backendData.token);
-          } else {
-            console.warn('⚠️ Failed to get backend JWT token:', backendData.error);
-            // Continue without backend token - some features may not work
-          }
-        } catch (backendError) {
-          console.warn('⚠️ Error getting backend JWT token:', backendError);
-          // Continue without backend token - some features may not work
-        }
+        // Get backend JWT token for API calls using centralized helper
+        await fetchBackendToken(user.email, credentials.password);
 
         return {
           success: true,
@@ -1171,6 +1196,75 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Check if an email already exists in user_profiles
+  // Resend verification email
+  const resendVerification = async (email) => {
+    if (!email) return { success: false, error: 'Email is required' };
+    
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      console.error('Error resending verification:', error);
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete account and cleanup data
+  const deleteAccount = async () => {
+    if (!user) return { success: false, error: 'Not authenticated' };
+    
+    try {
+      setLoading(true);
+      
+      // Delete user data from custom tables
+      // Note: Data deletion across multiple tables might be handled by DB triggers/cascades
+      // but we do explicit cleanup for critical tables
+      await supabase.from('user_profiles').delete().eq('id', user.id);
+      
+      // Sign out user
+      await logout();
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkEmailExists = async (email) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('email', email.toLowerCase().trim())
+        .maybeSingle();
+
+      if (error) {
+        console.warn('Error checking email existence:', error);
+        return { exists: false, error: error.message };
+      }
+
+      return { exists: !!data, error: null };
+    } catch (error) {
+      console.warn('Unexpected error checking email existence:', error);
+      return { exists: false, error: error.message };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -1183,6 +1277,9 @@ export const AuthProvider = ({ children }) => {
         signup,
         login,
         loginWithGoogle,
+        resendVerification,
+        deleteAccount,
+        checkEmailExists,
         logout,
         updateCurrentRole,
         hasRole,

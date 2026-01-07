@@ -119,11 +119,11 @@ const LandlordDashboard = () => {
   // Wait for auth to be fully ready before loading data
   useEffect(() => {
     if (!authReady) {
-      console.log("⏳ Dashboard waiting for auth readiness...");
+      // console.log("⏳ Dashboard waiting for auth readiness...");
       return;
     }
 
-    console.log("🚀 Dashboard ready — loading data");
+    // console.log("🚀 Dashboard ready — loading data");
     
     // Load dashboard data in parallel
     const loadData = async () => {
@@ -145,7 +145,7 @@ const LandlordDashboard = () => {
 
       // Ensure Supabase session is ready
       await ensureSession();
-      console.log('✅ [RecentData] Supabase session ready');
+      // console.log('✅ [RecentData] Supabase session ready');
 
       // Fetch recent properties (last 5)
       const { data: properties, error: propertiesError } = await supabase
@@ -231,7 +231,7 @@ const LandlordDashboard = () => {
         })) || [];
 
         setRecentLeads(transformedBookings);
-        console.log('💬 Recent bookings loaded as inquiries:', transformedBookings?.length || 0);
+        // console.log('💬 Recent bookings loaded as inquiries:', transformedBookings?.length || 0);
       }
 
     } catch (error) {
@@ -246,7 +246,7 @@ const LandlordDashboard = () => {
 
       // Ensure Supabase session is ready
       await ensureSession();
-      console.log('✅ [Inquiries] Supabase session ready');
+      // console.log('✅ [Inquiries] Supabase session ready');
 
       setLoadingInquiries(true);
 
@@ -292,7 +292,7 @@ const LandlordDashboard = () => {
       })) || [];
 
       setAllInquiries(transformedBookings);
-      console.log('💬 All inquiries loaded:', transformedBookings?.length || 0);
+      // console.log('💬 All inquiries loaded:', transformedBookings?.length || 0);
     } catch (error) {
       console.error('❌ Error loading all inquiries:', error);
       toast.error('Failed to load inquiries');
@@ -308,7 +308,7 @@ const LandlordDashboard = () => {
 
       // Ensure Supabase session is ready
       await ensureSession();
-      console.log('✅ [Dashboard] Supabase session ready');
+      // console.log('✅ [Dashboard] Supabase session ready');
 
       // console.log('🔍 Loading dashboard data for user:', user.id);
 

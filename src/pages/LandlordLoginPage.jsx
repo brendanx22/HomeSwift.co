@@ -3,7 +3,6 @@ import { Eye, EyeOff, Mail, Lock, ArrowLeft, AlertCircle, Users } from 'lucide-r
 import { motion } from 'framer-motion';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabaseClient';
 import { toast } from 'react-hot-toast';
 
 const LandlordLoginPage = () => {
@@ -19,7 +18,7 @@ const LandlordLoginPage = () => {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [searchParams] = useSearchParams();
   
-  const { login, loginWithGoogle, isAuthenticated } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, resendVerification } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/landlord/dashboard';
@@ -125,24 +124,21 @@ const LandlordLoginPage = () => {
     if (resendCooldown > 0) return;
     
     try {
-      const response = await fetch('https://api.homeswift.co/api/auth/resend-verification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: formData.email }),
-      });
+      setIsLoading(true);
+      const { success, error } = await resendVerification(formData.email);
       
-      const data = await response.json();
-      
-      if (response.ok) {
+      if (success) {
         toast.success('Verification email sent! Please check your inbox.');
         setResendCooldown(60);
+        setShowResendVerification(true);
       } else {
-        toast.error(data.error || 'Failed to resend verification email');
+        toast.error(error || 'Failed to resend verification email');
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Resend verification error:', err);
       toast.error('An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 

@@ -271,7 +271,7 @@ const RenterHomePage = () => {
         throw new Error(error || 'Failed to fetch properties');
       }
 
-      console.log(`✅ Successfully loaded ${propertiesData?.length || 0} properties`);
+      // console.log(`✅ Successfully loaded ${propertiesData?.length || 0} properties`);
 
       if (propertiesData && propertiesData.length > 0) {
         setProperties(propertiesData);
@@ -301,7 +301,7 @@ const RenterHomePage = () => {
   const loadData = useCallback(async () => {
     try {
       if (!user) {
-        console.log('❌ No user, skipping loadData');
+        // console.log('❌ No user, skipping loadData');
         return;
       }
 
@@ -317,7 +317,7 @@ const RenterHomePage = () => {
 
       if (saved) {
         const savedIds = new Set(saved.map(item => item.property_id));
-        console.log('✅ Loaded saved properties IDs for PropertyCards:', savedIds.size);
+        // console.log('✅ Loaded saved properties IDs for PropertyCards:', savedIds.size);
         console.log('🔍 Saved properties data:', saved);
         setSavedProperties(savedIds);
       } else {
@@ -337,7 +337,7 @@ const RenterHomePage = () => {
       loadData();
       // Note: MessagingContext handles loadConversations automatically
     } else {
-      console.log('❌ User not loaded yet');
+      // console.log('❌ User not loaded yet');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]); // loadData not needed as dependency since it's memoized with [user]
@@ -498,39 +498,8 @@ const RenterHomePage = () => {
     
     console.log('📊 Navbar Real-time Data State:', JSON.stringify(debugData, null, 2));
 
-    // Check localStorage for debugging
-    const localUser = localStorage.getItem('user');
-    console.log('🔍 LocalStorage User Data:', {
-      hasLocalUser: !!localUser,
-      localUserLength: localUser?.length || 0,
-      parsedUser: localUser ? JSON.parse(localUser) : null
-    });
   }, [user?.id, user?.email, user?.user_metadata, realtimeSavedCount, realtimeUserProfile, userDataLoading, savedProperties.size, unreadCount]);
 
-  // Debug: Track all state changes
-  useEffect(() => {
-    console.log("📊 STATE UPDATE:", {
-      propertiesCount: properties.length,
-      filteredPropertiesCount: filteredProperties.length,
-      groupedPropertiesKeys: Object.keys(groupedProperties),
-      loading,
-      location,
-      propertyType,
-      activeCategory,
-      bedrooms,
-      priceRange,
-    });
-  }, [
-    properties,
-    filteredProperties,
-    groupedProperties,
-    loading,
-    location,
-    propertyType,
-    activeCategory,
-    bedrooms,
-    priceRange,
-  ]);
 
 
 

@@ -44,12 +44,7 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
     }
   }, [isOpen, targetUserId]);
 
-  // Automatically start the video call when connection is initiated
-  useEffect(() => {
-    if (isCallInitiated && !isConnected && !isConnecting) {
-      handleStartVideoCall();
-    }
-  }, [isCallInitiated, isConnected, isConnecting]);
+  // No longer need separate handleStartVideoCall as startConnection handles it
 
   useEffect(() => {
     let interval;
@@ -65,13 +60,7 @@ const VideoCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
     };
   }, [isConnected]);
 
-  const handleStartVideoCall = async () => {
-    try {
-      await startVideoCall();
-    } catch (err) {
-      console.error('Failed to start video call:', err);
-    }
-  };
+  // Redundant refactor
 
   const handleEndCall = () => {
     endCall();

@@ -61,8 +61,31 @@ export const useWebRTC = (targetUserId) => {
     setIncomingCall(null);
 
     try {
-      // Create the WebRTC peer connection first
-      await initiateWebRTCConnection(targetUserId, type);
+      // First, get user media based on call type
+      const stream = await getUserMedia(type);
+      
+      // Create the WebRTC peer connection
+      const peerConnection = await initiateWebRTCConnection(targetUserId, type);
+
+      // Add tracks before sending offer (this should be handled by initiateWebRTCConnection or manually here)
+      if (peerConnection && stream) {
+        // Remove old tracks if any
+        const senders = peerConnection.getSenders();
+        senders.forEach(sender => peerConnection.removeTrack(sender));
+        
+        stream.getTracks().forEach(track => {
+          peerConnection.addTrack(track, stream);
+        });
+
+        // If we're the initiator, we need to send an offer
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        socket.emit('webrtc_offer', {
+          targetUserId,
+          offer,
+          callType: type
+        });
+      }
 
       // Notify the target user about the incoming call
       socket.emit('initiate_call', {
@@ -106,12 +129,11 @@ export const useWebRTC = (targetUserId) => {
       // First, get user media based on call type
       const stream = await getUserMedia(incomingCall.callType);
 
-      // Create WebRTC connection
-      await initiateWebRTCConnection(incomingCall.from, incomingCall.callType);
-
-      // Get the peer connection and add media tracks
-      const peerConnection = peerConnections.get(incomingCall.from);
+      // Get the peer connection (it should have been created by handleWebRTCOffer in context)
+      const peerConnection = await initiateWebRTCConnection(incomingCall.from, incomingCall.callType);
+      
       if (peerConnection && stream) {
+        // Add tracks
         stream.getTracks().forEach(track => {
           peerConnection.addTrack(track, stream);
         });
@@ -119,15 +141,20 @@ export const useWebRTC = (targetUserId) => {
         // Set up remote stream handling
         peerConnection.ontrack = (event) => {
           console.log('Received remote stream:', event.streams[0]);
-          if (event.streams[0]) {
-            if (incomingCall.callType === 'video' && remoteVideoRef.current) {
-              remoteVideoRef.current.srcObject = event.streams[0];
-            } else if (incomingCall.callType === 'voice' && remoteVideoRef.current) {
-              // For voice calls, we still use the video ref for audio
-              remoteVideoRef.current.srcObject = event.streams[0];
-            }
+          if (event.streams[0] && remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = event.streams[0];
           }
         };
+
+        // Create and send answer
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        
+        socket.emit('webrtc_answer', {
+          targetUserId: incomingCall.from,
+          answer,
+          callType: incomingCall.callType
+        });
       }
 
       // Notify caller that call was accepted
@@ -183,69 +210,7 @@ export const useWebRTC = (targetUserId) => {
     }
   };
 
-  // Start video call
-  const startVideoCall = async () => {
-    try {
-      const stream = await getUserMedia('video');
-
-      // Add media tracks to peer connection
-      const peerConnection = peerConnections.get(targetUserId);
-      if (peerConnection) {
-        stream.getTracks().forEach(track => {
-          peerConnection.addTrack(track, stream);
-        });
-
-        // Set up remote stream handling
-        peerConnection.ontrack = (event) => {
-          console.log('Received remote stream:', event.streams[0]);
-          if (remoteVideoRef.current && event.streams[0]) {
-            remoteVideoRef.current.srcObject = event.streams[0];
-            setIsConnected(true);
-          }
-        };
-      } else {
-        throw new Error('Peer connection not found. Please try again.');
-      }
-
-      return stream;
-    } catch (err) {
-      setError('Failed to start video call');
-      console.error('Video call error:', err);
-      throw err;
-    }
-  };
-
-  // Start voice call
-  const startVoiceCall = async () => {
-    try {
-      const stream = await getUserMedia('voice');
-
-      // Add media tracks to peer connection
-      const peerConnection = peerConnections.get(targetUserId);
-      if (peerConnection) {
-        stream.getTracks().forEach(track => {
-          peerConnection.addTrack(track, stream);
-        });
-
-        // Set up remote stream handling (audio only)
-        peerConnection.ontrack = (event) => {
-          console.log('Received remote audio stream:', event.streams[0]);
-          if (remoteVideoRef.current && event.streams[0]) {
-            remoteVideoRef.current.srcObject = event.streams[0];
-            setIsConnected(true);
-          }
-        };
-      } else {
-        throw new Error('Peer connection not found. Please try again.');
-      }
-
-      return stream;
-    } catch (err) {
-      setError('Failed to start voice call');
-      console.error('Voice call error:', err);
-      throw err;
-    }
-  };
+  // startVideoCall and startVoiceCall have been merged into startConnection
 
   // Toggle video on/off during call
   const toggleVideo = () => {
@@ -324,8 +289,6 @@ export const useWebRTC = (targetUserId) => {
     startConnection,
     acceptCall,
     rejectCall,
-    startVideoCall,
-    startVoiceCall,
     endCall,
     toggleVideo,
     toggleAudio,

@@ -19,10 +19,9 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabaseClient';
 
 const LandlordSettings = () => {
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, deleteAccount } = useAuth();
   const navigate = useNavigate();
 
   const [profileData, setProfileData] = useState({
@@ -180,20 +179,18 @@ const LandlordSettings = () => {
 
     try {
       setLoading(true);
-
-      // Delete user data
-      await supabase.from('user_profiles').delete().eq('id', user.id);
-      await supabase.from('properties').delete().eq('user_id', user.id);
-      await supabase.from('bookings').delete().eq('landlord_id', user.id);
-
-      // Sign out user
-      await supabase.auth.signOut();
+      
+      const { success, error } = await deleteAccount();
+      
+      if (!success) {
+        throw new Error(error || 'Failed to delete account');
+      }
 
       toast.success('Account deleted successfully');
       navigate('/');
     } catch (error) {
       console.error('Error deleting account:', error);
-      toast.error('Failed to delete account');
+      toast.error(error.message || 'Failed to delete account');
     } finally {
       setLoading(false);
     }

@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Check, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import { supabase } from '../lib/supabaseClient';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -31,8 +32,12 @@ const ResetPassword = () => {
     setLoading(true);
     
     try {
-      // TODO: Implement password reset logic with the token
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+      
+      if (error) throw error;
+      
       setResetSuccess(true);
       toast.success('Password reset successfully!');
       setTimeout(() => navigate('/login'), 2000);

@@ -125,23 +125,15 @@ const AppLayout = () => {
                           (isLandlordLoginPage ? 'landlord' : pendingUserType || currentRole || primaryRole || firstRole || userType || 'renter') :
                           (currentRole || pendingUserType || primaryRole || firstRole || userType || 'renter');
 
-      // Enhanced debug logging
-      console.log('AppLayout Auth Debug:', {
-        isAuthenticated,
-        user: user ? 'exists' : 'null',
-        userType,
-        storedRoles,
-        authContextRoles,
-        allRoles,
-        currentRole,
-        pendingUserType,
-        primaryRole,
-        firstRole,
-        detectedRole,
-        path,
-        isLandlordLoginPage,
-        isLoginPage
-      });
+      // Enhanced debug logging (disabled in production)
+      if (import.meta.env.DEV) {
+        console.log('AppLayout Auth Debug:', {
+          isAuthenticated,
+          user: user ? 'exists' : 'null',
+          detectedRole,
+          path
+        });
+      }
 
       // If we're on a login page, redirect to the appropriate dashboard
       if (isLoginPage || isLandlordLoginPage) {
@@ -284,7 +276,6 @@ const AppLayout = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       <main className="grow">
-        <Toaster position="top-right" />
         <Suspense
           fallback={
             <motion.div

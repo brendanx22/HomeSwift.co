@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import { supabase } from '../lib/supabaseClient';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -14,10 +15,13 @@ const ForgotPassword = () => {
     setLoading(true);
     
     try {
-      // TODO: Implement password reset logic
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) throw error;
+      
       toast.success('Password reset link sent to your email!');
-      navigate('/login');
     } catch (error) {
       toast.error(error.message || 'Failed to send reset link');
     } finally {

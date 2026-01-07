@@ -48,6 +48,7 @@ import { supabase } from '../lib/supabaseClient';
 import PropertyReviews from '../components/PropertyReviews';
 import PropertyMap from '../components/PropertyMap';
 import { trackListingViewed, trackEvent } from '../lib/posthog';
+import { NegotiationService } from '../services/negotiationService';
 
 export default function PropertyDetails() {
   const { id } = useParams();
@@ -60,7 +61,11 @@ export default function PropertyDetails() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showHaggleModal, setShowHaggleModal] = useState(false);
   const [movemateEnabled, setMovemateEnabled] = useState(false);
+  const [negotiatedPrice, setNegotiatedPrice] = useState('');
+  const [negotiationMessage, setNegotiationMessage] = useState('');
+  const [negotiationLoading, setNegotiationLoading] = useState(false);
 
   const [property, setProperty] = useState(preloadedProperty || null);
   const [loading, setLoading] = useState(!preloadedProperty);
@@ -93,12 +98,14 @@ export default function PropertyDetails() {
           setProperty(propertyData);
 
           // Debug logging to see what avatar data we have
+          /*
           console.log('🏠 Property loaded with landlord info:', {
             landlord_name: propertyData.landlord_name,
             landlord_profile_image: propertyData.landlord_profile_image,
             landlord_id: propertyData.landlord_id,
             current_user_id: user?.id
           });
+          */
 
           // Track property view for notifications
           if (propertyData?.landlord_id && isAuthenticated && user?.id !== propertyData.landlord_id) {
@@ -279,6 +286,106 @@ export default function PropertyDetails() {
       console.error('Error starting conversation:', error);
       toast.error('Failed to start conversation. Please try again.');
     }
+  };
+
+  const handleBookTour = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please sign in to book a tour');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('tour_bookings')
+        .insert([{
+          property_id: property.id,
+          tenant_id: user.id,
+          landlord_id: property.landlord_id,
+          status: 'pending',
+          created_at: new Date().toISOString()
+        }]);
+
+      if (error) {
+        if (error.code === '42P01') {
+          // Table doesn't exist, use inquiries as fallback
+          await supabase.from('inquiries').insert([{
+            property_id: property.id,
+            renter_id: user.id,
+            landlord_id: property.landlord_id,
+            message: 'I would like to book a tour of this property.'
+          }]);
+        } else {
+          throw error;
+        }
+      }
+
+      toast.success('Tour booking request sent!');
+    } catch (error) {
+      console.error('Error booking tour:', error);
+      toast.error('Failed to book tour');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNegotiate = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please sign in to negotiate price');
+      return;
+    }
+
+    if (!negotiatedPrice || isNaN(negotiatedPrice)) {
+      toast.error('Please enter a valid price');
+      return;
+    }
+
+    try {
+      setNegotiationLoading(true);
+      const { success, error } = await NegotiationService.startNegotiation({
+        property_id: property.id,
+        tenant_id: user.id,
+        landlord_id: property.landlord_id,
+        proposed_price: parseFloat(negotiatedPrice),
+        message: negotiationMessage,
+        original_price: property.price
+      });
+
+      if (!success) throw new Error(error);
+
+      toast.success('Negotiation request sent to landlord');
+      setShowHaggleModal(false);
+      setNegotiatedPrice('');
+      setNegotiationMessage('');
+    } catch (error) {
+      console.error('Error in negotiation:', error);
+      toast.error('Failed to send negotiation request');
+    } finally {
+      setNegotiationLoading(false);
+    }
+  };
+
+  const handlePayWithPaystack = (amount, email, metadata, callback) => {
+    if (!window.PaystackPop) {
+      toast.error('Payment system is currently unavailable');
+      return;
+    }
+
+    const handler = window.PaystackPop.setup({
+      key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder', // Should be in env
+      email: email,
+      amount: amount * 100, // Paystack amount is in kobo
+      currency: 'NGN',
+      metadata: metadata,
+      callback: function(response) {
+        callback(response);
+      },
+      onClose: function() {
+        toast('Payment cancelled', { icon: 'ℹ️' });
+      }
+    });
+
+    handler.openIframe();
   };
 
   const handleConfirmBooking = async () => {
@@ -487,6 +594,32 @@ export default function PropertyDetails() {
 
       // Close modal
       setShowBookingModal(false);
+
+      // Trigger Paystack Payment
+      handlePayWithPaystack(
+        property.price,
+        user.email,
+        {
+          property_id: property.id,
+          tenant_id: user.id,
+          booking_id: property.id // Temporary placeholder if we don't have it yet
+        },
+        async (paymentResponse) => {
+          console.log('Payment Successful:', paymentResponse);
+          
+          // Update booking with payment reference
+          await supabase
+            .from('bookings')
+            .update({ 
+               status: 'escrow_hold', 
+               payment_ref: paymentResponse.reference 
+            })
+            .eq('property_id', property.id)
+            .eq('tenant_id', user.id);
+
+          toast.success('Payment received and held in escrow! Booking finalized.');
+        }
+      );
 
       // Reset form
       setMovemateEnabled(false);
@@ -1032,18 +1165,28 @@ export default function PropertyDetails() {
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-5 mt-12 max-w-2xl mx-auto pb-8">
+        <div className="flex flex-col gap-4 mt-12 max-w-2xl mx-auto pb-8">
           <button
             onClick={handleContact}
-            className="rounded-full text-base h-14 bg-[#FF6B35] text-white hover:bg-orange-600 font-medium transition-colors"
+            className="w-full rounded-full text-base h-14 bg-[#FF6B35] text-white hover:bg-orange-600 font-bold shadow-lg transition-all"
           >
-            Book Space
+            Book Space & Secure in Escrow
           </button>
-          <button
-            className="rounded-full text-base h-14 border-2 border-[#FF6B35] text-[#FF6B35] hover:bg-[#FF6B35] hover:text-white font-medium transition-colors"
-          >
-            Book Tour
-          </button>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={handleBookTour}
+              className="rounded-full text-base h-14 border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white font-medium transition-all"
+            >
+              Book Tour
+            </button>
+            <button
+              onClick={() => setShowHaggleModal(true)}
+              className="rounded-full text-base h-14 border-2 border-[#FF6B35] text-[#FF6B35] hover:bg-[#FF6B35] hover:text-white font-medium transition-all"
+            >
+              Negotiate Price
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1202,6 +1345,79 @@ export default function PropertyDetails() {
                 className="flex-1 px-4 py-3 bg-[#FF6B35] text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
               >
                 Confirm Booking
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Haggle (Negotiation) Modal */}
+      {showHaggleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Negotiate Price</h2>
+              <button onClick={() => setShowHaggleModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-sm text-gray-500 mb-2">Original Price:</p>
+              <p className="text-xl font-bold text-gray-400 line-through">
+                ₦ {property.price?.toLocaleString()}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Your Proposed Price (₦)
+                </label>
+                <input
+                  type="number"
+                  value={negotiatedPrice}
+                  onChange={(e) => setNegotiatedPrice(e.target.value)}
+                  placeholder="Enter your offer"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-4 focus:ring-2 focus:ring-[#FF6B35] outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Message to Landlord
+                </label>
+                <textarea
+                  value={negotiationMessage}
+                  onChange={(e) => setNegotiationMessage(e.target.value)}
+                  placeholder="Why should the landlord consider your offer?"
+                  rows={4}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-4 focus:ring-2 focus:ring-[#FF6B35] outline-none transition-all resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="mt-8 flex gap-4">
+              <button
+                onClick={() => setShowHaggleModal(false)}
+                className="flex-1 px-4 py-4 border border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleNegotiate}
+                disabled={negotiationLoading}
+                className="flex-1 px-4 py-4 bg-[#FF6B35] text-white rounded-xl font-bold hover:bg-orange-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+              >
+                {negotiationLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  'Send Offer'
+                )}
               </button>
             </div>
           </motion.div>

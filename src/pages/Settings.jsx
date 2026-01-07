@@ -20,7 +20,7 @@ import { toast } from 'react-hot-toast';
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, deleteAccount } = useAuth();
 
   // State management
   const [loading, setLoading] = useState(true);
@@ -301,20 +301,18 @@ export default function Settings() {
 
     try {
       setSaving(true);
-
-      // Delete user data from all tables
-      await supabase.from('user_profiles').delete().eq('id', user.id);
-      await supabase.from('saved_properties').delete().eq('user_id', user.id);
-      await supabase.from('search_history').delete().eq('user_id', user.id);
-
-      // Sign out user
-      await supabase.auth.signOut();
+      
+      const { success, error } = await deleteAccount();
+      
+      if (!success) {
+        throw new Error(error || 'Failed to delete account');
+      }
 
       toast.success('Account deleted successfully');
       navigate('/');
     } catch (error) {
       console.error('Error deleting account:', error);
-      toast.error('Failed to delete account');
+      toast.error(error.message || 'Failed to delete account');
     } finally {
       setSaving(false);
     }

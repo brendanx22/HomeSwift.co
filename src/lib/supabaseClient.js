@@ -51,7 +51,7 @@ export const supabase = initSupabase()
 let sessionPromise = null;
 
 export const ensureSession = async () => {
-  console.log('🔄 [ensureSession] Called');
+  // console.log('🔄 [ensureSession] Called');
 
   // If we already have a promise
   if (sessionPromise) {
@@ -59,12 +59,12 @@ export const ensureSession = async () => {
       const session = await sessionPromise;
       // If we got a session, return it
       if (session) {
-        console.log('✅ [ensureSession] Returning cached session');
+        // console.log('✅ [ensureSession] Returning cached session');
         return session;
       }
       // If cached session was null, but we might have one now (e.g. after login)
       // We should try again.
-      console.log('⚠️ [ensureSession] Cached session was null, checking again...');
+      // console.log('⚠️ [ensureSession] Cached session was null, checking again...');
       sessionPromise = null; // Reset to force new check
     } catch (e) {
       console.error('❌ [ensureSession] Cached promise error:', e);
@@ -72,14 +72,14 @@ export const ensureSession = async () => {
     }
   }
 
-  console.log('🔍 [ensureSession] Fetching new session...');
+  // console.log('🔍 [ensureSession] Fetching new session...');
   sessionPromise = supabase.auth.getSession().then(({ data: { session }, error }) => {
     if (error) {
       console.error('❌ [ensureSession] Error getting session:', error);
     } else if (session) {
-      console.log('✅ [ensureSession] Session loaded:', session.user.id);
+      // console.log('✅ [ensureSession] Session loaded:', session.user.id);
     } else {
-      console.log('ℹ️ [ensureSession] No active session found');
+      // console.log('ℹ️ [ensureSession] No active session found');
     }
     return session;
   });

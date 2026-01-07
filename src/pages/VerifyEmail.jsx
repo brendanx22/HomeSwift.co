@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, AlertCircle, Clock, ArrowRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
@@ -42,6 +42,8 @@ const VerifyEmail = () => {
     navigate(redirectPath);
   };
 
+  const { resendVerification } = useAuth();
+  
   const handleResendEmail = async () => {
     if (!email) return;
 
@@ -49,16 +51,9 @@ const VerifyEmail = () => {
       setStatus('loading');
       setMessage('Sending verification email...');
 
-      // Use Supabase to resend verification email
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
+      const { success, error } = await resendVerification(email);
 
-      if (error) throw error;
+      if (!success) throw new Error(error);
 
       setStatus('success');
       setMessage('Verification email sent! Please check your inbox and click the link to verify your account.');
@@ -66,7 +61,7 @@ const VerifyEmail = () => {
     } catch (error) {
       console.error('Error resending verification:', error);
       setStatus('error');
-      setMessage('Failed to send verification email. Please try again.');
+      setMessage(error.message || 'Failed to send verification email. Please try again.');
       toast.error('Failed to send verification email');
     }
   };

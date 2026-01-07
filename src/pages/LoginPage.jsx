@@ -21,7 +21,7 @@ export default function LoginPage() {
   const [hasRequestedResend, setHasRequestedResend] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { login, loginWithGoogle, isAuthenticated } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, resendVerification } = useAuth();
   const from = location.state?.from?.pathname || '/';
   const [searchParams] = useSearchParams();
   const isVerified = searchParams.get('verified') === 'true';
@@ -74,27 +74,6 @@ export default function LoginPage() {
       });
       
       if (loginResult?.success) {
-        // After successful Supabase login, get the backend token
-        try {
-          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://api.homeswift.co'}/api/auth/signin`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password })
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.token) {
-              localStorage.setItem('backendToken', data.token);
-              console.log('Backend token stored successfully');
-            }
-          }
-        } catch (err) {
-          console.warn('Could not get backend token, continuing with Supabase auth only:', err);
-        }
-        
         toast.success(loginResult.message || 'Login successful!');
       } else {
         // Handle specific error cases
@@ -125,16 +104,10 @@ export default function LoginPage() {
       setLoading(true);
       setError('');
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.homeswift.co'}/api/auth/resend-verification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: unverifiedEmail })
-      });
+      const { success, error } = await resendVerification(unverifiedEmail);
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to resend verification email');
+      if (!success) {
+        throw new Error(error || 'Failed to resend verification email');
       }
       
       toast.success('Verification email sent! Please check your inbox.');
@@ -143,18 +116,7 @@ export default function LoginPage() {
       setHasRequestedResend(true);
     } catch (error) {
       console.error('Resend verification error:', error);
-      
-      if (error.response) {
-        if (error.response.status === 429) {
-          setResendCooldown(60);
-          setHasRequestedResend(true);
-          setError('Please wait before requesting another verification email.');
-        } else {
-          setError(error.response.data?.error || 'Failed to resend verification email');
-        }
-      } else {
-        setError(error.message || 'Failed to resend verification email');
-      }
+      setError(error.message || 'Failed to resend verification email');
     } finally {
       setLoading(false);
     }

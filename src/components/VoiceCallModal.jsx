@@ -39,12 +39,7 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
     }
   }, [isOpen, targetUserId]);
 
-  // Automatically start the voice call when connection is initiated
-  useEffect(() => {
-    if (isCallInitiated && !isConnected && !isConnecting) {
-      handleStartVoiceCall();
-    }
-  }, [isCallInitiated, isConnected, isConnecting]);
+  // No longer need separate handleStartVoiceCall as startConnection handles it
 
   useEffect(() => {
     let interval;
@@ -60,13 +55,7 @@ const VoiceCallModal = ({ isOpen, onClose, targetUser, targetUserId }) => {
     };
   }, [isConnected]);
 
-  const handleStartVoiceCall = async () => {
-    try {
-      await startVoiceCall();
-    } catch (err) {
-      console.error('Failed to start voice call:', err);
-    }
-  };
+  // Redundant refactor
 
   const handleEndCall = () => {
     endCall();

@@ -263,28 +263,6 @@ const AuthCallback = () => {
           console.log('✅ Cleared pendingUserType from localStorage');
         }
 
-        // Get backend token for the authenticated user
-        try {
-          const response = await fetch('https://api.homeswift.co/api/auth/token', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ user_id: user.id }),
-            credentials: 'include'
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.token) {
-              localStorage.setItem('backendToken', data.token);
-              console.log('Backend token stored successfully');
-            }
-          }
-        } catch (err) {
-          console.warn('Could not get backend token, continuing with Supabase auth only:', err);
-        }
-
         toast.success(isNewUser ? 'Account created successfully!' : 'Successfully authenticated!');
 
         // Determine redirect path based on user type

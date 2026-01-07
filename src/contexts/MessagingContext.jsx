@@ -60,9 +60,9 @@ export const MessagingProvider = ({ children }) => {
         return;
       }
 
-      // Force HTTPS to avoid mixed content errors
-      const apiUrl = 'https://api.homeswift.co';
-      console.log('📡 Fetching from:', `${apiUrl}/api/messages/conversations`);
+      // Use environment variable for API URL
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
+      // console.log('📡 Fetching from:', `${apiUrl}/api/messages/conversations`);
       
       const response = await fetch(`${apiUrl}/api/messages/conversations`, {
         method: 'GET',
@@ -117,8 +117,8 @@ export const MessagingProvider = ({ children }) => {
           return;
         }
 
-        // Force HTTPS to avoid mixed content errors
-        const apiUrl = 'https://api.homeswift.co';
+        // Use environment variable for API URL
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
 
         const newSocket = io(apiUrl, {
           auth: {
@@ -262,16 +262,6 @@ export const MessagingProvider = ({ children }) => {
 
       await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
 
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-
-      // Send answer back via Socket.IO
-      socket.emit('webrtc_answer', {
-        targetUserId: senderId,
-        answer,
-        callType
-      });
-
       // Store peer connection
       peerConnections.current.set(senderId, peerConnection);
 
@@ -326,6 +316,13 @@ export const MessagingProvider = ({ children }) => {
   // WebRTC connection initiation
   const initiateWebRTCConnection = async (targetUserId, callType = 'video') => {
     try {
+      // Reuse existing connection if it exists and is not closed
+      const existingPC = peerConnections.current.get(targetUserId);
+      if (existingPC && (existingPC.connectionState !== 'closed' && existingPC.connectionState !== 'failed')) {
+        console.log('🔄 Reusing existing WebRTC connection for:', targetUserId);
+        return existingPC;
+      }
+
       const peerConnection = new RTCPeerConnection({
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
@@ -368,20 +365,11 @@ export const MessagingProvider = ({ children }) => {
         // The remote stream will be handled by the useWebRTC hook
       };
 
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-
       // Store peer connection
       peerConnections.current.set(targetUserId, peerConnection);
 
-      // Send offer via Socket.IO with call type
-      socket.emit('webrtc_offer', {
-        targetUserId,
-        offer,
-        callType
-      });
-
-      console.log(`WebRTC ${callType} connection initiated with:`, targetUserId);
+      console.log(`WebRTC connection object created for:`, targetUserId);
+      return peerConnection;
     } catch (error) {
       console.error('Error initiating WebRTC connection:', error);
       throw error;
@@ -417,8 +405,8 @@ export const MessagingProvider = ({ children }) => {
         return;
       }
 
-      // Force HTTPS to avoid mixed content errors
-      const apiUrl = 'https://api.homeswift.co';
+      // Use environment variable for API URL
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
       const response = await fetch(`${apiUrl}/api/messages/conversations/${conversationId}/messages`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -450,8 +438,8 @@ export const MessagingProvider = ({ children }) => {
         return;
       }
 
-      // Force HTTPS to avoid mixed content errors
-      const apiUrl = 'https://api.homeswift.co';
+      // Use environment variable for API URL
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
       const response = await fetch(`${apiUrl}/api/messages/conversations/${conversationId}/messages`, {
         method: 'POST',
         headers: {
@@ -490,8 +478,8 @@ export const MessagingProvider = ({ children }) => {
         return;
       }
 
-      // Force HTTPS to avoid mixed content errors
-      const apiUrl = 'https://api.homeswift.co';
+      // Use environment variable for API URL
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
       const response = await fetch(`${apiUrl}/api/messages/conversations`, {
         method: 'POST',
         headers: {

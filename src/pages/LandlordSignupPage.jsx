@@ -18,7 +18,7 @@ const LandlordSignupPage = () => {
   }, []);
 
   const navigate = useNavigate();
-  const { signup, loginWithGoogle } = useAuth();
+  const { signup, loginWithGoogle, checkEmailExists } = useAuth();
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -158,34 +158,17 @@ const LandlordSignupPage = () => {
     setEmailStatus('checking');
 
     try {
-      console.log('📧 Making Supabase query to user_profiles table...');
-
-      // Check if user_profiles table exists and has data
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('email')
-        .eq('email', emailToCheck)
-        .maybeSingle();
+      const { exists, error } = await checkEmailExists(emailToCheck);
 
       if (error) {
-        console.error('❌ Supabase query error:', error);
-        // If the table doesn't exist, assume email is available for now
-        if (error.code === '42P01') { // Table doesn't exist
-          console.log('📧 user_profiles table does not exist, assuming email is available');
-          setEmailStatus('available');
-          return;
-        }
-        throw error;
+        throw new Error(error);
       }
 
-      console.log('📧 Query result:', { data, error });
-
-      const status = data ? 'taken' : 'available';
+      const status = exists ? 'taken' : 'available';
       setEmailStatus(status);
-      console.log(`📧 Email status: ${status}`, data ? 'Email exists in database' : 'Email is available');
+      console.log(`📧 Email status: ${status}`, exists ? 'Email exists' : 'Email is available');
     } catch (error) {
       console.error('❌ Email check failed:', error.message);
-      console.error('❌ Full error object:', error);
       setEmailStatus('error');
       toast.error('Failed to check email availability');
     }

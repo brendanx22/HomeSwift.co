@@ -2,14 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, User, Home, Building2, Users, ArrowLeft } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function SignupPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signup: signUp, loginWithGoogle, isAuthenticated, loading: authLoading, checkEmailExists } = useAuth();
+  const { signup: signUp, loginWithGoogle, isAuthenticated, loading: authLoading, checkEmailExists, resendVerification } = useAuth();
   
   // Determine user type from localStorage first, then URL
   const [userType, setUserType] = useState('renter');
@@ -93,16 +92,9 @@ export default function SignupPage() {
       setLoading(true);
       setError('');
       
-      // Use Supabase's resend confirmation email
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-        },
-      });
+      const { success, error } = await resendVerification(email);
       
-      if (error) throw error;
+      if (!success) throw new Error(error);
       
       toast.success('A new verification email has been sent. Please check your inbox.');
     } catch (err) {
@@ -111,6 +103,7 @@ export default function SignupPage() {
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
+      setLoading(false);
     }
   };
 
@@ -396,79 +389,27 @@ export default function SignupPage() {
       return;
     }
     
-    // Store the email we're currently checking
-    const checkId = Date.now();
-    lastRequestedEmailRef.current = { email: sanitized, id: checkId };
-    
-    // Cancel any in-flight request
-    if (emailCheckTimeoutRef.current) {
-      clearTimeout(emailCheckTimeoutRef.current);
-    }
-    
     // Show checking status
     setEmailStatus('checking');
     
     try {
-      // Use a timeout to debounce the API call
-      emailCheckTimeoutRef.current = setTimeout(async () => {
-        try {
-          console.log(`[${checkId}] Starting email check for:`, sanitized);
-          
-          // Use the admin API to check if user exists (this requires RLS policies to be set correctly)
-          const { data, error } = await supabase
-            .from('user_profiles')  // Using the correct table name
-            .select('id')
-            .eq('email', sanitized)
-            .maybeSingle();
-          
-          // Check if this response is still relevant
-          const currentRequest = lastRequestedEmailRef.current;
-          if (!currentRequest || currentRequest.email !== sanitized || currentRequest.id !== checkId) {
-            console.log(`[${checkId}] Email check response for different email or outdated request, ignoring`);
-            return;
-          }
-          
-          if (error) {
-            console.warn(`[${checkId}] Error checking email:`, error);
-            // If there's an error, assume available to be safe
-            setEmailStatus('available');
-            setEmailCheckError('');
-            return;
-          }
-          
-          if (data) {
-            // Email is already registered
-            console.log(`[${checkId}] Email is already registered`);
-            setEmailStatus('taken');
-            setEmailCheckError('This email is already registered');
-          } else {
-            // Email is available
-            console.log(`[${checkId}] Email is available`);
-            setEmailStatus('available');
-            setEmailCheckError('');
-          }
-        } catch (err) {
-          console.error(`[${checkId}] Email check error:`, err);
-          setEmailStatus('error');
-          setEmailCheckError('Error checking email availability. Please try again.');
-        }
-      }, 500); // 500ms debounce
-    } catch (error) {
-      // Handle any synchronous errors
-      if (error.name === 'AbortError') {
-        console.log('Email check aborted');
-        return;
+      const { exists, error } = await checkEmailExists(sanitized);
+      
+      if (error) {
+        throw new Error(error);
       }
       
-      console.error('Email check setup error:', error);
-      // Only update state if this was for the current email
-      const currentEmail = (formData.email || '').trim().toLowerCase();
-      if (currentEmail === sanitized) {
-        setEmailStatus('error');
-        setEmailCheckError(
-          error.message || 'We could not verify your email right now. Please try again.'
-        );
+      if (exists) {
+        setEmailStatus('taken');
+        setEmailCheckError('This email is already registered');
+      } else {
+        setEmailStatus('available');
+        setEmailCheckError('');
       }
+    } catch (err) {
+      console.error('Email check error:', err);
+      setEmailStatus('error');
+      setEmailCheckError('Error checking email availability. Please try again.');
     }
   };
 

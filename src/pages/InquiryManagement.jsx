@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useMessaging } from '../contexts/MessagingContext';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'react-hot-toast';
+import { NegotiationService } from '../services/negotiationService';
 import {
   ArrowLeft,
   Search,
@@ -40,6 +41,14 @@ const InquiryManagement = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [showInquiryDetails, setShowInquiryDetails] = useState(false);
+  const [activeTab, setActiveTab] = useState('bookings');
+  const [negotiations, setNegotiations] = useState([]);
+  const [filteredNegotiations, setFilteredNegotiations] = useState([]);
+  const [negotiationLoading, setNegotiationLoading] = useState(false);
+  const [selectedNegotiation, setSelectedNegotiation] = useState(null);
+  const [showNegotiationDetails, setShowNegotiationDetails] = useState(false);
+  const [counterPrice, setCounterPrice] = useState('');
+  const [responseMessage, setResponseMessage] = useState('');
 
   // Check authentication
   useEffect(() => {
@@ -49,33 +58,55 @@ const InquiryManagement = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Load inquiries
+  // Load inquiries and negotiations
   useEffect(() => {
-    loadInquiries();
-  }, [user]);
+    if (activeTab === 'bookings') {
+      loadInquiries();
+    } else {
+      loadNegotiations();
+    }
+  }, [user, activeTab]);
 
-  // Filter inquiries based on search and status
+  // Filter inquiries and negotiations
   useEffect(() => {
-    let filtered = inquiries;
+    if (activeTab === 'bookings') {
+      let filtered = inquiries;
 
-    // Filter by status
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(inquiry => inquiry.status === statusFilter);
+      // Filter by status
+      if (statusFilter !== 'all') {
+        filtered = filtered.filter(inquiry => inquiry.status === statusFilter);
+      }
+
+      // Filter by search query
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(inquiry =>
+          inquiry.tenant_name?.toLowerCase().includes(query) ||
+          inquiry.property_title?.toLowerCase().includes(query) ||
+          inquiry.property_location?.toLowerCase().includes(query) ||
+          inquiry.tenant_email?.toLowerCase().includes(query)
+        );
+      }
+
+      setFilteredInquiries(filtered);
+    } else {
+      let filtered = negotiations;
+
+      if (statusFilter !== 'all') {
+        filtered = filtered.filter(n => n.status === statusFilter);
+      }
+
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(n =>
+          n.tenant_name?.toLowerCase().includes(query) ||
+          n.property?.title?.toLowerCase().includes(query) ||
+          n.property?.location?.toLowerCase().includes(query)
+        );
+      }
+      setFilteredNegotiations(filtered);
     }
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(inquiry =>
-        inquiry.tenant_name?.toLowerCase().includes(query) ||
-        inquiry.property_title?.toLowerCase().includes(query) ||
-        inquiry.property_location?.toLowerCase().includes(query) ||
-        inquiry.tenant_email?.toLowerCase().includes(query)
-      );
-    }
-
-    setFilteredInquiries(filtered);
-  }, [inquiries, searchQuery, statusFilter]);
+  }, [inquiries, negotiations, searchQuery, statusFilter, activeTab]);
 
   const loadInquiries = async () => {
     try {
@@ -146,6 +177,46 @@ const InquiryManagement = () => {
       toast.error('Failed to load inquiries');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadNegotiations = async () => {
+    try {
+      if (!user?.id) return;
+      setNegotiationLoading(true);
+      const { success, data, error } = await NegotiationService.getLandlordNegotiations(user.id);
+      if (success) {
+        setNegotiations(data);
+      } else {
+        toast.error('Failed to load negotiations');
+      }
+    } catch (err) {
+      console.error('Error loading negotiations:', err);
+    } finally {
+      setNegotiationLoading(false);
+    }
+  };
+
+  const handleUpdateNegotiation = async (negotiationId, status) => {
+    try {
+      const { success, data, error } = await NegotiationService.updateNegotiationStatus(
+        negotiationId, 
+        status, 
+        responseMessage,
+        status === 'countered' ? counterPrice : null
+      );
+
+      if (success) {
+        toast.success(`Negotiation ${status}`);
+        loadNegotiations();
+        setShowNegotiationDetails(false);
+        setResponseMessage('');
+        setCounterPrice('');
+      } else {
+        toast.error(error || 'Failed to update negotiation');
+      }
+    } catch (err) {
+      console.error('Error updating negotiation:', err);
     }
   };
 
@@ -266,7 +337,38 @@ const InquiryManagement = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
+        {/* Tab Navigation */}
+        <div className="flex items-center space-x-4 mb-6 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('bookings')}
+            className={`pb-4 text-sm font-medium transition-colors relative ${
+              activeTab === 'bookings'
+                ? 'text-[#FF6B35] border-b-2 border-[#FF6B35]'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Bookings
+            <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+              {inquiries.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('negotiations')}
+            className={`pb-4 text-sm font-medium transition-colors relative ${
+              activeTab === 'negotiations'
+                ? 'text-[#FF6B35] border-b-2 border-[#FF6B35]'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Negotiations
+            <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+              {negotiations.length}
+            </span>
+          </button>
+        </div>
+
+        {/* Stats Cards (Bookings Only) */}
+        {activeTab === 'bookings' && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-xl border border-gray-200">
             <div className="flex items-center justify-between">
@@ -317,6 +419,7 @@ const InquiryManagement = () => {
             </div>
           </div>
         </div>
+        )}
 
         {/* Filters and Search */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 mb-8">
@@ -351,94 +454,150 @@ const InquiryManagement = () => {
         <div className="bg-white rounded-xl border border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">
-              Inquiries ({filteredInquiries.length})
+              {activeTab === 'bookings' ? 'Inquiries' : 'Negotiations'} ({activeTab === 'bookings' ? filteredInquiries.length : filteredNegotiations.length})
             </h2>
           </div>
 
           <div className="divide-y divide-gray-200">
-            {filteredInquiries.length === 0 ? (
-              <div className="p-12 text-center">
-                <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No inquiries found</h3>
-                <p className="text-gray-600">
-                  {searchQuery || statusFilter !== 'all'
-                    ? 'Try adjusting your search or filter criteria'
-                    : 'No inquiries have been submitted yet'
-                  }
-                </p>
-              </div>
+            {activeTab === 'bookings' ? (
+              // Bookings List
+              filteredInquiries.length === 0 ? (
+                <div className="p-12 text-center">
+                  <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No inquiries found</h3>
+                  <p className="text-gray-600">
+                    {searchQuery || statusFilter !== 'all'
+                      ? 'Try adjusting your search or filter criteria'
+                      : 'No inquiries have been submitted yet'
+                    }
+                  </p>
+                </div>
+              ) : (
+                filteredInquiries.map((inquiry) => (
+                  <motion.div
+                    key={inquiry.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-6 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => {
+                      setSelectedInquiry(inquiry);
+                      setShowInquiryDetails(true);
+                    }}
+                  >
+                    {/* Existing Booking Card Content */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <div className="w-10 h-10 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-medium">
+                            {inquiry.tenant_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{inquiry.tenant_name}</h3>
+                            <p className="text-sm text-gray-600">{inquiry.tenant_email}</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Building className="w-4 h-4 mr-2" />
+                            {inquiry.property_title}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600">
+                            <MapPin className="w-4 h-4 mr-2" />
+                            {inquiry.property_location}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            Move in: {formatDate(inquiry.move_in_date)}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(inquiry.status)}`}>
+                              {inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )
             ) : (
-              filteredInquiries.map((inquiry) => (
-                <motion.div
-                  key={inquiry.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-6 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => {
-                    setSelectedInquiry(inquiry);
-                    setShowInquiryDetails(true);
-                  }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className="w-10 h-10 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-medium">
-                          {inquiry.tenant_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+              // Negotiations List
+              filteredNegotiations.length === 0 ? (
+                <div className="p-12 text-center">
+                  <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No negotiations found</h3>
+                  <p className="text-gray-600">
+                    No price negotiation requests found for your properties.
+                  </p>
+                </div>
+              ) : (
+                filteredNegotiations.map((negotiation) => (
+                  <motion.div
+                    key={negotiation.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-6 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => {
+                      setSelectedNegotiation(negotiation);
+                      setShowNegotiationDetails(true);
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                         <div className="flex items-center space-x-3 mb-2">
+                          <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-medium">
+                            {negotiation.tenant_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{negotiation.tenant_name}</h3>
+                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                              Negotiation
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{inquiry.tenant_name}</h3>
-                          <p className="text-sm text-gray-600">{inquiry.tenant_email}</p>
-                        </div>
-                      </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Building className="w-4 h-4 mr-2" />
-                          {inquiry.property_title}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Building className="w-4 h-4 mr-2" />
+                            {negotiation.property?.title}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600">
+                             <div className="flex flex-col">
+                               <span className="text-gray-500 line-through text-xs">
+                                 Listed: ₦{negotiation.property_price?.toLocaleString() || negotiation.property?.price?.toLocaleString()}
+                               </span>
+                               <span className="font-bold text-green-600">
+                                 Offer: ₦{parseInt(negotiation.proposed_price).toLocaleString()}
+                               </span>
+                             </div>
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600">
+                             <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
+                                negotiation.status === 'accepted' ? 'bg-green-100 text-green-800 border-green-200' :
+                                negotiation.status === 'rejected' ? 'bg-red-100 text-red-800 border-red-200' :
+                                negotiation.status === 'countered' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                'bg-yellow-100 text-yellow-800 border-yellow-200'
+                             }`}>
+                               {negotiation.status.charAt(0).toUpperCase() + negotiation.status.slice(1)}
+                             </span>
+                          </div>
+                           <div className="text-xs text-gray-500">
+                             {formatTimeAgo(negotiation.created_at)}
+                           </div>
                         </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <MapPin className="w-4 h-4 mr-2" />
-                          {inquiry.property_location}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Calendar className="w-4 h-4 mr-2" />
-                          Move in: {formatDate(inquiry.move_in_date)}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(inquiry.status)}`}>
-                            {inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {inquiry.special_requests && (
-                        <p className="text-sm text-gray-600 mb-2">
-                          <strong>Special requests:</strong> {inquiry.special_requests}
-                        </p>
-                      )}
-
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-600">
-                          ₦{inquiry.property_price.toLocaleString()}/year • {inquiry.lease_duration} months
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {formatTimeAgo(inquiry.created_at)}
-                        </div>
+                        {negotiation.message && (
+                          <p className="text-sm text-gray-600 italic">"{negotiation.message}"</p>
+                        )}
                       </div>
                     </div>
-
-                    <div className="flex items-center space-x-2 ml-4">
-                      <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))
+                  </motion.div>
+                ))
+              )
             )}
           </div>
+          </div>
         </div>
-      </div>
 
       {/* Inquiry Details Modal */}
       {showInquiryDetails && selectedInquiry && (
@@ -603,6 +762,111 @@ const InquiryManagement = () => {
                 {selectedInquiry.status === 'pending' ? 'Close' : 'Done'}
               </button>
             </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Negotiation Details Modal */}
+      {showNegotiationDetails && selectedNegotiation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+           <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Negotiation Request</h2>
+              <button 
+                onClick={() => setShowNegotiationDetails(false)} 
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+           </div>
+           
+           <div className="p-6 space-y-6">
+             {/* Offer Details */}
+             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{selectedNegotiation.property?.title}</h3>
+                    <p className="text-gray-600 flex items-center mt-1">
+                      <MapPin className="w-4 h-4 mr-1" /> {selectedNegotiation.property?.location}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-500 line-through">Listed: ₦{selectedNegotiation.property_price?.toLocaleString() || selectedNegotiation.property?.price?.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-green-600">Offer: ₦{parseInt(selectedNegotiation.proposed_price).toLocaleString()}</p>
+                  </div>
+                </div>
+                
+                {selectedNegotiation.message && (
+                  <div className="bg-white p-4 rounded-lg border border-gray-100">
+                    <p className="text-gray-600 italic">"{selectedNegotiation.message}"</p>
+                    <p className="text-xs text-gray-400 mt-2 text-right">- {selectedNegotiation.tenant_name}</p>
+                  </div>
+                )}
+             </div>
+
+             {/* Action Section */}
+             {selectedNegotiation.status === 'pending' || selectedNegotiation.status === 'countered' ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Reply Message (Optional)</label>
+                    <textarea 
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#FF6B35] focus:border-[#FF6B35]"
+                      placeholder="Add a message to the tenant..."
+                      rows={3}
+                      value={responseMessage}
+                      onChange={(e) => setResponseMessage(e.target.value)}
+                    />
+                  </div>
+                  
+                  {/* Counter Offer Input if needed */}
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={() => handleUpdateNegotiation(selectedNegotiation.id, 'accepted')}
+                      className="flex-1 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 shadow-lg shadow-green-200 transition-colors"
+                    >
+                      Accept Offer
+                    </button>
+                    <button 
+                      onClick={() => handleUpdateNegotiation(selectedNegotiation.id, 'rejected')}
+                      className="flex-1 py-3 border border-red-200 text-red-600 rounded-xl font-semibold hover:bg-red-50 transition-colors"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-gray-100">
+                     <p className="text-sm font-medium text-gray-700 mb-2">Or propose a counter offer:</p>
+                     <div className="flex gap-4">
+                       <input 
+                         type="number"
+                         placeholder="Counter Price (₦)"
+                         className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+                         value={counterPrice}
+                         onChange={(e) => setCounterPrice(e.target.value)}
+                       />
+                       <button 
+                         onClick={() => handleUpdateNegotiation(selectedNegotiation.id, 'countered')}
+                         className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                       >
+                         Send Counter
+                       </button>
+                     </div>
+                  </div>
+                </div>
+             ) : (
+                <div className="text-center py-6 bg-gray-50 rounded-xl">
+                   <p className="text-gray-600">This negotiation is <strong>{selectedNegotiation.status}</strong>.</p>
+                   {selectedNegotiation.landlord_response && (
+                     <p className="text-sm text-gray-500 mt-2">Your response: "{selectedNegotiation.landlord_response}"</p>
+                   )}
+                </div>
+             )}
+           </div>
           </motion.div>
         </div>
       )}
