@@ -74,7 +74,7 @@ const PropertyReviews = ({ propertyId, propertyTitle }) => {
         .from('property_reviews')
         .select(`
           *,
-          user_profiles!property_reviews_user_id_fkey (
+          user_profiles (
             full_name,
             avatar_url
           )

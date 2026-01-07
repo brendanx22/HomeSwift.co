@@ -5,7 +5,7 @@ import { identifyUser, resetUser, trackLogin, trackSignup, trackRoleSwitch } fro
 
 export const AuthContext = createContext();
 
-const API_URL = import.meta.env.VITE_BACKEND_URL || 'https://api.homeswift.co';
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.homeswift.co';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);

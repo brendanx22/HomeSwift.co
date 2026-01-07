@@ -19,9 +19,10 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 
 const LandlordSettings = () => {
-  const { user, isAuthenticated, loading: authLoading, deleteAccount } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, deleteAccount, API_URL } = useAuth();
   const navigate = useNavigate();
 
   const [profileData, setProfileData] = useState({
@@ -32,6 +33,13 @@ const LandlordSettings = () => {
     bio: '',
     avatar_url: null,
     location: ''
+  });
+
+  const [payoutSettings, setPayoutSettings] = useState({
+    bank_name: '',
+    bank_code: '',
+    account_number: '',
+    account_name: ''
   });
 
   const [activeTab, setActiveTab] = useState('profile');
@@ -161,6 +169,26 @@ const LandlordSettings = () => {
     };
 
     loadSettings();
+  }, [user]);
+
+  // Load payout settings
+  useEffect(() => {
+    const loadPayoutSettings = async () => {
+      if (!user?.id) return;
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('bank_details, payout_recipient_code')
+        .eq('id', user.id)
+        .maybeSingle(); // Use maybeSingle to prevent error if no profile
+      
+      if (data?.bank_details) {
+        setPayoutSettings(prev => ({
+          ...prev,
+          ...data.bank_details
+        }));
+      }
+    };
+    loadPayoutSettings();
   }, [user]);
 
   // Handle input changes
@@ -331,6 +359,42 @@ const LandlordSettings = () => {
     } catch (err) {
       console.error('Error updating preferences:', err);
       toast.error('Failed to update preferences');
+  };
+
+  const handleSavePayoutDetails = async () => {
+    setLoading(true);
+    try {
+      if (!payoutSettings.bank_code || !payoutSettings.account_number) {
+        toast.error('Please enter bank and account number');
+        return;
+      }
+
+      // Call backend to create recipient
+      const response = await fetch(`${API_URL}/api/payments/create-recipient`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({
+          name: payoutSettings.account_name || `${profileData.first_name} ${profileData.last_name}`,
+          account_number: payoutSettings.account_number,
+          bank_code: payoutSettings.bank_code
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        toast.success('Payout details saved successfully!');
+        // Update local state if needed (API should have updated DB)
+      } else {
+        throw new Error(data.message || 'Failed to save payout details');
+      }
+
+    } catch (error) {
+      console.error('Error saving payout details:', error);
+      toast.error(error.message || 'Failed to update settings');
     } finally {
       setLoading(false);
     }
@@ -766,20 +830,86 @@ const LandlordSettings = () => {
 
               {activeTab === 'billing' && (
                 <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Billing & Subscription</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Payout Settings</h2>
                   <div className="space-y-6">
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h3 className="font-medium text-gray-900 mb-2">Current Plan</h3>
-                      <p className="text-sm text-gray-600">Free Plan</p>
+                    <div className="border border-green-100 bg-green-50 rounded-lg p-4 mb-6">
+                      <div className="flex items-start gap-3">
+                        <CreditCard className="w-5 h-5 text-green-600 mt-0.5" />
+                        <div>
+                          <h3 className="font-medium text-green-900">Direct Deposit</h3>
+                          <p className="text-sm text-green-700">
+                            Connect your bank account to receive rent payments automatically.
+                            Payments are processed securely via Paystack.
+                          </p>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h3 className="font-medium text-gray-900 mb-2">Payment Method</h3>
-                      <p className="text-sm text-gray-600">No payment method on file</p>
-                      <button className="mt-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600">
-                        Add Payment Method
-                      </button>
-                    </div>
+                    <form className="space-y-4">
+                       <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Bank Name
+                        </label>
+                        <select
+                          value={payoutSettings.bank_code}
+                          onChange={(e) => {
+                             const idx = e.target.selectedIndex;
+                             const label = e.target.options[idx].text;
+                             setPayoutSettings({...payoutSettings, bank_code: e.target.value, bank_name: label});
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                        >
+                          <option value="">Select your bank</option>
+                          <option value="044">Access Bank</option>
+                          <option value="058">Guaranty Trust Bank</option>
+                          <option value="011">First Bank of Nigeria</option>
+                          <option value="214">First City Monument Bank</option>
+                          <option value="057">Zenith Bank</option>
+                          <option value="033">United Bank for Africa</option>
+                          <option value="232">Sterling Bank</option>
+                          <option value="032">Union Bank of Nigeria</option>
+                          <option value="035">Wema Bank</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Account Number
+                        </label>
+                        <input
+                          type="text"
+                          maxLength="10"
+                          value={payoutSettings.account_number}
+                          onChange={(e) => setPayoutSettings({...payoutSettings, account_number: e.target.value})}
+                          placeholder="0123456789"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Account Name
+                        </label>
+                         <input
+                          type="text"
+                          value={payoutSettings.account_name}
+                          onChange={(e) => setPayoutSettings({...payoutSettings, account_name: e.target.value})}
+                          placeholder="Account Name (e.g. John Doe)"
+                          className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                        />
+                      </div>
+
+                      <div className="pt-4">
+                        <button 
+                          type="button"
+                          onClick={handleSavePayoutDetails}
+                          disabled={loading}
+                          className="w-full bg-[#FF6B35] text-white px-4 py-3 rounded-lg hover:bg-orange-600 font-medium transition-colors disabled:opacity-50"
+                        >
+                          {loading ? 'Saving...' : 'Save Payout Details'}
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               )}

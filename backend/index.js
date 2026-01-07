@@ -9,6 +9,8 @@ const { createClient } = require("@supabase/supabase-js");
 const authRoutes = require("./routes/authRoutes");
 const propertyRoutes = require("./routes/propertyRoutes");
 const messageRoutes = require("./routes/messageRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+const leaseRoutes = require("./routes/leaseRoutes");
 const { errorHandler } = require("./middleware/errorMiddleware");
 
 // Enhanced logging setup
@@ -414,6 +416,8 @@ try {
   app.use("/api/auth", authRoutes);
   app.use("/api/properties", propertyRoutes);
   app.use("/api/messages", messageRoutes);
+  app.use("/api/payments", paymentRoutes);
+  app.use("/api/leases", leaseRoutes);
 
   // Health check endpoint
   app.get("/api/health", (req, res) => {

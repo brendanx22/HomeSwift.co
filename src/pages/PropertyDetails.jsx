@@ -620,32 +620,95 @@ export default function PropertyDetails() {
         }
       );
 
-      // Close modal
-      setShowBookingModal(false);
+      // 1. Create Booking Record first (Status: Pending)
+      let bookingId = null;
+      try {
+        const { data: bookingData, error: bookingError } = await supabase
+          .from('bookings')
+          .insert({
+             tenant_id: user.id,
+             property_id: property.id,
+             total_amount: property.price,
+             status: 'pending', // Pending payment
+             landlord_id: property.landlord_id,
+             created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
 
-      // Trigger Paystack Payment
+        if (bookingError) throw bookingError;
+        bookingId = bookingData.id;
+
+      } catch (err) {
+        console.error('Failed to create initial booking:', err);
+        toast.error('Booking initiation failed. Please try again.');
+        return;
+      }
+
+      // 2. Trigger Paystack Payment
       handlePayWithPaystack(
         property.price,
         user.email,
         {
-          property_id: property.id,
-          tenant_id: user.id,
-          booking_id: property.id // Temporary placeholder if we don't have it yet
-        },
-        async (paymentResponse) => {
-          console.log('Payment Successful:', paymentResponse);
-          
-          // Update booking with payment reference
-          await supabase
-            .from('bookings')
-            .update({ 
-               status: 'escrow_hold', 
-               payment_ref: paymentResponse.reference 
-            })
-            .eq('property_id', property.id)
-            .eq('tenant_id', user.id);
+          onSuccess: async (reference) => {
+            console.log('Payment Reference:', reference);
+             // Verify payment with backend
+            try {
+              const verifyResponse = await fetch(`${API_URL}/api/payments/verify`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                },
+                body: JSON.stringify({
+                  reference: reference.reference, 
+                  bookingId: bookingId // Now passing the real booking ID
+                })
+              });
+              
+              const verifyData = await verifyResponse.json();
+              
+              if (verifyData.status === 'success') {
+                setShowBookingModal(false);
+                toast.success('Payment Verified & Booking Secured!');
+                
+                // GENERATE LEASE AGREEMENT
+                try {
+                  const leaseResponse = await fetch(`${API_URL}/api/leases/generate`, {
+                     method: 'POST',
+                     headers: {
+                       'Content-Type': 'application/json',
+                       'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                     },
+                     body: JSON.stringify({
+                       bookingId: bookingId
+                     })
+                  });
+                  // Actually, looking at my verifyPayment controller, it returns response.data from Paystack and a message.
+                  // It receives bookingId from frontend if passed. 
+                  // In PropertyDetails.jsx currently, we pass `bookingId: null` to verifyPayment.
+                  // This is a problem. We need the booking ID to associate the lease.
+                  // Solution: We should CREATE the booking ID before payment (status: pending) and pass it to Paystack metadata.
+                } catch(leaseError) {
+                   console.error('Lease generation failed:', leaseError);
+                   toast.error('Payment successful, but lease generation failed. Please contact support.');
+                }
 
-          toast.success('Payment received and held in escrow! Booking finalized.');
+              } else {
+                 console.error('Verification failed:', verifyData);
+                 toast.error(`Payment verification failed: ${verifyData.message}`);
+                 setShowBookingModal(false);
+              }
+            } catch (err) {
+              console.error('Frontend verification error:', err);
+              // Fallback logic could go here
+              setShowBookingModal(false);
+              toast.error('Network error confirming payment.');
+            }
+          },
+          onClose: () => {
+            toast('Payment cancelled', { icon: '⚠️' });
+          }
         }
       );
 
