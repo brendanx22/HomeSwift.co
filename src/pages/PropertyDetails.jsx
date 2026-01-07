@@ -82,11 +82,32 @@ export default function PropertyDetails() {
   const [videoMuted, setVideoMuted] = useState(true);
   const videoRefs = React.useRef({});
 
-  React.useEffect(() => {
-    // If we have a preloaded property that matches the ID, don't fetch
+  useEffect(() => {
+    // If we have a preloaded property that matches the ID, don't fetch initially
     if (preloadedProperty && preloadedProperty.id === id) {
       setProperty(preloadedProperty);
       setLoading(false);
+      
+      // If landlord name is missing in preloaded data, fetch it
+      if (!preloadedProperty.landlord_name || preloadedProperty.landlord_name === 'Property Owner') {
+        const fetchLandlord = async () => {
+          if (!preloadedProperty.landlord_id) return;
+          const { data } = await supabase
+            .from('user_profiles')
+            .select('full_name, profile_image')
+            .eq('id', preloadedProperty.landlord_id)
+            .single();
+            
+          if (data) {
+            setProperty(prev => ({
+              ...prev,
+              landlord_name: data.full_name || 'Property Owner',
+              landlord_profile_image: data.profile_image
+            }));
+          }
+        };
+        fetchLandlord();
+      }
       return;
     }
 
@@ -97,15 +118,22 @@ export default function PropertyDetails() {
         if (success) {
           setProperty(propertyData);
 
-          // Debug logging to see what avatar data we have
-          /*
-          console.log('🏠 Property loaded with landlord info:', {
-            landlord_name: propertyData.landlord_name,
-            landlord_profile_image: propertyData.landlord_profile_image,
-            landlord_id: propertyData.landlord_id,
-            current_user_id: user?.id
-          });
-          */
+          // If API return didn't have name (join failed), try direct fetch
+          if ((!propertyData.landlord_name || propertyData.landlord_name === 'Property Owner') && propertyData.landlord_id) {
+             const { data } = await supabase
+              .from('user_profiles')
+              .select('full_name, profile_image')
+              .eq('id', propertyData.landlord_id)
+              .single();
+              
+            if (data) {
+              setProperty(prev => ({
+                ...prev,
+                landlord_name: data.full_name || 'Property Owner',
+                landlord_profile_image: data.profile_image
+              }));
+            }
+          }
 
           // Track property view for notifications
           if (propertyData?.landlord_id && isAuthenticated && user?.id !== propertyData.landlord_id) {
@@ -1168,9 +1196,9 @@ export default function PropertyDetails() {
         <div className="flex flex-col gap-4 mt-12 max-w-2xl mx-auto pb-8">
           <button
             onClick={handleContact}
-            className="w-full rounded-full text-base h-14 bg-[#FF6B35] text-white hover:bg-orange-600 font-bold shadow-lg transition-all"
+            className="w-full rounded-full text-base h-14 bg-[#FF6B35] text-white hover:bg-orange-600 font-bold shadow-lg transition-all flex items-center justify-center gap-2"
           >
-            Book Space & Secure in Escrow
+             Make Payment
           </button>
           
           <div className="grid grid-cols-2 gap-4">
@@ -1202,7 +1230,7 @@ export default function PropertyDetails() {
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Book This Space</h2>
+                <h2 className="text-xl font-bold text-gray-900">Payment Process</h2>
                 <button
                   onClick={() => setShowBookingModal(false)}
                   className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -1344,7 +1372,7 @@ export default function PropertyDetails() {
                 onClick={handleConfirmBooking}
                 className="flex-1 px-4 py-3 bg-[#FF6B35] text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
               >
-                Confirm Booking
+                Pay & Complete Booking
               </button>
             </div>
           </motion.div>
