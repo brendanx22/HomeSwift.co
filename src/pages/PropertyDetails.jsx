@@ -508,15 +508,10 @@ export default function PropertyDetails() {
         property_id: bookingData.property_id
       });
 
-      // 1. Create Booking Record (Status: Pending)
-      let bookingId = null;
-
       // Store in database (bookings table)
-      const { data: insertedBooking, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('bookings')
-        .insert([bookingData])
-        .select()
-        .single();
+        .insert([bookingData]);
 
       if (insertError) {
         console.error('Error storing booking in database:', insertError);
@@ -543,15 +538,12 @@ export default function PropertyDetails() {
           }
 
           console.log('✅ Booking saved to inquiries table as fallback');
-          toast.success('Booking inquiry sent successfully (via fallback)!');
-          return; // Stop here as we can't process payment without a booking ID
         } else {
-          toast.error(`Failed to submit booking: ${insertError.message}`);
+          toast.error('Failed to submit booking. Please try again.');
           return;
         }
       } else {
-        console.log('✅ Booking saved to bookings table', insertedBooking);
-        bookingId = insertedBooking.id;
+        console.log('✅ Booking saved to bookings table');
       }
 
       // Also submit to backend API for notifications
@@ -563,7 +555,6 @@ export default function PropertyDetails() {
             'Authorization': `Bearer ${user.access_token || localStorage.getItem('supabase.auth.token')}`
           },
           body: JSON.stringify({
-            booking_id: bookingId, // Pass the ID we just created
             property_id: property.id,
             landlord_id: property.landlord_id,
             tenant_id: user.id,
@@ -597,9 +588,10 @@ export default function PropertyDetails() {
         });
       } catch (notificationError) {
         console.error('Error creating notifications:', notificationError);
+        // Don't fail the booking if notifications fail
       }
 
-      // Show success toast
+      // Show success toast with comprehensive details
       toast.success(
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
@@ -608,12 +600,55 @@ export default function PropertyDetails() {
           <div>
             <p className="font-medium text-gray-900">Booking Submitted Successfully!</p>
             <p className="text-sm text-gray-500">
-              Your inquiry has been sent. Please complete payment to secure it.
+              Your inquiry for <strong>{property.title || `${property.bedrooms || 3} Bedroom Apartment`}</strong> in <strong>{property.location}</strong> has been sent to the landlord.
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              They'll respond within 24 hours with next steps.
             </p>
           </div>
         </div>,
-        { duration: 4000 }
+        {
+          duration: 6000,
+          position: 'top-center',
+          style: {
+            background: '#fff',
+            color: '#111827',
+            border: '1px solid #e5e7eb',
+            borderRadius: '0.75rem',
+            padding: '1rem',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          },
+          iconTheme: {
+            primary: '#10B981',
+            secondary: '#fff',
+          },
+        }
       );
+
+      // 1. Create Booking Record first (Status: Pending)
+      let bookingId = null;
+      try {
+        const { data: bookingData, error: bookingError } = await supabase
+          .from('bookings')
+          .insert({
+             tenant_id: user.id,
+             property_id: property.id,
+             total_amount: property.price,
+             status: 'pending', // Pending payment
+             landlord_id: property.landlord_id,
+             created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (bookingError) throw bookingError;
+        bookingId = bookingData.id;
+
+      } catch (err) {
+        console.error('Failed to create initial booking:', err);
+        toast.error('Booking initiation failed. Please try again.');
+        return;
+      }
 
       // 2. Trigger Paystack Payment
       handlePayWithPaystack(
@@ -624,7 +659,7 @@ export default function PropertyDetails() {
             console.log('Payment Reference:', reference);
              // Verify payment with backend
             try {
-              const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/verify`, {
+              const verifyResponse = await fetch(`${API_URL}/api/payments/verify`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -644,7 +679,7 @@ export default function PropertyDetails() {
                 
                 // GENERATE LEASE AGREEMENT
                 try {
-                  const leaseResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/leases/generate`, {
+                  const leaseResponse = await fetch(`${API_URL}/api/leases/generate`, {
                      method: 'POST',
                      headers: {
                        'Content-Type': 'application/json',
