@@ -34,7 +34,7 @@ const Home = () => {
 
   return (
     <div
-      className="min-h-[120vh] w-full bg-cover bg-center hero-container flex flex-col overflow-hidden relative"
+      className="min-h-screen w-full bg-cover bg-center hero-container flex flex-col overflow-hidden relative"
       style={{
         backgroundImage: 'url("/images/hero-bg-new.png")',
         backgroundSize: 'cover',
@@ -55,7 +55,7 @@ const Home = () => {
         <img 
           src="/images/illustration-user.png" 
           alt="Modern Home Illustration" 
-          className="w-full h-auto object-cover object-bottom"
+          className="w-full h-[50vh] object-cover object-bottom"
           style={{ marginBottom: '0' }}
         />
       </div>
