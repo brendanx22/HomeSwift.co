@@ -53,7 +53,7 @@ const Home = () => {
         style={{ height: '100%' }}
       >
         <img 
-          src="/images/illustration-new.png" 
+          src="/images/illustration-user.png" 
           alt="Modern Home Illustration" 
           className="w-full h-auto object-cover object-bottom"
           style={{ marginBottom: '0' }}
