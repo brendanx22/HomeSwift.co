@@ -34,9 +34,9 @@ const Home = () => {
 
   return (
     <div
-      className="h-screen w-full bg-cover bg-center hero-container flex flex-col overflow-hidden relative"
+      className="min-h-[120vh] w-full bg-cover bg-center hero-container flex flex-col overflow-hidden relative"
       style={{
-        backgroundImage: 'url("/images/2338_1.png")',
+        backgroundImage: 'url("/images/hero-bg-new.png")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -53,10 +53,10 @@ const Home = () => {
         style={{ height: '100%' }}
       >
         <img 
-          src="/images/Illustration.png" 
+          src="/images/illustration-new.png" 
           alt="Modern Home Illustration" 
           className="w-full h-auto object-cover object-bottom"
-          style={{ marginBottom: '-5%' }}
+          style={{ marginBottom: '0' }}
         />
       </div>
 
@@ -64,6 +64,7 @@ const Home = () => {
         @media (max-width: 768px) {
           .hero-container {
             background-position: center !important;
+            min-height: 100vh !important;
           }
         }
       `}</style>
@@ -253,7 +254,7 @@ const Home = () => {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 text-center">
+      <main className="relative z-10 flex flex-1 flex-col items-center justify-start pt-20 sm:pt-32 px-4 sm:px-6 text-center">
         {/* Feature Tag */}
         <motion.div
           className="flex items-center space-x-2 bg-white/30 backdrop-blur-md border border-white/20 shadow-sm rounded-[2rem] px-6 py-3 mb-2"
@@ -294,7 +295,7 @@ const Home = () => {
 
         {/* Search Input */}
         <motion.div
-          className="w-full max-w-2xl"
+          className="w-full max-w-lg"
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
@@ -305,8 +306,8 @@ const Home = () => {
                 type="text"
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Describe your ideal home (e.g., '3-bedroom apartment in Lagos with balcony')"
-                className="w-full bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full px-6 py-3 text-[#2C3E50] text-base placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] focus:bg-white focus:shadow-xl transition-all duration-300"
+                placeholder="Describe your ideal home..."
+                className="w-full bg-white/30 backdrop-blur-md border border-white/20 shadow-lg rounded-full px-6 py-3 text-[#2C3E50] text-base placeholder-gray-600 focus:outline-none focus:border-[#FF6B35] focus:bg-white/80 transition-all duration-300"
               />
               <motion.button
                 type="submit"
