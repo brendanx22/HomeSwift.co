@@ -34,33 +34,35 @@ const Home = () => {
 
   return (
     <div
-      className="h-screen w-full bg-cover bg-center hero-container flex flex-col overflow-hidden"
+      className="h-screen w-full bg-cover bg-center hero-container flex flex-col overflow-hidden relative"
       style={{
-        backgroundImage: 'url("/images/Illustration.png")',
-        backgroundColor: '#ffffff',
+        backgroundImage: 'url("/images/2338_1.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center 110%',
-        backgroundSize: 'contain',
-        width: '100%',
-        position: 'relative',
-        top: 0,
-        left: 0
       }}
       onMouseMove={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
         mouseX.set(e.clientX - rect.left - rect.width / 2);
       }}
     >
+      {/* Overlay Illustration */}
+      <div 
+        className="absolute bottom-0 left-0 w-full flex justify-center items-end pointer-events-none z-0"
+        style={{ height: '100%' }}
+      >
+        <img 
+          src="/images/Illustration.png" 
+          alt="Modern Home Illustration" 
+          className="w-full h-auto object-contain object-bottom max-h-[85vh]"
+          style={{ marginBottom: '-5%' }}
+        />
+      </div>
+
       <style>{`
         @media (max-width: 768px) {
           .hero-container {
-            background-position: center 100% !important;
-            background-size: contain !important;
-            background-attachment: scroll !important;
-          }
-          .logo-img {
-            width: 120px !important;
-            height: auto !important;
+            background-position: center !important;
           }
         }
       `}</style>
