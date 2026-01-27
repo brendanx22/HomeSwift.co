@@ -40,6 +40,7 @@ const Home = () => {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
+        backgroundColor: 'transparent',
       }}
       onMouseMove={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
@@ -79,55 +80,45 @@ const Home = () => {
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
-          <a href="/" className="text-[#2C3E50] text-md font-medium border-b-2 border-[#FF6B35] pb-1">Home</a>
-          <a href="/faq" className="text-[#2C3E50]/80 text-md hover:text-[#FF6B35] transition-colors">FAQs</a>
-          <a href="/about" className="text-[#2C3E50]/80 text-md hover:text-[#FF6B35] transition-colors">About Us</a>
+        <nav className="hidden md:flex items-center space-x-6 absolute left-1/2 transform -translate-x-1/2 bg-white/30 backdrop-blur-md border border-white/20 rounded-full px-6 py-2 shadow-lg z-20">
+          <a href="/" className="text-[#2C3E50] text-sm font-medium border-b-2 border-[#FF6B35] pb-1">Home</a>
+          <a href="/faq" className="text-[#2C3E50] text-sm hover:text-[#FF6B35] transition-colors font-medium">FAQs</a>
+          <a href="/about" className="text-[#2C3E50] text-sm hover:text-[#FF6B35] transition-colors font-medium">About Us</a>
         </nav>
 
         {/* Action Buttons */}
-        <div className="hidden md:flex items-center space-x-4">
+        <div className="hidden md:flex items-center space-x-4 ml-auto">
           <motion.button
             onClick={handleGetStartedClick}
-            className="flex items-center space-x-2 bg-[#FF6B35] text-white px-6 py-2 rounded-full font-medium hover:bg-[#FF7B45] transition-colors"
+            className="flex items-center space-x-2 bg-[#FF6B35] text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-[#FF7B45] transition-colors"
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
             <span>Get Started</span>
             <motion.div 
-              className="w-6 h-6 bg-white text-[#2C3E50] rounded-full flex items-center justify-center"
+              className="w-5 h-5 bg-white text-[#2C3E50] rounded-full flex items-center justify-center"
               whileHover={{ rotate: 360 }}
               transition={{ duration: 0.6 }}
             >
-              <ArrowRight size={14} className="text-[#2C3E50]" />
+              <ArrowRight size={12} className="text-[#2C3E50]" />
             </motion.div>
           </motion.button>
           <motion.button
             onClick={handleLoginClick}
-            className="bg-transparent border border-gray-400 text-[#2C3E50] px-6 py-2 rounded-full font-medium hover:bg-white/10 transition-colors"
+            className="bg-transparent border border-gray-400 text-[#2C3E50] px-5 py-2 rounded-full text-sm font-medium hover:bg-white/10 transition-colors"
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
             Login
           </motion.button>
-          <motion.a
-            href="/waitlist"
-            className="bg-[#2C3E50] text-white px-6 py-2 rounded-full font-medium hover:bg-[#1E2B38] transition-colors flex items-center space-x-2"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-          >
-            <span>Join Waitlist</span>
-            <Sparkles size={16} className="text-[#FF6B35]" />
-          </motion.a>
         </div>
       
         {/* Mobile Menu Button */}
         <motion.button 
           onClick={() => setShowMobileMenu(!showMobileMenu)}
-          className="md:hidden text-[#FF6B35] p-2"
+          className="md:hidden text-[#FF6B35] p-2 ml-auto"
           whileHover={{ scale: 1.1, rotate: 90 }}
           whileTap={{ scale: 0.9 }}
           transition={{ type: "spring", stiffness: 400, damping: 17 }}
@@ -254,17 +245,6 @@ const Home = () => {
                   >
                     Login
                   </motion.button>
-                  
-                  <motion.a
-                    href="/waitlist"
-                    onClick={() => setShowMobileMenu(false)}
-                    className="w-full bg-[#2C3E50] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#1E2B38] transition-colors flex items-center justify-center space-x-2 shadow-lg"
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <span>Join Waitlist</span>
-                    <Sparkles size={16} className="text-[#FF6B35]" />
-                  </motion.a>
                 </div>
               </div>
             </motion.div>
