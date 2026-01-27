@@ -55,7 +55,7 @@ const Home = () => {
         <img 
           src="/images/Illustration.png" 
           alt="Modern Home Illustration" 
-          className="w-full h-auto object-contain object-bottom max-h-[85vh]"
+          className="w-full h-auto object-cover object-bottom"
           style={{ marginBottom: '-5%' }}
         />
       </div>
@@ -256,7 +256,7 @@ const Home = () => {
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 text-center">
         {/* Feature Tag */}
         <motion.div
-          className="flex items-center space-x-2 bg-[#FF6B35] rounded-[2rem] px-6 py-3 mb-2"
+          className="flex items-center space-x-2 bg-white/30 backdrop-blur-md border border-white/20 shadow-sm rounded-[2rem] px-6 py-3 mb-2"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
@@ -266,14 +266,14 @@ const Home = () => {
             animate={{ rotate: [0, 360] }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           >
-            <Sparkles className="w-4 h-4 text-white" />
+            <Sparkles className="w-4 h-4 text-[#2C3E50]" />
           </motion.div>
-          <span className="text-white text-sm font-medium">Smarter, faster, simpler home search</span>
+          <span className="text-[#2C3E50] text-sm font-medium">Smarter, faster, simpler home search</span>
         </motion.div>
 
         {/* Main Headline */}
         <motion.h1
-          className="text-center mb-6 sm:mb-10 max-w-4xl text-3xl md:text-4xl lg:text-5xl text-[#2C3E50] leading-tight"
+          className="text-center mb-6 sm:mb-10 max-w-4xl text-2xl md:text-3xl lg:text-4xl text-[#2C3E50] leading-tight"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: 'easeOut', delay: 0.3 }}
@@ -284,7 +284,7 @@ const Home = () => {
 
         {/* Sub-headline */}
         <motion.p
-          className="text-sm md:text-sm text-[#FF6B35] mb-8 sm:mb-12 max-w-2xl leading-relaxed"
+          className="text-xs md:text-sm text-[#FF6B35] mb-8 sm:mb-12 max-w-2xl leading-relaxed font-medium"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 }}
@@ -306,18 +306,18 @@ const Home = () => {
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 placeholder="Describe your ideal home (e.g., '3-bedroom apartment in Lagos with balcony')"
-                className="w-full bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full px-8 py-5 text-[#2C3E50] text-lg placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] focus:bg-white focus:shadow-xl transition-all duration-300"
+                className="w-full bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full px-6 py-3 text-[#2C3E50] text-base placeholder-gray-500 focus:outline-none focus:border-[#FF6B35] focus:bg-white focus:shadow-xl transition-all duration-300"
               />
               <motion.button
                 type="submit"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-[#FF6B35] text-white p-4 rounded-full hover:bg-[#FF7B45] transition-colors shadow-lg"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#FF6B35] text-white p-2 rounded-full hover:bg-[#FF7B45] transition-colors shadow-lg"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <ArrowUp size={24} className="rotate-45" />
+                <ArrowUp size={20} className="rotate-45" />
               </motion.button>
             </div>
-            <p className="mt-3 text-sm text-[#2C3E50]/60 text-center">
+            <p className="mt-3 text-xs text-[#2C3E50]/60 text-center">
               Try: "cozy apartment near university" or "family house with garden"
             </p>
           </form>
