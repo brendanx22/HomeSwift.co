@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUp, ArrowRight, ArrowUpRight, Sparkles, Menu, X, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronDown, MapPin, Bed, Bath, Ruler, Heart } from 'lucide-react';
+import { ArrowUp, ArrowRight, ArrowUpRight, Sparkles, Menu, X, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronDown, MapPin, Bed, Bath, Ruler, Heart, Plus, Minus, Facebook, Twitter, Instagram, Linkedin, Mail, Phone } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useScroll } from 'framer-motion';
 import { PropertyAPI } from '../lib/propertyAPI';
 
@@ -24,6 +24,7 @@ const Home = () => {
   const [activeDropdown, setActiveDropdown] = useState(null); // 'purchase', 'type', 'price'
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 3;
+  const [activeFAQ, setActiveFAQ] = useState(null);
 
   const fetchProperties = async (filters = {}) => {
     try {
@@ -851,6 +852,237 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* FAQ Section */}
+      <section className="bg-white py-24 px-6 sm:px-12 lg:px-24 relative z-10">
+        <div className="max-w-3xl mx-auto">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-[#FF6B35]/10 border border-[#FF6B35]/20 mb-6">
+              <span className="text-[#FF6B35] text-[10px] font-bold uppercase tracking-wider">Common Questions</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-semibold text-[#1C2C3E] mb-4 tracking-tight">Frequently Asked Questions</h2>
+            <p className="text-[#1C2C3E]/50 text-base font-medium">Everything you need to know about HomeSwift.</p>
+          </motion.div>
+
+          <div className="space-y-4">
+            {[
+              {
+                q: "How does HomeSwift AI work?",
+                a: "Our AI processes your natural language descriptions (e.g., 'a cozy 2-bedroom with a large kitchen near Lekki') and cross-references them with our database of verified properties to find the perfect match in seconds."
+              },
+              {
+                q: "Are the listings verified?",
+                a: "Yes. Every property listed on HomeSwift undergoes a rigorous verification process to ensure the landlord is legitimate and the property details are accurate, protecting you from fraud."
+              },
+              {
+                q: "What are the transaction fees?",
+                a: "We charge a transparent 2% transaction fee for successful deals. This is significantly lower than the traditional 10% or more typically charged by agencies across Nigeria."
+              },
+              {
+                q: "How do I contact landlords?",
+                a: "Once you find a property you like, you can initiate a secure chat directly with the landlord through our platform. No middle-man needed."
+              },
+              {
+                q: "Is my payment information secure?",
+                a: "Absolutely. We use bank-grade encryption and partner with industry-leading payment processors to ensure all transactions are handled with the highest level of security."
+              }
+            ].map((faq, idx) => (
+              <motion.div
+                key={idx}
+                className={`border rounded-2xl overflow-hidden transition-all duration-300 ${activeFAQ === idx ? 'border-[#FF6B35] bg-[#FF6B35]/[0.02]' : 'border-gray-100 hover:border-gray-200'}`}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <button
+                  onClick={() => setActiveFAQ(activeFAQ === idx ? null : idx)}
+                  className="w-full flex items-center justify-between p-6 text-left"
+                >
+                  <span className="font-bold text-[#1C2C3E]">{faq.q}</span>
+                  <div className={`transition-transform duration-300 ${activeFAQ === idx ? 'rotate-180 text-[#FF6B35]' : 'text-[#1C2C3E]/30'}`}>
+                    {activeFAQ === idx ? <Minus size={20} /> : <Plus size={20} />}
+                  </div>
+                </button>
+                <AnimatePresence>
+                  {activeFAQ === idx && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <div className="px-6 pb-6 text-[#1C2C3E]/60 text-sm leading-relaxed font-medium">
+                        {faq.a}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA Section */}
+      <section className="py-24 px-6 sm:px-12 lg:px-24 relative z-10">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            className="bg-[#1C2C3E] rounded-[3rem] p-12 md:p-24 relative overflow-hidden text-center"
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+          >
+            {/* Background elements */}
+            <div className="absolute top-0 left-0 w-full h-full">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FF6B35]/10 rounded-full blur-[120px] pointer-events-none" />
+              <div className="absolute bottom-[-100px] right-[-100px] w-64 h-64 border border-white/5 rounded-full pointer-events-none" />
+              <div className="absolute top-[-50px] left-[-50px] w-64 h-64 border border-white/5 rounded-full pointer-events-none" />
+            </div>
+
+            <div className="relative z-10">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+              >
+                <h2 className="text-4xl md:text-6xl font-bold text-white mb-8 tracking-tight leading-[1.1]">
+                  Ready to Find Your <br />
+                  Ideal Home?
+                </h2>
+                <p className="text-white/60 text-lg md:text-xl max-w-2xl mx-auto mb-12 font-medium">
+                  Join thousands of happy Nigerians who found their dream homes without the stress and high costs.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                  <motion.button
+                    onClick={() => navigate('/auth/register')}
+                    className="w-full sm:w-auto bg-[#FF6B35] text-white px-10 py-4 rounded-full font-bold shadow-xl shadow-orange-900/20 hover:bg-[#FF7B45] transition-all"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Get Started Now
+                  </motion.button>
+                  <motion.button
+                    onClick={() => navigate('/properties')}
+                    className="w-full sm:w-auto bg-white/10 backdrop-blur-md text-white border border-white/20 px-10 py-4 rounded-full font-bold hover:bg-white/20 transition-all"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Browse Listings
+                  </motion.button>
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-white pt-24 pb-12 px-6 sm:px-12 lg:px-24 border-t border-gray-100 relative z-10">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
+            {/* Brand Column */}
+            <div className="space-y-6">
+              <img src="/images/logo.png" alt="HomeSwift Logo" className="h-10 w-auto object-contain rounded-xl" />
+              <p className="text-[#1C2C3E]/60 text-sm leading-relaxed font-medium">
+                HomeSwift is a tech-driven real estate platform revolutionizing the way Nigerians find and secure homes through AI and direct verification.
+              </p>
+              <div className="flex items-center space-x-4">
+                {[
+                  { icon: Facebook, href: "#" },
+                  { icon: Twitter, href: "#" },
+                  { icon: Instagram, href: "#" },
+                  { icon: Linkedin, href: "#" }
+                ].map((social, idx) => (
+                  <motion.a
+                    key={idx}
+                    href={social.href}
+                    className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-[#1C2C3E]/40 hover:bg-[#FF6B35] hover:text-white transition-all shadow-xs"
+                    whileHover={{ y: -3 }}
+                  >
+                    <social.icon size={18} />
+                  </motion.a>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Links Column */}
+            <div>
+              <h4 className="text-[#1C2C3E] font-bold text-sm uppercase tracking-widest mb-8">Navigation</h4>
+              <ul className="space-y-4">
+                {['Home', 'Browse Properties', 'How it Works', 'About us', 'FAQs'].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="text-[#1C2C3E]/60 text-sm font-medium hover:text-[#FF6B35] transition-colors">{item}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Support Column */}
+            <div>
+              <h4 className="text-[#1C2C3E] font-bold text-sm uppercase tracking-widest mb-8">Support</h4>
+              <ul className="space-y-6">
+                <li className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-[#FF6B35]">
+                    <Mail size={16} />
+                  </div>
+                  <span className="text-[#1C2C3E]/60 text-sm font-medium">hello@homeswift.com</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-[#FF6B35]">
+                    <Phone size={16} />
+                  </div>
+                  <span className="text-[#1C2C3E]/60 text-sm font-medium">+234 (01) 234 5678</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-[#FF6B35]">
+                    <MapPin size={16} />
+                  </div>
+                  <span className="text-[#1C2C3E]/60 text-sm font-medium leading-snug">
+                    Victoria Island, Lagos, Nigeria
+                  </span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Newsletter Column */}
+            <div>
+              <h4 className="text-[#1C2C3E] font-bold text-sm uppercase tracking-widest mb-8">Stay Updated</h4>
+              <p className="text-[#1C2C3E]/60 text-xs mb-6 leading-relaxed font-medium">
+                Subscribe for the latest listings and platform updates.
+              </p>
+              <div className="relative group">
+                <input
+                  type="email"
+                  placeholder="Email Address"
+                  className="w-full bg-gray-50 border border-transparent rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:bg-white focus:border-[#FF6B35]/30 transition-all font-medium"
+                />
+                <button className="absolute right-2 top-1.5 bottom-1.5 px-4 bg-[#FF6B35] text-white rounded-xl text-xs font-bold hover:bg-[#FF7B45] transition-colors shadow-sm">
+                  Join
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-8 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6">
+            <p className="text-[#1C2C3E]/40 text-[11px] font-bold tracking-wider uppercase">
+              © {new Date().getFullYear()} HomeSwift Technologies Inc.
+            </p>
+            <div className="flex items-center space-x-8">
+              <a href="#" className="text-[#1C2C3E]/40 text-[11px] font-bold hover:text-[#1C2C3E] transition-colors uppercase tracking-wider">Privacy Policy</a>
+              <a href="#" className="text-[#1C2C3E]/40 text-[11px] font-bold hover:text-[#1C2C3E] transition-colors uppercase tracking-wider">Terms of Service</a>
+              <p className="text-[#1C2C3E]/40 text-[11px] font-bold uppercase tracking-wider flex items-center">
+                Built with <Heart size={10} className="mx-1.5 text-red-400 fill-current" /> across Nigeria
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
