@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUp, ArrowRight, Sparkles, Menu, X } from 'lucide-react';
+import { ArrowUp, ArrowRight, ArrowUpRight, Sparkles, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 
 const Home = () => {
@@ -307,6 +307,83 @@ const Home = () => {
           </form>
         </motion.div>
       </main>
+
+      {/* Trust Section */}
+      <section className="bg-[#FFFDFB] py-24 px-6 sm:px-12 lg:px-24 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          {/* Left Column */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative z-10"
+          >
+            <h2 className="text-4xl md:text-5xl font-semibold text-[#1C2C3E] leading-[1.2] mb-10 tracking-tight">
+              Trusted by <span className="font-bold">15,670+</span><br />
+              Landlords and Renters
+            </h2>
+            
+            <div className="flex items-center -space-x-3 mb-8">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" className="w-14 h-14 rounded-full border-4 border-[#FFFDFB] object-cover bg-blue-100" />
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" alt="User" className="w-14 h-14 rounded-full border-4 border-[#FFFDFB] object-cover bg-green-100" />
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Zoe" alt="User" className="w-14 h-14 rounded-full border-4 border-[#FFFDFB] object-cover bg-purple-100" />
+              <div className="w-14 h-14 rounded-full border-4 border-[#FFFDFB] bg-[#FF6B35] flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                +100
+              </div>
+            </div>
+
+            <motion.a 
+              href="/landlords" 
+              className="inline-flex items-center text-[#1C2C3E] font-medium border-b-2 border-[#1C2C3E] pb-1 hover:border-[#FF6B35] hover:text-[#FF6B35] transition-all"
+              whileHover={{ x: 5 }}
+            >
+              See Verified Landlords <ArrowUpRight size={18} className="ml-2" />
+            </motion.a>
+          </motion.div>
+          
+          {/* Right Column */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            <p className="text-[#1C2C3E]/70 text-lg leading-relaxed mb-12 max-w-xl font-medium">
+              Over 15,000 landlords and renters across Nigeria rely on HomeSwift to find, list, and secure homes with confidence. 
+              From verified listings to transparent deals, we're building a trusted community that makes renting and buying homes simple, safe, and stress-free.
+            </p>
+            <div className="flex flex-wrap gap-6 items-center">
+              <motion.button 
+                className="bg-[#FF6B35] text-white px-10 py-4 rounded-full font-bold flex items-center shadow-lg shadow-orange-200 hover:bg-[#FF7B45] transition-all"
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Explore Listings <ArrowRight size={20} className="ml-3" />
+              </motion.button>
+              <motion.button 
+                className="text-[#1C2C3E] px-8 py-4 rounded-full font-bold hover:bg-gray-100/50 transition-all"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Explore Listings
+              </motion.button>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Decorative Starburst */}
+        <motion.div 
+          className="absolute left-1/2 bottom-10 -translate-x-1/2 text-[#FF6B35]/20 pointer-events-none"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        >
+          <svg width="180" height="180" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 0L53 47L100 50L53 53L50 100L47 53L0 50L47 47L50 0Z" stroke="currentColor" strokeWidth="0.5" />
+            <path d="M14.6 14.6L47.9 47.9L50 50L52.1 52.1L85.4 85.4M14.6 85.4L47.9 52.1L50 50L52.1 47.9L85.4 14.6" stroke="currentColor" strokeWidth="0.5" />
+          </svg>
+        </motion.div>
+      </section>
     </div>
   );
 };
