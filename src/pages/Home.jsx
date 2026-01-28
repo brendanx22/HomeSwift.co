@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUp, ArrowRight, ArrowUpRight, Sparkles, Menu, X } from 'lucide-react';
+import { ArrowUp, ArrowRight, ArrowUpRight, Sparkles, Menu, X, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronDown, MapPin, Bed, Bath, Ruler, Heart } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useScroll } from 'framer-motion';
 
 const Home = () => {
@@ -514,6 +514,143 @@ const Home = () => {
               Learn More →
             </motion.button>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Popular Listings Section */}
+      <section className="bg-white py-24 px-6 sm:px-12 lg:px-24 relative z-10">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
+            <div>
+              <motion.div
+                className="inline-flex items-center px-3 py-1 rounded-full bg-[#FF6B35]/10 border border-[#FF6B35]/20 mb-6"
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] mr-2" />
+                <span className="text-[#FF6B35] text-[10px] font-bold uppercase tracking-wider">Listings</span>
+              </motion.div>
+              <h2 className="text-3xl md:text-4xl font-semibold text-[#1C2C3E] mb-4 tracking-tight">Popular Listings</h2>
+              <p className="text-[#1C2C3E]/50 text-base font-medium">Listings getting the most attention this week.</p>
+            </div>
+            
+            <div className="flex items-center space-x-6 mt-8 md:mt-0">
+              <div className="flex items-center space-x-2">
+                <button className="p-2 rounded-full border border-gray-100 hover:bg-gray-50 transition-colors">
+                  <ChevronLeft size={20} className="text-[#1C2C3E]/40" />
+                </button>
+                <span className="text-[#1C2C3E] text-sm font-bold tracking-widest"><span className="text-[#1C2C3E]">01</span><span className="text-gray-300">/05</span></span>
+                <button className="p-2 rounded-full border border-gray-100 hover:bg-gray-50 transition-colors">
+                  <ChevronRight size={20} className="text-[#1C2C3E]" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Search/Filter Bar */}
+          <motion.div
+            className="bg-white border border-gray-100 shadow-[0_10px_40px_rgba(0,0,0,0.03)] rounded-[2rem] p-3 mb-16 flex flex-col lg:flex-row lg:items-center gap-2"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 px-4 py-2">
+              <div className="flex flex-col border-r-0 lg:border-r border-gray-100 pr-4 last:border-r-0">
+                <span className="text-[#1C2C3E] font-bold text-sm mb-1">Where</span>
+                <span className="text-[#1C2C3E]/40 text-xs">Search location</span>
+              </div>
+              <div className="flex flex-col border-r-0 lg:border-r border-gray-100 pr-4 last:border-r-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#1C2C3E] font-bold text-sm mb-1">Purchase</span>
+                  <ChevronDown size={14} className="text-[#1C2C3E]/40" />
+                </div>
+                <span className="text-[#1C2C3E]/40 text-xs">Add Purchase Type</span>
+              </div>
+              <div className="flex flex-col border-r-0 lg:border-r border-gray-100 pr-4 last:border-r-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#1C2C3E] font-bold text-sm mb-1">Type</span>
+                  <ChevronDown size={14} className="text-[#1C2C3E]/40" />
+                </div>
+                <span className="text-[#1C2C3E]/40 text-xs">Add Type</span>
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#1C2C3E] font-bold text-sm mb-1">Price Range</span>
+                  <ChevronDown size={14} className="text-[#1C2C3E]/40" />
+                </div>
+                <span className="text-[#1C2C3E]/40 text-xs">Select a price range</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 p-1">
+              <button className="flex items-center justify-center space-x-2 bg-gray-50 hover:bg-gray-100 px-6 py-3 rounded-2xl transition-all font-bold text-[#1C2C3E] text-sm">
+                <SlidersHorizontal size={18} />
+                <span>Filter</span>
+              </button>
+              <button className="flex-1 lg:flex-none flex items-center justify-center space-x-2 bg-[#FF6B35] hover:bg-[#FF7B45] text-white px-8 py-3 rounded-2xl transition-all font-bold shadow-lg shadow-orange-100 text-sm">
+                <Search size={18} />
+                <span>Search</span>
+              </button>
+            </div>
+          </motion.div>
+
+          {/* Listings Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3, 4, 5, 6].map((idx) => (
+              <motion.div
+                key={idx}
+                className="group cursor-pointer"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: (idx % 3) * 0.1 }}
+              >
+                <div className="relative overflow-hidden rounded-[2rem] aspect-[4/3] mb-6">
+                  <img 
+                    src={`/images/house-${(idx % 3) + 1}.png`} 
+                    alt="Property" 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                  />
+                  <div className="absolute top-5 left-5 w-8 h-8 bg-white/90 backdrop-blur-md rounded-lg flex items-center justify-center shadow-xs">
+                    <div className="w-4 h-4 text-[#FF6B35]">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    </div>
+                  </div>
+                  <div className="absolute top-5 right-5 px-3 py-1 bg-[#1C2C3E]/40 backdrop-blur-md border border-white/20 rounded-full">
+                    <span className="text-white text-[10px] font-bold">For Rent</span>
+                  </div>
+                </div>
+
+                <div className="px-2">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-2xl font-bold text-[#1C2C3E]">₦500,000<span className="text-xs text-[#1C2C3E]/30 font-medium lowercase"> /year</span></span>
+                  </div>
+                  <h3 className="text-xl font-bold text-[#1C2C3E] mb-2">GRA Phase 1</h3>
+                  <div className="flex items-center text-[#1C2C3E]/40 mb-5">
+                    <MapPin size={14} className="mr-1.5" />
+                    <span className="text-xs font-medium">No. 15 Okpanam road, Asaba</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-5 border-t border-gray-100">
+                    <div className="flex items-center space-x-1.5 text-[#1C2C3E]/40 font-bold">
+                      <Bed size={16} />
+                      <span className="text-xs">2</span>
+                    </div>
+                    <div className="flex items-center space-x-1.5 text-[#1C2C3E]/40 font-bold">
+                      <Bath size={16} />
+                      <span className="text-xs">2</span>
+                    </div>
+                    <div className="flex items-center space-x-1.5 text-[#1C2C3E]/40 font-bold">
+                      <Ruler size={16} />
+                      <span className="text-xs">20,000 sq.ft</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
     </div>
