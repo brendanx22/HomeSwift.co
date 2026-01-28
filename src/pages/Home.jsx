@@ -13,22 +13,55 @@ const Home = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [properties, setProperties] = useState([]);
   const [loadingProperties, setLoadingProperties] = useState(true);
+  
+  // Filter States
+  const [locationQuery, setLocationQuery] = useState('');
+  const [purchaseType, setPurchaseType] = useState(''); // 'for-rent', 'for-sale'
+  const [propertyType, setPropertyType] = useState('');
+  const [priceRange, setPriceRange] = useState(null);
+  
+  // UI States
+  const [activeDropdown, setActiveDropdown] = useState(null); // 'purchase', 'type', 'price'
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 3;
+
+  const fetchProperties = async (filters = {}) => {
+    try {
+      setLoadingProperties(true);
+      const result = await PropertyAPI.searchProperties(filters);
+      if (result.success) {
+        setProperties(result.properties);
+        setCurrentPage(0); // Reset pagination on new search
+      }
+    } catch (error) {
+      console.error("Error fetching properties:", error);
+    } finally {
+      setLoadingProperties(false);
+    }
+  };
 
   React.useEffect(() => {
-    const fetchProperties = async () => {
-      try {
-        const result = await PropertyAPI.getAllProperties();
-        if (result.success) {
-          setProperties(result.properties);
-        }
-      } catch (error) {
-        console.error("Error fetching properties:", error);
-      } finally {
-        setLoadingProperties(false);
-      }
-    };
     fetchProperties();
   }, []);
+
+  const handleSearch = () => {
+    const filters = {};
+    if (locationQuery) filters.location = locationQuery;
+    if (purchaseType) filters.listingType = purchaseType;
+    if (propertyType) filters.propertyType = propertyType;
+    if (priceRange) {
+      filters.minPrice = priceRange.min;
+      filters.maxPrice = priceRange.max;
+    }
+    fetchProperties(filters);
+    setActiveDropdown(null);
+  };
+
+  const totalPages = Math.ceil(properties.length / itemsPerPage) || 1;
+  const currentItems = properties.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
+
+  const nextPage = () => setCurrentPage((prev) => (prev + 1) % totalPages);
+  const prevPage = () => setCurrentPage((prev) => (prev - 1 + totalPages) % totalPages);
 
   // Scroll animations
   const { scrollYProgress } = useScroll();
@@ -557,12 +590,21 @@ const Home = () => {
             
             <div className="flex items-center space-x-6 mt-8 md:mt-0">
               <div className="flex items-center space-x-2">
-                <button className="p-2 rounded-full border border-gray-100 hover:bg-gray-50 transition-colors">
-                  <ChevronLeft size={20} className="text-[#1C2C3E]/40" />
+                <button 
+                  onClick={prevPage}
+                  className="p-2 rounded-full border border-gray-100 hover:bg-gray-50 transition-colors"
+                >
+                  <ChevronLeft size={20} className={currentPage === 0 ? "text-[#1C2C3E]/20" : "text-[#1C2C3E]"} />
                 </button>
-                <span className="text-[#1C2C3E] text-sm font-bold tracking-widest"><span className="text-[#1C2C3E]">01</span><span className="text-gray-300">/05</span></span>
-                <button className="p-2 rounded-full border border-gray-100 hover:bg-gray-50 transition-colors">
-                  <ChevronRight size={20} className="text-[#1C2C3E]" />
+                <span className="text-[#1C2C3E] text-sm font-bold tracking-widest">
+                  <span className="text-[#1C2C3E]">{(currentPage + 1).toString().padStart(2, '0')}</span>
+                  <span className="text-gray-300">/{totalPages.toString().padStart(2, '0')}</span>
+                </span>
+                <button 
+                  onClick={nextPage}
+                  className="p-2 rounded-full border border-gray-100 hover:bg-gray-50 transition-colors"
+                >
+                  <ChevronRight size={20} className={currentPage === totalPages - 1 ? "text-[#1C2C3E]/20" : "text-[#1C2C3E]"} />
                 </button>
               </div>
             </div>
@@ -570,45 +612,157 @@ const Home = () => {
 
           {/* Search/Filter Bar */}
           <motion.div
-            className="bg-white border border-gray-100 shadow-[0_10px_40px_rgba(0,0,0,0.03)] rounded-[2rem] p-3 mb-16 flex flex-col lg:flex-row lg:items-center gap-2"
+            className="bg-white border border-gray-100 shadow-[0_10px_40px_rgba(0,0,0,0.03)] rounded-[2rem] p-3 mb-16 flex flex-col lg:flex-row lg:items-center gap-2 relative z-50"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 px-4 py-2">
-              <div className="flex flex-col border-r-0 lg:border-r border-gray-100 pr-4 last:border-r-0">
-                <span className="text-[#1C2C3E] font-bold text-sm mb-1">Where</span>
-                <span className="text-[#1C2C3E]/40 text-xs">Search location</span>
+              {/* Where Filter */}
+              <div className="flex flex-col border-r-0 lg:border-r border-gray-100 pr-4 last:border-r-0 group">
+                <label className="text-[#1C2C3E] font-bold text-sm mb-1 cursor-pointer">Where</label>
+                <input 
+                  type="text" 
+                  placeholder="Search location" 
+                  value={locationQuery}
+                  onChange={(e) => setLocationQuery(e.target.value)}
+                  className="text-[#1C2C3E] text-xs bg-transparent border-none p-0 focus:ring-0 placeholder-[#1C2C3E]/30"
+                />
               </div>
-              <div className="flex flex-col border-r-0 lg:border-r border-gray-100 pr-4 last:border-r-0">
-                <div className="flex items-center justify-between">
+
+              {/* Purchase Filter */}
+              <div className="flex flex-col border-r-0 lg:border-r border-gray-100 pr-4 last:border-r-0 relative">
+                <div 
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => setActiveDropdown(activeDropdown === 'purchase' ? null : 'purchase')}
+                >
                   <span className="text-[#1C2C3E] font-bold text-sm mb-1">Purchase</span>
-                  <ChevronDown size={14} className="text-[#1C2C3E]/40" />
+                  <ChevronDown size={14} className={`text-[#1C2C3E]/40 transition-transform ${activeDropdown === 'purchase' ? 'rotate-180' : ''}`} />
                 </div>
-                <span className="text-[#1C2C3E]/40 text-xs">Add Purchase Type</span>
+                <span className="text-[#1C2C3E]/40 text-xs truncate">
+                  {purchaseType ? (purchaseType === 'for-rent' ? 'For Rent' : 'For Sale') : 'Add Purchase Type'}
+                </span>
+                
+                <AnimatePresence>
+                  {activeDropdown === 'purchase' && (
+                    <motion.div 
+                      key="purchase-dropdown"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute top-full left-0 mt-4 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-[60]"
+                    >
+                      {['for-rent', 'for-sale'].map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => { setPurchaseType(type); setActiveDropdown(null); }}
+                          className="w-full text-left px-4 py-2 text-xs font-bold text-[#1C2C3E] hover:bg-gray-50 rounded-xl capitalize transition-colors"
+                        >
+                          {type.replace('-', ' ')}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              <div className="flex flex-col border-r-0 lg:border-r border-gray-100 pr-4 last:border-r-0">
-                <div className="flex items-center justify-between">
+
+              {/* Type Filter */}
+              <div className="flex flex-col border-r-0 lg:border-r border-gray-100 pr-4 last:border-r-0 relative">
+                <div 
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => setActiveDropdown(activeDropdown === 'type' ? null : 'type')}
+                >
                   <span className="text-[#1C2C3E] font-bold text-sm mb-1">Type</span>
-                  <ChevronDown size={14} className="text-[#1C2C3E]/40" />
+                  <ChevronDown size={14} className={`text-[#1C2C3E]/40 transition-transform ${activeDropdown === 'type' ? 'rotate-180' : ''}`} />
                 </div>
-                <span className="text-[#1C2C3E]/40 text-xs">Add Type</span>
+                <span className="text-[#1C2C3E]/40 text-xs truncate">
+                  {propertyType || 'Add Type'}
+                </span>
+
+                <AnimatePresence>
+                  {activeDropdown === 'type' && (
+                    <motion.div 
+                      key="type-dropdown"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute top-full left-0 mt-4 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-[60]"
+                    >
+                      {['Apartment', 'House', 'Villa', 'Office', 'Townhouse'].map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => { setPropertyType(type); setActiveDropdown(null); }}
+                          className="w-full text-left px-4 py-2 text-xs font-bold text-[#1C2C3E] hover:bg-gray-50 rounded-xl transition-colors"
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              <div className="flex flex-col">
-                <div className="flex items-center justify-between">
+
+              {/* Price Range Filter */}
+              <div className="flex flex-col relative">
+                <div 
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => setActiveDropdown(activeDropdown === 'price' ? null : 'price')}
+                >
                   <span className="text-[#1C2C3E] font-bold text-sm mb-1">Price Range</span>
-                  <ChevronDown size={14} className="text-[#1C2C3E]/40" />
+                  <ChevronDown size={14} className={`text-[#1C2C3E]/40 transition-transform ${activeDropdown === 'price' ? 'rotate-180' : ''}`} />
                 </div>
-                <span className="text-[#1C2C3E]/40 text-xs">Select a price range</span>
+                <span className="text-[#1C2C3E]/40 text-xs">
+                  {priceRange ? `₦${priceRange.min / 1000}k - ₦${priceRange.max / 1000}k` : 'Select a price range'}
+                </span>
+
+                <AnimatePresence>
+                  {activeDropdown === 'price' && (
+                    <motion.div 
+                      key="price-dropdown"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute top-full left-0 mt-4 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-[60]"
+                    >
+                      {[
+                        { label: 'Any Price', val: null },
+                        { label: 'Under ₦500k', val: { min: 0, max: 500000 } },
+                        { label: '₦500k - ₦2m', val: { min: 500000, max: 2000000 } },
+                        { label: '₦2m - ₦5m', val: { min: 2000000, max: 5000000 } },
+                        { label: 'Above ₦5m', val: { min: 5000000, max: 50000000 } },
+                      ].map((range) => (
+                        <button
+                          key={range.label}
+                          onClick={() => { setPriceRange(range.val); setActiveDropdown(null); }}
+                          className="w-full text-left px-4 py-2 text-xs font-bold text-[#1C2C3E] hover:bg-gray-50 rounded-xl transition-colors"
+                        >
+                          {range.label}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
             
             <div className="flex items-center gap-3 p-1">
-              <button className="flex items-center justify-center space-x-2 bg-gray-50 hover:bg-gray-100 px-6 py-3 rounded-2xl transition-all font-bold text-[#1C2C3E] text-sm">
+              <button 
+                onClick={() => {
+                  setLocationQuery('');
+                  setPurchaseType('');
+                  setPropertyType('');
+                  setPriceRange(null);
+                  fetchProperties();
+                }}
+                className="flex items-center justify-center space-x-2 bg-gray-50 hover:bg-gray-100 px-6 py-3 rounded-2xl transition-all font-bold text-[#1C2C3E] text-sm"
+              >
                 <SlidersHorizontal size={18} />
-                <span>Filter</span>
+                <span>Reset</span>
               </button>
-              <button className="flex-1 lg:flex-none flex items-center justify-center space-x-2 bg-[#FF6B35] hover:bg-[#FF7B45] text-white px-8 py-3 rounded-2xl transition-all font-bold shadow-lg shadow-orange-100 text-sm">
+              <button 
+                onClick={handleSearch}
+                className="flex-1 lg:flex-none flex items-center justify-center space-x-2 bg-[#FF6B35] hover:bg-[#FF7B45] text-white px-8 py-3 rounded-2xl transition-all font-bold shadow-lg shadow-orange-100 text-sm"
+              >
                 <Search size={18} />
                 <span>Search</span>
               </button>
@@ -626,8 +780,8 @@ const Home = () => {
                   <div className="h-10 bg-gray-200 rounded w-full"></div>
                 </div>
               ))
-            ) : properties.length > 0 ? (
-              properties.slice(0, 6).map((property, idx) => (
+            ) : currentItems.length > 0 ? (
+              currentItems.map((property, idx) => (
                 <motion.div
                   key={property.id}
                   className="group cursor-pointer"

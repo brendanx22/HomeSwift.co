@@ -348,6 +348,10 @@ export class PropertyAPI {
         query = query.eq("property_type", searchParams.propertyType);
       }
 
+      if (searchParams.listingType) {
+        query = query.eq("listing_type", searchParams.listingType);
+      }
+
       if (searchParams.minPrice) {
         query = query.gte("price", searchParams.minPrice);
       }
