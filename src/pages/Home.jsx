@@ -357,20 +357,20 @@ const Home = () => {
       </section>
 
       {/* Who are we Section */}
-      <section className="bg-white py-24 px-6 sm:px-12 lg:px-24 relative z-10">
+      <section className="bg-white py-20 px-6 sm:px-12 lg:px-24 relative z-10">
         <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
           <motion.div
-            className="inline-flex items-center px-4 py-1.5 rounded-full bg-[#FF6B35]/10 border border-[#FF6B35]/20 mb-10"
+            className="inline-flex items-center px-3 py-1 rounded-full bg-[#FF6B35]/10 border border-[#FF6B35]/20 mb-8"
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
           >
-            <div className="w-2 h-2 rounded-full bg-[#FF6B35] mr-2" />
-            <span className="text-[#FF6B35] text-xs font-bold uppercase tracking-wider">Who are we?</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] mr-2" />
+            <span className="text-[#FF6B35] text-[10px] font-bold uppercase tracking-wider">Who are we?</span>
           </motion.div>
 
           <motion.h2
-            className="text-3xl md:text-5xl font-semibold text-[#1C2C3E] leading-[1.3] max-w-5xl mb-16 tracking-tight"
+            className="text-2xl md:text-3xl font-semibold text-[#1C2C3E] leading-[1.3] max-w-4xl mb-12 tracking-tight"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -379,7 +379,7 @@ const Home = () => {
             We are a tech-driven real estate platform connecting landlords and renters directly. <span className="text-[#5D7B93]">Our goal is to make finding and renting homes faster, transparent, and stress-free with smart AI and verified listings.</span>
           </motion.h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
             {[
               { src: '/images/house-1.png', delay: 0 },
               { src: '/images/house-2.png', delay: 0.2 },
@@ -387,7 +387,7 @@ const Home = () => {
             ].map((img, idx) => (
               <motion.div
                 key={idx}
-                className="overflow-hidden rounded-3xl h-64 md:h-80 shadow-lg"
+                className="overflow-hidden rounded-2xl h-52 md:h-64 shadow-md"
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
@@ -401,19 +401,19 @@ const Home = () => {
       </section>
 
       {/* Achievements Section */}
-      <section className="bg-white py-24 px-6 sm:px-12 lg:px-24 relative z-10">
+      <section className="bg-white py-20 px-6 sm:px-12 lg:px-24 relative z-10">
         <div className="max-w-7xl mx-auto flex flex-col items-center">
           <motion.div
-            className="inline-flex items-center px-4 py-1.5 rounded-full bg-[#FF6B35]/10 border border-[#FF6B35]/20 mb-16"
+            className="inline-flex items-center px-3 py-1 rounded-full bg-[#FF6B35]/10 border border-[#FF6B35]/20 mb-12"
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
           >
-            <span className="text-[#FF6B35] text-xs font-bold uppercase tracking-wider">Our Achievements</span>
-            <div className="w-2 h-2 rounded-full bg-[#FF6B35] ml-2" />
+            <span className="text-[#FF6B35] text-[10px] font-bold uppercase tracking-wider">Our Achievements</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] ml-2" />
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 w-full">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 w-full">
             {[
               { label: 'Customer Satisfaction', value: '98%' },
               { label: 'Verified Listings', value: '12K+' },
@@ -422,14 +422,14 @@ const Home = () => {
             ].map((stat, idx) => (
               <motion.div
                 key={idx}
-                className="bg-[#F8F9FA] p-10 rounded-[2rem] flex flex-col items-center text-center group hover:bg-[#FF6B35] transition-colors duration-500"
+                className="bg-[#F8F9FA] p-6 md:p-8 rounded-2xl flex flex-col items-center text-center group hover:bg-[#FF6B35] transition-colors duration-500"
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
               >
-                <span className="text-4xl md:text-5xl font-bold text-[#1C2C3E] mb-3 group-hover:text-white transition-colors tracking-tight">{stat.value}</span>
-                <span className="text-[#1C2C3E]/50 text-xs md:text-sm font-medium group-hover:text-white/80 transition-colors uppercase tracking-widest">{stat.label}</span>
+                <span className="text-3xl md:text-4xl font-bold text-[#1C2C3E] mb-2 group-hover:text-white transition-colors tracking-tight">{stat.value}</span>
+                <span className="text-[#1C2C3E]/50 text-[10px] md:text-xs font-medium group-hover:text-white/80 transition-colors uppercase tracking-widest">{stat.label}</span>
               </motion.div>
             ))}
           </div>
@@ -437,8 +437,8 @@ const Home = () => {
       </section>
 
       {/* Detailed About Section */}
-      <section className="bg-white py-32 px-6 sm:px-12 lg:px-24 relative z-10">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+      <section className="bg-white py-24 px-6 sm:px-12 lg:px-24 relative z-10">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
           {/* Left Visual representation */}
           <motion.div
             className="relative"
@@ -447,11 +447,11 @@ const Home = () => {
             viewport={{ once: true }}
             transition={{ duration: 1 }}
           >
-            <div className="bg-[#FAF9F7] rounded-[3rem] p-12 relative overflow-hidden aspect-square flex flex-col justify-end shadow-xs group">
+            <div className="bg-[#FAF9F7] rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden aspect-square flex flex-col justify-end shadow-xs group">
               <img src="/images/house-1.png" alt="Featured Property" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-1000" />
               <div className="absolute inset-0 bg-linear-to-t from-white via-transparent to-transparent opacity-80" />
               
-              <div className="relative z-10 space-y-6">
+              <div className="relative z-10 space-y-4">
                 {[
                   { title: 'HomeSwift (Outcome)', desc: 'Renting in days, not months, at 2% transaction fee vs 10%+ agency fees' },
                   { title: 'HomeSwift (Outcome)', desc: 'Cut renting costs 80% with direct landlord access, no hidden fees.' },
@@ -459,18 +459,18 @@ const Home = () => {
                 ].map((item, idx) => (
                   <motion.div
                     key={idx}
-                    className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-lg border border-white/50 flex items-start space-x-4 max-w-sm"
+                    className="bg-white/95 backdrop-blur-md rounded-xl p-4 shadow-lg border border-white/50 flex items-start space-x-3 max-w-sm"
                     initial={{ opacity: 0, x: -20 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.5 + idx * 0.2 }}
                   >
-                    <div className="w-10 h-10 bg-[#FF6B35] rounded-xl flex items-center justify-center shrink-0">
-                      <img src="/images/logo.png" className="w-6 h-6 object-contain invert grayscale" alt="HS" />
+                    <div className="w-8 h-8 bg-[#FF6B35] rounded-lg flex items-center justify-center shrink-0">
+                      <img src="/images/logo.png" className="w-4 h-4 object-contain invert grayscale" alt="HS" />
                     </div>
                     <div>
-                      <h4 className="text-[#1C2C3E] font-bold text-sm mb-1">{item.title}</h4>
-                      <p className="text-[#1C2C3E]/60 text-[11px] leading-relaxed">{item.desc}</p>
+                      <h4 className="text-[#1C2C3E] font-bold text-[13px] mb-0.5">{item.title}</h4>
+                      <p className="text-[#1C2C3E]/60 text-[10px] leading-tight">{item.desc}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -486,28 +486,28 @@ const Home = () => {
             transition={{ duration: 1 }}
           >
             <motion.div
-              className="inline-flex items-center px-4 py-1.5 rounded-full bg-[#FF6B35]/10 border border-[#FF6B35]/20 mb-8"
+              className="inline-flex items-center px-3 py-1 rounded-full bg-[#FF6B35]/10 border border-[#FF6B35]/20 mb-6"
             >
-              <div className="w-2 h-2 rounded-full bg-[#FF6B35] mr-2" />
-              <span className="text-[#FF6B35] text-xs font-bold uppercase tracking-wider">About Us</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] mr-2" />
+              <span className="text-[#FF6B35] text-[10px] font-bold uppercase tracking-wider">About Us</span>
             </motion.div>
 
-            <h2 className="text-4xl md:text-5xl font-semibold text-[#1C2C3E] leading-[1.2] mb-8 tracking-tight">
+            <h2 className="text-3xl md:text-4xl font-semibold text-[#1C2C3E] leading-[1.2] mb-6 tracking-tight">
               Find Your Next Home <span className="flex items-center inline-flex">
                 <div className="flex -space-x-1 mx-2">
-                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=A" className="w-8 h-8 rounded-full border-2 border-white bg-blue-50" />
-                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=B" className="w-8 h-8 rounded-full border-2 border-white bg-green-50" />
-                  <div className="w-8 h-8 rounded-full border-2 border-white bg-[#FF6B35] flex items-center justify-center text-[8px] text-white font-bold">AI</div>
+                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=A" className="w-6 h-6 rounded-full border border-white bg-blue-50" />
+                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=B" className="w-6 h-6 rounded-full border border-white bg-green-50" />
+                  <div className="w-6 h-6 rounded-full border border-white bg-[#FF6B35] flex items-center justify-center text-[7px] text-white font-bold">AI</div>
                 </div>
               </span> With AI, at a Fraction of The Usual Cost.
             </h2>
 
-            <p className="text-[#1C2C3E]/60 text-lg leading-relaxed mb-10 font-medium">
+            <p className="text-[#1C2C3E]/60 text-base leading-relaxed mb-8 font-medium">
               Find verified homes fast, talk directly to landlords, and move in without delays or heavy fees. HomeSwift streamlines your entire renting journey with AI-guided search, real-time communication, secure verification, and a seamless experience designed to save you time, stress, and money.
             </p>
 
             <motion.button
-              className="px-8 py-3.5 rounded-full border-2 border-[#FF6B35]/30 text-[#FF6B35] font-bold hover:bg-[#FF6B35] hover:text-white transition-all duration-300"
+              className="px-8 py-3 rounded-full border-2 border-[#FF6B35]/30 text-[#FF6B35] font-bold hover:bg-[#FF6B35] hover:text-white transition-all duration-300 text-sm"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
