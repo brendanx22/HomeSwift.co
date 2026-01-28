@@ -355,6 +355,186 @@ const Home = () => {
           </svg>
         </motion.div>
       </section>
+
+      {/* Who are we? Section */}
+      <section className="bg-white py-32 px-6 sm:px-12 lg:px-24">
+        <div className="max-w-7xl mx-auto flex flex-col items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="flex items-center space-x-2 bg-[#FF6B35]/10 rounded-full px-4 py-1.5 mb-12"
+          >
+            <div className="w-2 h-2 rounded-full bg-[#FF6B35]" />
+            <span className="text-[#FF6B35] text-xs font-bold tracking-wider uppercase">Who are we?</span>
+          </motion.div>
+
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="text-center text-3xl md:text-4xl lg:text-5xl font-semibold text-[#1C2C3E] leading-[1.3] max-w-5xl mb-24 tracking-tight"
+          >
+            We are a tech-driven real estate <span className="text-[#3498DB]">platform connecting</span> landlords and renters directly. Our goal is to <span className="text-[#3498DB]">make finding</span> and renting homes faster, transparent, and stress-free with smart AI and verified listings.
+          </motion.h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+            {[1, 2, 3].map((num) => (
+              <motion.div
+                key={num}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: num * 0.1, duration: 0.6 }}
+                className="rounded-[2.5rem] overflow-hidden aspect-[4/3] shadow-xl shadow-gray-200/50"
+              >
+                <img 
+                  src={`/images/house-${num}.png`} 
+                  alt={`Modern Home ${num}`} 
+                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-700" 
+                />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Our Achievements Section */}
+      <section className="bg-[#FAF9F6] py-32 px-6 sm:px-12 lg:px-24">
+        <div className="max-w-7xl mx-auto flex flex-col items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="flex items-center space-x-2 bg-[#FF6B35]/10 rounded-full px-4 py-1.5 mb-24"
+          >
+            <span className="text-[#FF6B35] text-xs font-bold tracking-wider uppercase">Our Achievements</span>
+            <div className="w-2 h-2 rounded-full bg-[#FF6B35]" />
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 w-full">
+            {[
+              { label: 'Customer Satisfaction', val: '98%' },
+              { label: 'Verified Listings', val: '12K+' },
+              { label: 'Successful Rentals', val: '8K+' },
+              { label: 'Active Users', val: '15K+' },
+            ].map((stat, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="bg-white/60 backdrop-blur-sm rounded-3xl p-10 flex flex-col items-center text-center shadow-sm border border-white/50"
+              >
+                <span className="text-5xl font-bold text-[#1C2C3E] mb-3">{stat.val}</span>
+                <span className="text-[#1C2C3E]/50 text-sm font-medium">{stat.label}</span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* About Us / AI Search Section */}
+      <section className="bg-white py-32 px-6 sm:px-12 lg:px-24">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+          {/* Left: Floating Cards Image */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative"
+          >
+            <div className="rounded-[3rem] overflow-hidden aspect-[1/1.1] relative shadow-2xl">
+              <img 
+                src="/images/house-1.png" 
+                alt="AI Driven Homes" 
+                className="w-full h-full object-cover grayscale-[0.2] brightness-90" 
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-gray-900/40 to-transparent" />
+              
+              {/* Floating Outcome Cards */}
+              <div className="absolute inset-0 p-8 flex flex-col justify-center space-y-6">
+                {[
+                  {
+                    title: 'HomeSwift (Outcome)',
+                    desc: 'Renting in days, not months, at 2% transaction fee vs 10%+ agency fees',
+                  },
+                  {
+                    title: 'HomeSwift (Outcome)',
+                    desc: 'Cut renting costs 80% with direct landlord access, no hidden fees.',
+                  },
+                  {
+                    title: 'HomeSwift (Outcome)',
+                    desc: 'Get personalized home matches in seconds, tailored to your needs',
+                  },
+                ].map((card, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -30 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.4 + (i * 0.2) }}
+                    className="bg-white/90 backdrop-blur-md rounded-2xl p-5 shadow-lg border border-white/20 flex items-start space-x-4 max-w-sm"
+                    style={{ marginLeft: i * 20 }}
+                  >
+                    <div className="bg-[#FF6B35] p-3 rounded-xl flex-shrink-0">
+                      <img src="/images/logo.png" className="w-6 h-6 object-contain brightness-0 invert" alt="" />
+                    </div>
+                    <div>
+                      <h4 className="text-[#1C2C3E] font-bold text-sm mb-1">{card.title}</h4>
+                      <p className="text-[#1C2C3E]/70 text-xs leading-relaxed font-medium">
+                        {card.desc.split('at 2%').map((part, idx) => idx === 0 ? part : <><span className="text-[#1C2C3E] font-bold">at 2% transaction fee</span>{part}</>)}
+                        {card.desc.includes('80%') && card.desc.split('80%').map((part, idx) => idx === 0 ? part : <><span className="text-[#1C2C3E] font-bold">80% with direct landlord access</span>{part}</>)}
+                        {card.desc.includes('matches in seconds') && card.desc.split('matches in seconds').map((part, idx) => idx === 0 ? part : <><span className="text-[#1C2C3E] font-bold">home matches in seconds</span>{part}</>)}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Right: Content */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="flex items-center space-x-2 bg-[#FF6B35]/10 rounded-full px-4 py-1.5 mb-8 w-fit">
+              <div className="w-2 h-2 rounded-full bg-[#FF6B35]" />
+              <span className="text-[#FF6B35] text-xs font-bold tracking-wider uppercase">About Us</span>
+            </div>
+
+            <h3 className="text-4xl md:text-5xl font-semibold text-[#1C2C3E] leading-[1.2] mb-8 tracking-tight">
+              Find Your Next Home 
+              <span className="inline-flex items-center -space-x-2 mx-3">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=A" className="w-10 h-10 rounded-full border-2 border-white bg-blue-100" />
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=B" className="w-10 h-10 rounded-full border-2 border-white bg-green-100" />
+                <div className="w-10 h-10 rounded-full border-2 border-white bg-[#FF6B35] flex items-center justify-center">
+                  <Sparkles size={14} className="text-white" />
+                </div>
+              </span>
+              With AI, at a Fraction of The Usual Cost.
+            </h3>
+
+            <p className="text-[#1C2C3E]/60 text-lg leading-relaxed mb-12 font-medium">
+              Find verified homes fast, talk directly to landlords, and move in without delays or heavy fees. HomeSwift streamlines your entire renting journey with AI-guided search, real-time communication, secure verification, and a seamless experience designed to save you time, stress, and money.
+            </p>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="border border-[#FF6B35] text-[#FF6B35] px-10 py-4 rounded-full font-bold hover:bg-[#FF6B35] hover:text-white transition-all duration-300 flex items-center group"
+            >
+              Learn More <ArrowRight size={20} className="ml-3 group-hover:translate-x-1 transition-transform" />
+            </motion.button>
+          </motion.div>
+        </div>
+      </section>
     </div>
   );
 };
