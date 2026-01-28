@@ -39,7 +39,7 @@ const Home = () => {
   };
 
   return (
-    <div className="bg-[#FAF9F6]">
+    <div className="bg-white">
       <div
         className="h-screen w-full bg-cover bg-center hero-container flex flex-col overflow-hidden relative sticky top-0 z-0"
         style={{
@@ -401,7 +401,7 @@ const Home = () => {
       </section>
 
       {/* Our Achievements Section */}
-      <section className="bg-[#FAF9F6] py-32 px-6 sm:px-12 lg:px-24">
+      <section className="bg-white py-32 px-6 sm:px-12 lg:px-24">
         <div className="max-w-7xl mx-auto flex flex-col items-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -426,7 +426,7 @@ const Home = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="bg-white/60 backdrop-blur-sm rounded-3xl p-10 flex flex-col items-center text-center shadow-sm border border-white/50"
+                className="bg-gray-50/50 backdrop-blur-sm rounded-3xl p-10 flex flex-col items-center text-center shadow-[0_10px_30px_rgba(0,0,0,0.03)] border border-gray-100/50"
               >
                 <span className="text-5xl font-bold text-[#1C2C3E] mb-3">{stat.val}</span>
                 <span className="text-[#1C2C3E]/50 text-sm font-medium">{stat.label}</span>
