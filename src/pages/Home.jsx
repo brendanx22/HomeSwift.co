@@ -55,7 +55,7 @@ const Home = () => {
         <img 
           src="/images/illustration-user.png" 
           alt="Modern Home Illustration" 
-          className="w-full h-auto object-cover object-bottom"
+          className="w-full h-auto object-cover object-bottom max-h-[65vh] md:max-h-[55vh] lg:max-h-[60vh]"
           style={{ marginBottom: '0' }}
         />
       </div>
