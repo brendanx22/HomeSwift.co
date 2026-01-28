@@ -62,7 +62,7 @@ const Home = () => {
           <img 
             src="/images/illustration-user.png" 
             alt="Modern Home Illustration" 
-            className="w-full h-auto object-cover object-bottom max-h-[65vh] md:max-h-[55vh] lg:max-h-[60vh]"
+            className="w-full h-auto object-contain object-bottom max-h-[80vh] lg:max-h-[85vh]"
             style={{ marginBottom: '0' }}
           />
         </motion.div>
@@ -183,7 +183,13 @@ const Home = () => {
                 </div>
                 <div className="p-6 space-y-8">
                   <nav className="space-y-2">
-                    <a href="/" className="block px-4 py-3 text-[#2C3E50] text-lg font-semibold bg-[#FF6B35]/10 rounded-lg border-l-4 border-[#FF6B35]">Home</a>
+                    <a 
+                    href="/" 
+                    className="block px-4 py-3 text-[#2C3E50] text-lg font-semibold bg-gray-50 rounded-lg border-l-4 border-[#FF6B35]"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    Home
+                  </a>
                     <a href="/faq" className="block px-4 py-3 text-[#2C3E50]/70 text-lg hover:text-[#FF6B35]">FAQs</a>
                     <a href="/about" className="block px-4 py-3 text-[#2C3E50]/70 text-lg hover:text-[#FF6B35]">About Us</a>
                   </nav>
@@ -339,7 +345,7 @@ const Home = () => {
 
         {/* Decorative Starburst */}
         <motion.div 
-          className="absolute left-1/2 bottom-10 -translate-x-1/2 text-[#FF6B35]/20 pointer-events-none"
+          className="hidden md:block absolute left-1/2 bottom-10 -translate-x-1/2 text-[#FF6B35]/20 pointer-events-none"
           animate={{ rotate: 360 }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         >
