@@ -250,15 +250,15 @@ const Home = () => {
       <main className="relative z-10 flex flex-1 flex-col items-center justify-start pt-16 sm:pt-24 px-4 sm:px-6 text-center">
         {/* Feature Tag */}
         <motion.div
-          className="flex items-center space-x-2 bg-blue-50/40 backdrop-blur-md border border-white/30 shadow-xs rounded-full px-5 py-2 mb-6"
+          className="flex items-center space-x-2 bg-blue-50/40 backdrop-blur-md border border-white/30 shadow-xs rounded-full px-4 py-1.5 mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
         >
           <motion.div>
-            <Sparkles className="w-3.5 h-3.5 text-[#2C3E50]/70" />
+            <Sparkles className="w-3 h-3 text-[#2C3E50]/70" />
           </motion.div>
-          <span className="text-[#2C3E50]/80 text-[13px] font-medium tracking-tight">Smarter, faster, simpler home search</span>
+          <span className="text-[#2C3E50]/80 text-[11px] font-medium tracking-tight">Smarter, faster, simpler home search</span>
         </motion.div>
 
         {/* Main Headline */}
@@ -284,7 +284,7 @@ const Home = () => {
 
         {/* Search Input */}
         <motion.div
-          className="w-full max-w-xl pb-32"
+          className="w-full max-w-md pb-32"
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
