@@ -1,16 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700&display=swap");
 
-@import 'tailwindcss';
-@import 'tailwindcss/utilities' layer(utilities);
+@import "tailwindcss";
+@import "tailwindcss/utilities" layer(utilities);
 
 @layer base {
-  html {
-    font-family: 'Raleway', sans-serif;
+  html,
+  body {
+    font-family: "Raleway", sans-serif;
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
   }
-  
+
   body {
     background-color: white;
-    color: theme('colors.gray.900');
+    color: theme("colors.gray.900");
   }
 }
 
@@ -23,6 +27,6 @@
 
 /* Hide scrollbar for IE, Edge and Firefox */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }

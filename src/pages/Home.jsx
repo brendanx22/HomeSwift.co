@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUp, ArrowRight, ArrowUpRight, Sparkles, Menu, X, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronDown, MapPin, Bed, Bath, Ruler, Heart, Plus, Minus, Facebook, Twitter, Instagram, Linkedin, Mail, Phone } from 'lucide-react';
+import { ArrowUp, ArrowRight, ArrowUpRight, Sparkles, Menu, X, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronDown, MapPin, Bed, Bath, Ruler, Heart, Plus, Minus, Facebook, Twitter, Instagram, Linkedin, Mail, Phone, Info, Home as HomeIcon } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useScroll } from 'framer-motion';
 import { PropertyAPI } from '../lib/propertyAPI';
 
@@ -96,7 +96,7 @@ const Home = () => {
   };
 
   return (
-    <div className="bg-[#FAF9F6] overflow-x-hidden max-w-[100vw]">
+    <div className="bg-[#FAF9F6] overflow-x-hidden">
       <div
         className="h-screen w-full bg-cover bg-center hero-container flex flex-col overflow-hidden relative sticky top-0 z-0"
         style={{
@@ -141,12 +141,12 @@ const Home = () => {
         >
           {/* Logo */}
           <div className="flex items-center">
-            <img src="/images/logo.png" alt="HomeSwift Logo" className="logo-img w-32 sm:w-60 h-8 sm:h-10 rounded-lg object-contain" />
+            <img src="/images/logo.png" alt="HomeSwift Logo" className="logo-img w-48 sm:w-60 h-10 rounded-lg object-cover" />
           </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8 absolute left-1/2 transform -translate-x-1/2 bg-white/40 backdrop-blur-md border border-white/20 rounded-full px-8 py-2.5 shadow-sm z-20">
-            <a href="/" className="text-[#2C3E50] text-sm font-medium hover:text-[#FF6B35] transition-colors">Home</a>
+            <a href="/" className="text-[#2C3E50] text-sm font-medium border-b-2 border-[#FF6B35] pb-0.5">Home</a>
             <a href="/faq" className="text-[#2C3E50]/70 text-sm hover:text-[#FF6B35] transition-colors font-medium">FAQs</a>
             <a href="/about" className="text-[#2C3E50]/70 text-sm hover:text-[#FF6B35] transition-colors font-medium">About Us</a>
           </nav>
@@ -175,27 +175,34 @@ const Home = () => {
         
           <motion.button 
             onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="md:hidden z-[110] p-2 ml-auto flex flex-col items-center justify-center space-y-1.5 w-10 h-10 rounded-xl bg-white/50 backdrop-blur-md border border-white/30 shadow-sm"
+            className="md:hidden text-[#FF6B35] p-2 ml-auto"
+            whileHover={{ scale: 1.1, rotate: 90 }}
             whileTap={{ scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <motion.div 
-              className="w-5 h-0.5 bg-[#FF6B35] rounded-full"
-              animate={{ 
-                rotate: showMobileMenu ? 45 : 0,
-                y: showMobileMenu ? 4 : 0
-              }}
-            />
-            <motion.div 
-              className="w-5 h-0.5 bg-[#FF6B35] rounded-full"
-              animate={{ opacity: showMobileMenu ? 0 : 1 }}
-            />
-            <motion.div 
-              className="w-5 h-0.5 bg-[#FF6B35] rounded-full"
-              animate={{ 
-                rotate: showMobileMenu ? -45 : 0,
-                y: showMobileMenu ? -4 : 0
-              }}
-            />
+            <AnimatePresence mode="wait">
+              {showMobileMenu ? (
+                <motion.div
+                  key="close"
+                  initial={{ rotate: -90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: 90, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <X size={24} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="menu"
+                  initial={{ rotate: 90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: -90, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Menu size={24} />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.button>
         </motion.header>
 
