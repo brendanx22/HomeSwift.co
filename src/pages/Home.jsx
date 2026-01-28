@@ -62,7 +62,7 @@ const Home = () => {
           <img 
             src="/images/illustration-user.png" 
             alt="Modern Home Illustration" 
-            className="w-full h-auto object-contain object-bottom max-h-[80vh] lg:max-h-[85vh]"
+            className="w-full h-auto object-cover object-bottom max-h-[80vh] lg:max-h-[85vh]"
             style={{ marginBottom: '0' }}
           />
         </motion.div>
