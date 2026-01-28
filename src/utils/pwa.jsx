@@ -9,7 +9,8 @@ import {
   CheckCircle,
   AlertTriangle,
   Info,
-  X
+  X,
+  Share
 } from 'lucide-react';
 
 // PWA Service Worker Registration
@@ -19,12 +20,17 @@ export const usePWA = () => {
   const [isInstalled, setIsInstalled] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     // Check if app is already installed
     if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
     }
+
+    // iOS Detection
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    setIsIOS(isIOSDevice);
 
     // Listen for online/offline events
     const handleOnline = () => setIsOnline(true);
@@ -89,6 +95,7 @@ export const usePWA = () => {
     isOnline,
     isInstallable,
     isInstalled,
+    isIOS,
     installApp,
     updateAvailable,
     handleUpdate
@@ -119,39 +126,51 @@ export const OfflineIndicator = () => {
 
 // PWA Install Prompt Component
 export const PWAInstallPrompt = () => {
-  const { isInstallable, installApp, isInstalled } = usePWA();
+  const { isInstallable, installApp, isInstalled, isIOS } = usePWA();
   const [dismissed, setDismissed] = useState(false);
 
-  if (!isInstallable || isInstalled || dismissed) return null;
+  // Show only if not installed, not dismissed, and either installable (Android/Desktop) or iOS
+  const shouldShow = !isInstalled && !dismissed && (isInstallable || isIOS);
+
+  if (!shouldShow) return null;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 100 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 100 }}
-      className="fixed bottom-4 left-4 right-4 z-50 bg-white rounded-lg shadow-2xl border border-gray-200 p-6 max-w-sm mx-auto"
+      className="fixed bottom-6 left-4 right-4 z-[9999] bg-white rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-gray-100 p-6 max-w-sm mx-auto"
     >
-      <div className="flex items-start space-x-3">
-        <div className="w-10 h-10 bg-[#FF6B35] rounded-lg flex items-center justify-center shrink-0">
-          <Smartphone className="w-5 h-5 text-white" />
+      <div className="flex items-start space-x-4">
+        <div className="w-12 h-12 bg-[#FF6B35] rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-orange-100">
+          <img src="/images/logo.png" className="w-6 h-6 object-contain invert grayscale" alt="HS" />
         </div>
 
         <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 mb-1">Install HomeSwift</h3>
-          <p className="text-sm text-gray-600 mb-3">
-            Get the full experience with offline access and push notifications
+          <h3 className="font-bold text-[#1C2C3E] mb-1">Install HomeSwift</h3>
+          <p className="text-xs text-[#1C2C3E]/60 mb-4 leading-relaxed">
+            {isIOS 
+              ? "Tap the 'Share' icon in Safari then 'Add to Home Screen' to get the full experience."
+              : "Install our app for a faster, better experience with offline access."}
           </p>
 
-          <div className="flex space-x-2">
-            <button
-              onClick={installApp}
-              className="flex-1 bg-[#FF6B35] text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
-            >
-              Install App
-            </button>
+          <div className="flex items-center space-x-2">
+            {!isIOS ? (
+              <button
+                onClick={installApp}
+                className="flex-1 bg-[#FF6B35] text-white py-2.5 px-4 rounded-xl text-[13px] font-bold hover:bg-orange-600 transition-colors"
+              >
+                Install App
+              </button>
+            ) : (
+              <div className="flex-1 flex items-center bg-gray-50 py-2.5 px-4 rounded-xl space-x-2">
+                <Share size={14} className="text-[#FF6B35]" />
+                <span className="text-[11px] font-bold text-[#1C2C3E]/80 uppercase tracking-wider">Step 1: Tap Share</span>
+              </div>
+            )}
             <button
               onClick={() => setDismissed(true)}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+              className="px-4 py-2.5 bg-gray-100 text-[#1C2C3E]/60 rounded-xl text-[13px] font-bold hover:bg-gray-200 transition-colors"
             >
               Not Now
             </button>
@@ -160,7 +179,7 @@ export const PWAInstallPrompt = () => {
 
         <button
           onClick={() => setDismissed(true)}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
+          className="text-[#1C2C3E]/20 hover:text-[#1C2C3E]/40 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
