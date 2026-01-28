@@ -268,7 +268,7 @@ const Home = () => {
 
         {/* Main Content */}
         <motion.main 
-          className="relative z-10 flex flex-1 flex-col items-center justify-start md:justify-center pt-12 md:pt-0 px-4 sm:px-6 text-center"
+          className="relative z-10 flex flex-1 flex-col items-center justify-start md:justify-center pt-20 md:pt-0 px-4 sm:px-6 text-center"
           style={{ opacity: heroOpacity, y: heroY, scale: heroScale }}
         >
           {/* Feature Tag */}
