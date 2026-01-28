@@ -81,35 +81,28 @@ const Home = () => {
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-6 absolute left-1/2 transform -translate-x-1/2 bg-white/30 backdrop-blur-md border border-white/20 rounded-full px-6 py-2 shadow-lg z-20">
-          <a href="/" className="text-[#2C3E50] text-sm font-medium border-b-2 border-[#FF6B35] pb-1">Home</a>
-          <a href="/faq" className="text-[#2C3E50] text-sm hover:text-[#FF6B35] transition-colors font-medium">FAQs</a>
-          <a href="/about" className="text-[#2C3E50] text-sm hover:text-[#FF6B35] transition-colors font-medium">About Us</a>
+        <nav className="hidden md:flex items-center space-x-8 absolute left-1/2 transform -translate-x-1/2 bg-white/40 backdrop-blur-md border border-white/20 rounded-full px-8 py-2.5 shadow-sm z-20">
+          <a href="/" className="text-[#2C3E50] text-sm font-medium border-b-2 border-[#FF6B35] pb-0.5">Home</a>
+          <a href="/faq" className="text-[#2C3E50]/70 text-sm hover:text-[#FF6B35] transition-colors font-medium">FAQs</a>
+          <a href="/about" className="text-[#2C3E50]/70 text-sm hover:text-[#FF6B35] transition-colors font-medium">About Us</a>
         </nav>
 
         {/* Action Buttons */}
         <div className="hidden md:flex items-center space-x-4 ml-auto">
           <motion.button
             onClick={handleGetStartedClick}
-            className="flex items-center space-x-2 bg-[#FF6B35] text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-[#FF7B45] transition-colors"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
+            className="bg-[#FF6B35] text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-[#FF7B45] transition-colors shadow-sm"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <span>Get Started</span>
-            <motion.div 
-              className="w-5 h-5 bg-white text-[#2C3E50] rounded-full flex items-center justify-center"
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.6 }}
-            >
-              <ArrowRight size={12} className="text-[#2C3E50]" />
-            </motion.div>
+            Get Started
           </motion.button>
           <motion.button
             onClick={handleLoginClick}
-            className="bg-transparent border border-gray-400 text-[#2C3E50] px-5 py-2 rounded-full text-sm font-medium hover:bg-white/10 transition-colors"
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
+            className="bg-transparent border border-gray-300 text-[#2C3E50] px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-white/10 transition-colors"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
             Login
@@ -254,27 +247,23 @@ const Home = () => {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="relative z-10 flex flex-1 flex-col items-center justify-start pt-20 sm:pt-32 px-4 sm:px-6 text-center">
+      <main className="relative z-10 flex flex-1 flex-col items-center justify-start pt-16 sm:pt-24 px-4 sm:px-6 text-center">
         {/* Feature Tag */}
         <motion.div
-          className="flex items-center space-x-2 bg-white/30 backdrop-blur-md border border-white/20 shadow-sm rounded-[2rem] px-6 py-3 mb-2"
+          className="flex items-center space-x-2 bg-blue-50/40 backdrop-blur-md border border-white/30 shadow-xs rounded-full px-5 py-2 mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
-          whileHover={{ scale: 1.05, y: -2 }}
         >
-          <motion.div
-            animate={{ rotate: [0, 360] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          >
-            <Sparkles className="w-4 h-4 text-[#2C3E50]" />
+          <motion.div>
+            <Sparkles className="w-3.5 h-3.5 text-[#2C3E50]/70" />
           </motion.div>
-          <span className="text-[#2C3E50] text-sm font-medium">Smarter, faster, simpler home search</span>
+          <span className="text-[#2C3E50]/80 text-[13px] font-medium tracking-tight">Smarter, faster, simpler home search</span>
         </motion.div>
 
         {/* Main Headline */}
         <motion.h1
-          className="text-center mb-6 sm:mb-10 max-w-4xl text-2xl md:text-3xl lg:text-4xl text-[#2C3E50] leading-tight"
+          className="text-center mb-6 sm:mb-8 max-w-4xl text-4xl md:text-5xl lg:text-6xl text-[#2C3E50] leading-[1.1] font-semibold tracking-tight"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: 'easeOut', delay: 0.3 }}
@@ -285,17 +274,17 @@ const Home = () => {
 
         {/* Sub-headline */}
         <motion.p
-          className="text-xs md:text-sm text-[#FF6B35] mb-8 sm:mb-12 max-w-2xl leading-relaxed font-medium"
+          className="text-sm md:text-base text-[#2C3E50]/60 mb-10 sm:mb-12 max-w-2xl leading-relaxed font-normal"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 }}
         >
-        Describe your dream home—cozy apartment, family house, or modern duplex. HomeSwift AI understands and instantly connects you with the best options.
+          Describe your dream home—cozy apartment, family house, or modern duplex. HomeSwift AI understands and instantly connects you with the best options.
         </motion.p>
 
         {/* Search Input */}
         <motion.div
-          className="w-full max-w-lg"
+          className="w-full max-w-xl pb-32"
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
@@ -306,21 +295,15 @@ const Home = () => {
                 type="text"
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Describe your ideal home..."
-                className="w-full bg-white/30 backdrop-blur-md border border-white/20 shadow-lg rounded-full px-6 py-3 text-[#2C3E50] text-base placeholder-gray-600 focus:outline-none focus:border-[#FF6B35] focus:bg-white/80 transition-all duration-300"
+                placeholder="Describe your ideal home"
+                className="w-full bg-blue-100/30 backdrop-blur-md border border-white/40 rounded-full px-8 py-4 text-[#2C3E50] text-sm placeholder-gray-500 focus:outline-none focus:border-[#FF6B35]/50 focus:bg-white/60 transition-all duration-300 shadow-sm"
               />
-              <motion.button
-                type="submit"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#FF6B35] text-white p-2 rounded-full hover:bg-[#FF7B45] transition-colors shadow-lg"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+              <motion.div
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-[#2C3E50]/40"
               >
-                <ArrowUp size={20} className="rotate-45" />
-              </motion.button>
+                <Sparkles size={20} />
+              </motion.div>
             </div>
-            <p className="mt-3 text-xs text-[#2C3E50]/60 text-center">
-              Try: "cozy apartment near university" or "family house with garden"
-            </p>
           </form>
         </motion.div>
       </main>
