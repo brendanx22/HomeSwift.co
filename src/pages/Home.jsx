@@ -263,7 +263,7 @@ const Home = () => {
 
         {/* Main Headline */}
         <motion.h1
-          className="text-center mb-6 sm:mb-8 max-w-4xl text-4xl md:text-5xl lg:text-6xl text-[#2C3E50] leading-[1.1] font-semibold tracking-tight"
+          className="text-center mb-6 sm:mb-8 max-w-4xl text-3xl md:text-4xl lg:text-5xl text-[#2C3E50] leading-[1.1] font-semibold tracking-tight"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: 'easeOut', delay: 0.3 }}
@@ -274,7 +274,7 @@ const Home = () => {
 
         {/* Sub-headline */}
         <motion.p
-          className="text-sm md:text-base text-[#2C3E50]/60 mb-10 sm:mb-12 max-w-2xl leading-relaxed font-normal"
+          className="text-xs md:text-sm text-[#2C3E50]/60 mb-10 sm:mb-12 max-w-2xl leading-relaxed font-normal"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 }}
