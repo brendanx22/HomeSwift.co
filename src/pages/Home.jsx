@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUp, ArrowRight, ArrowUpRight, Sparkles, Menu, X, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronDown, MapPin, Bed, Bath, Ruler, Heart } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useScroll } from 'framer-motion';
+import { PropertyAPI } from '../lib/propertyAPI';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -10,6 +11,24 @@ const Home = () => {
   const mouseY = useMotionValue(0);
   const [searchText, setSearchText] = useState('');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [properties, setProperties] = useState([]);
+  const [loadingProperties, setLoadingProperties] = useState(true);
+
+  React.useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        const result = await PropertyAPI.getAllProperties();
+        if (result.success) {
+          setProperties(result.properties);
+        }
+      } catch (error) {
+        console.error("Error fetching properties:", error);
+      } finally {
+        setLoadingProperties(false);
+      }
+    };
+    fetchProperties();
+  }, []);
 
   // Scroll animations
   const { scrollYProgress } = useScroll();
@@ -598,58 +617,83 @@ const Home = () => {
 
           {/* Listings Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[1, 2, 3, 4, 5, 6].map((idx) => (
-              <motion.div
-                key={idx}
-                className="group cursor-pointer"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: (idx % 3) * 0.1 }}
-              >
-                <div className="relative overflow-hidden rounded-[2rem] aspect-[4/3] mb-6">
-                  <img 
-                    src={`/images/house-${(idx % 3) + 1}.png`} 
-                    alt="Property" 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                  />
-                  <div className="absolute top-5 left-5 w-8 h-8 bg-white/90 backdrop-blur-md rounded-lg flex items-center justify-center shadow-xs">
-                    <div className="w-4 h-4 text-[#FF6B35]">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            {loadingProperties ? (
+              [1, 2, 3].map((n) => (
+                <div key={n} className="animate-pulse">
+                  <div className="bg-gray-200 rounded-[2rem] aspect-[4/3] mb-6"></div>
+                  <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                  <div className="h-10 bg-gray-200 rounded w-full"></div>
+                </div>
+              ))
+            ) : properties.length > 0 ? (
+              properties.slice(0, 6).map((property, idx) => (
+                <motion.div
+                  key={property.id}
+                  className="group cursor-pointer"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: (idx % 3) * 0.1 }}
+                  onClick={() => navigate(`/properties/${property.id}`)}
+                >
+                  <div className="relative overflow-hidden rounded-[2rem] aspect-[4/3] mb-6 shadow-sm group-hover:shadow-md transition-shadow">
+                    <img 
+                      src={property.images?.[0] || '/images/house-1.png'} 
+                      alt={property.title} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                    />
+                    <div className="absolute top-5 left-5 w-8 h-8 bg-white/90 backdrop-blur-md rounded-lg flex items-center justify-center shadow-xs">
+                      <div className="w-4 h-4 text-[#FF6B35]">
+                        <Heart size={16} className={property.is_saved ? "fill-current" : ""} />
+                      </div>
+                    </div>
+                    <div className="absolute top-5 right-5 px-3 py-1 bg-[#1C2C3E]/40 backdrop-blur-md border border-white/20 rounded-full">
+                      <span className="text-white text-[10px] font-bold capitalize">
+                        {property.listing_type === 'for-rent' ? 'For Rent' : 'For Sale'}
+                      </span>
                     </div>
                   </div>
-                  <div className="absolute top-5 right-5 px-3 py-1 bg-[#1C2C3E]/40 backdrop-blur-md border border-white/20 rounded-full">
-                    <span className="text-white text-[10px] font-bold">For Rent</span>
-                  </div>
-                </div>
 
-                <div className="px-2">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl font-bold text-[#1C2C3E]">₦500,000<span className="text-xs text-[#1C2C3E]/30 font-medium lowercase"> /year</span></span>
-                  </div>
-                  <h3 className="text-xl font-bold text-[#1C2C3E] mb-2">GRA Phase 1</h3>
-                  <div className="flex items-center text-[#1C2C3E]/40 mb-5">
-                    <MapPin size={14} className="mr-1.5" />
-                    <span className="text-xs font-medium">No. 15 Okpanam road, Asaba</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-5 border-t border-gray-100">
-                    <div className="flex items-center space-x-1.5 text-[#1C2C3E]/40 font-bold">
-                      <Bed size={16} />
-                      <span className="text-xs">2</span>
+                  <div className="px-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-2xl font-bold text-[#1C2C3E]">
+                        ₦{property.price?.toLocaleString()}
+                        <span className="text-xs text-[#1C2C3E]/30 font-medium lowercase"> 
+                          {property.listing_type === 'for-rent' ? ' /year' : ''}
+                        </span>
+                      </span>
                     </div>
-                    <div className="flex items-center space-x-1.5 text-[#1C2C3E]/40 font-bold">
-                      <Bath size={16} />
-                      <span className="text-xs">2</span>
+                    <h3 className="text-lg font-bold text-[#1C2C3E] mb-1 line-clamp-1">{property.title}</h3>
+                    <div className="flex items-center text-[#1C2C3E]/40 mb-5">
+                      <MapPin size={14} className="mr-1.5 shrink-0" />
+                      <span className="text-xs font-medium line-clamp-1">{property.location}</span>
                     </div>
-                    <div className="flex items-center space-x-1.5 text-[#1C2C3E]/40 font-bold">
-                      <Ruler size={16} />
-                      <span className="text-xs">20,000 sq.ft</span>
+                    
+                    <div className="flex items-center justify-between pt-5 border-t border-gray-100">
+                      <div className="flex items-center space-x-1.5 text-[#1C2C3E]/40 font-bold">
+                        <Bed size={16} />
+                        <span className="text-xs">{property.bedrooms || property.rooms || 0}</span>
+                      </div>
+                      <div className="flex items-center space-x-1.5 text-[#1C2C3E]/40 font-bold">
+                        <Bath size={16} />
+                        <span className="text-xs">{property.bathrooms || 0}</span>
+                      </div>
+                      {property.area && (
+                        <div className="flex items-center space-x-1.5 text-[#1C2C3E]/40 font-bold">
+                          <Ruler size={16} />
+                          <span className="text-xs">{property.area.toLocaleString()} sq.ft</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-full py-20 text-center">
+                <p className="text-gray-500">No properties found.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
