@@ -25,6 +25,10 @@ const Home = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 3;
   const [activeFAQ, setActiveFAQ] = useState(null);
+  const [heroActiveDropdown, setHeroActiveDropdown] = useState(null); // 'type', 'budget'
+  const [heroLocation, setHeroLocation] = useState('');
+  const [heroType, setHeroType] = useState('Any Type');
+  const [heroBudget, setHeroBudget] = useState('Any Price');
 
   const fetchProperties = async (filters = {}) => {
     try {
@@ -92,7 +96,7 @@ const Home = () => {
   };
 
   return (
-    <div className="bg-[#FAF9F6]">
+    <div className="bg-[#FAF9F6] overflow-x-hidden max-w-[100vw]">
       <div
         className="h-screen w-full bg-cover bg-center hero-container flex flex-col overflow-hidden relative sticky top-0 z-0"
         style={{
@@ -137,12 +141,12 @@ const Home = () => {
         >
           {/* Logo */}
           <div className="flex items-center">
-            <img src="/images/logo.png" alt="HomeSwift Logo" className="logo-img w-48 sm:w-60 h-10 rounded-lg object-cover" />
+            <img src="/images/logo.png" alt="HomeSwift Logo" className="logo-img w-32 sm:w-60 h-8 sm:h-10 rounded-lg object-contain" />
           </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8 absolute left-1/2 transform -translate-x-1/2 bg-white/40 backdrop-blur-md border border-white/20 rounded-full px-8 py-2.5 shadow-sm z-20">
-            <a href="/" className="text-[#2C3E50] text-sm font-medium border-b-2 border-[#FF6B35] pb-0.5">Home</a>
+            <a href="/" className="text-[#2C3E50] text-sm font-medium hover:text-[#FF6B35] transition-colors">Home</a>
             <a href="/faq" className="text-[#2C3E50]/70 text-sm hover:text-[#FF6B35] transition-colors font-medium">FAQs</a>
             <a href="/about" className="text-[#2C3E50]/70 text-sm hover:text-[#FF6B35] transition-colors font-medium">About Us</a>
           </nav>
@@ -171,34 +175,27 @@ const Home = () => {
         
           <motion.button 
             onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="md:hidden text-[#FF6B35] p-2 ml-auto"
-            whileHover={{ scale: 1.1, rotate: 90 }}
+            className="md:hidden z-[110] p-2 ml-auto flex flex-col items-center justify-center space-y-1.5 w-10 h-10 rounded-xl bg-white/50 backdrop-blur-md border border-white/30 shadow-sm"
             whileTap={{ scale: 0.9 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <AnimatePresence mode="wait">
-              {showMobileMenu ? (
-                <motion.div
-                  key="close"
-                  initial={{ rotate: -90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <X size={24} />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="menu"
-                  initial={{ rotate: 90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: -90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Menu size={24} />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <motion.div 
+              className="w-5 h-0.5 bg-[#FF6B35] rounded-full"
+              animate={{ 
+                rotate: showMobileMenu ? 45 : 0,
+                y: showMobileMenu ? 4 : 0
+              }}
+            />
+            <motion.div 
+              className="w-5 h-0.5 bg-[#FF6B35] rounded-full"
+              animate={{ opacity: showMobileMenu ? 0 : 1 }}
+            />
+            <motion.div 
+              className="w-5 h-0.5 bg-[#FF6B35] rounded-full"
+              animate={{ 
+                rotate: showMobileMenu ? -45 : 0,
+                y: showMobileMenu ? -4 : 0
+              }}
+            />
           </motion.button>
         </motion.header>
 
@@ -338,45 +335,114 @@ const Home = () => {
             Connect directly with verified landlords and discover exclusive listings across Nigeria. No heavy agency fees, just transparent deals.
           </motion.p>
 
-          {/* Advanced Search Bar */}
+          {/* Advanced Search Bar - Premium Capsule Style */}
           <motion.div
-            className="w-full max-w-4xl"
+            className="w-full max-w-5xl"
             initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
           >
-            <div className="bg-white/40 backdrop-blur-xl border border-white p-2 rounded-[2.5rem] shadow-2xl shadow-blue-900/10">
-              <div className="bg-white rounded-[2rem] p-2 flex flex-col md:flex-row items-center gap-2">
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2 w-full px-4">
-                  <div className="flex flex-col border-r-0 md:border-r border-gray-100 py-2 pr-4 text-left">
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-[#FF6B35] mb-1">Where</span>
-                    <input type="text" placeholder="Lagos, Nigeria" className="bg-transparent border-none p-0 text-sm font-bold text-[#1C2C3E] placeholder-[#1C2C3E]/20 focus:ring-0" />
+            <div className="bg-white/40 backdrop-blur-2xl border border-white/50 p-2 rounded-[3rem] shadow-[0_30px_100px_rgba(0,0,0,0.08)]">
+              <div className="bg-white rounded-[2.5rem] p-2 flex flex-col md:flex-row items-center gap-1">
+                {/* Location Section */}
+                <div className="flex-[1.2] flex items-center px-6 py-4 hover:bg-gray-50/50 rounded-2xl transition-all group cursor-pointer w-full">
+                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#FF6B35] mr-4 shrink-0">
+                    <MapPin size={20} />
                   </div>
-                  <div className="flex flex-col border-r-0 md:border-r border-gray-100 py-2 pr-4 text-left">
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-[#FF6B35] mb-1">Property Type</span>
-                    <select className="bg-transparent border-none p-0 text-sm font-bold text-[#1C2C3E] focus:ring-0 cursor-pointer">
-                      <option>Any Type</option>
-                      <option>Apartment</option>
-                      <option>House</option>
-                      <option>Office</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col py-2 text-left">
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-[#FF6B35] mb-1">Budget</span>
-                    <select className="bg-transparent border-none p-0 text-sm font-bold text-[#1C2C3E] focus:ring-0 cursor-pointer">
-                      <option>Any Price</option>
-                      <option>Under ₦2m</option>
-                      <option>₦2m - ₦5m</option>
-                      <option>Above ₦5m</option>
-                    </select>
+                  <div className="flex flex-col text-left flex-1">
+                    <span className="text-[10px] uppercase tracking-[0.15em] font-black text-[#FF6B35] mb-1">Where</span>
+                    <input 
+                      type="text" 
+                      placeholder="Enter city or area..." 
+                      value={heroLocation}
+                      onChange={(e) => setHeroLocation(e.target.value)}
+                      className="bg-transparent border-none p-0 text-base font-bold text-[#1C2C3E] placeholder-[#1C2C3E]/20 focus:ring-0 w-full" 
+                    />
                   </div>
                 </div>
+
+                <div className="hidden md:block w-px h-10 bg-gray-100" />
+
+                {/* Property Type Section */}
+                <div 
+                  className="flex-1 relative flex items-center px-6 py-4 hover:bg-gray-50/50 rounded-2xl transition-all group cursor-pointer w-full"
+                  onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'type' ? null : 'type')}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 mr-4 shrink-0">
+                    <Bed size={20} />
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-[10px] uppercase tracking-[0.15em] font-black text-[#1C2C3E]/30 mb-1">Property</span>
+                    <span className="text-base font-bold text-[#1C2C3E] truncate">{heroType}</span>
+                  </div>
+                  <ChevronDown size={14} className={`ml-auto text-[#1C2C3E]/20 transition-transform ${heroActiveDropdown === 'type' ? 'rotate-180' : ''}`} />
+
+                  <AnimatePresence>
+                    {heroActiveDropdown === 'type' && (
+                      <motion.div
+                        className="absolute top-full left-0 mt-4 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 z-50"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 15 }}
+                      >
+                        {['Any Type', 'Apartment', 'House', 'Villa', 'Townhouse'].map((t) => (
+                          <button
+                            key={t}
+                            onClick={(e) => { e.stopPropagation(); setHeroType(t); setHeroActiveDropdown(null); }}
+                            className="w-full text-left px-4 py-2.5 text-sm font-bold text-[#1C2C3E] hover:bg-gray-50 rounded-xl transition-colors"
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="hidden md:block w-px h-10 bg-gray-100" />
+
+                {/* Budget Section */}
+                <div 
+                  className="flex-1 relative flex items-center px-6 py-4 hover:bg-gray-50/50 rounded-2xl transition-all group cursor-pointer w-full"
+                  onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'budget' ? null : 'budget')}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-500 mr-4 shrink-0">
+                    <Ruler size={20} />
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-[10px] uppercase tracking-[0.15em] font-black text-[#1C2C3E]/30 mb-1">Budget</span>
+                    <span className="text-base font-bold text-[#1C2C3E] truncate">{heroBudget}</span>
+                  </div>
+                  <ChevronDown size={14} className={`ml-auto text-[#1C2C3E]/20 transition-transform ${heroActiveDropdown === 'budget' ? 'rotate-180' : ''}`} />
+
+                  <AnimatePresence>
+                    {heroActiveDropdown === 'budget' && (
+                      <motion.div
+                        className="absolute top-full left-0 mt-4 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 z-50"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 15 }}
+                      >
+                        {['Any Price', 'Under ₦2m', '₦2m - ₦5m', '₦5m - ₦10m', 'Above ₦10m'].map((b) => (
+                          <button
+                            key={b}
+                            onClick={(e) => { e.stopPropagation(); setHeroBudget(b); setHeroActiveDropdown(null); }}
+                            className="w-full text-left px-4 py-2.5 text-sm font-bold text-[#1C2C3E] hover:bg-gray-50 rounded-xl transition-colors"
+                          >
+                            {b}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 <button 
                   onClick={() => navigate('/properties')}
-                  className="w-full md:w-auto flex items-center justify-center space-x-3 bg-[#1C2C3E] text-white px-10 py-5 rounded-[1.5rem] font-bold hover:bg-black transition-all shadow-xl shadow-blue-100"
+                  className="w-full md:w-auto flex items-center justify-center space-x-3 bg-[#1C2C3E] text-white px-10 py-5 rounded-[2rem] font-bold hover:bg-[#FF6B35] transition-all shadow-xl shadow-blue-100 group"
                 >
-                  <Search size={18} />
-                  <span>Search</span>
+                  <Search size={22} className="group-hover:scale-110 transition-transform" />
+                  <span className="md:hidden lg:inline text-lg">Find Home</span>
                 </button>
               </div>
             </div>
