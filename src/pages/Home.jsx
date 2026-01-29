@@ -343,53 +343,57 @@ const Home = () => {
             Connect directly with verified landlords and discover exclusive listings across Nigeria. No heavy agency fees, just transparent deals.
           </motion.p>
 
-          {/* Search Interface - Dual Capsule Style */}
+          {/* Search Interface - Airbnb Style with Glassmorphism */}
           <motion.div
-            className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-center gap-3 px-4 sm:px-6"
+            className="w-full max-w-5xl px-4 sm:px-6"
             initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
           >
-            {/* Unified Capsule: Search Parameters + Action */}
-            <div className="flex-[3] w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-3xl md:rounded-full p-4 md:px-3 md:py-1 flex flex-col md:flex-row items-center shadow-2xl shadow-black/5 transition-all hover:bg-white/25">
-              {/* Where Pod */}
-              <div className="w-full md:flex-1 flex flex-col items-start px-4 py-3 md:py-2">
-                <span className="text-[13px] font-bold text-[#1C2C3E]">Where</span>
+            {/* Desktop: Unified Search Bar */}
+            <div className="hidden md:flex w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-full shadow-2xl shadow-black/10 overflow-hidden">
+              {/* Where Section */}
+              <div 
+                className="flex-1 flex flex-col justify-center px-6 py-4 cursor-pointer hover:bg-white/30 transition-all relative group"
+                onClick={() => setHeroActiveDropdown(null)}
+              >
+                <span className="text-[12px] font-bold text-[#1C2C3E] mb-0.5">Where</span>
                 <input 
                   type="text" 
-                  placeholder="Search location" 
+                  placeholder="Search destinations" 
                   value={heroLocation}
                   onChange={(e) => setHeroLocation(e.target.value)}
-                  className="bg-transparent border-none p-0 text-[11px] text-[#1C2C3E] placeholder-[#1C2C3E]/50 focus:ring-0 w-full font-medium" 
+                  className="bg-transparent border-none p-0 text-[14px] text-[#1C2C3E] placeholder-[#1C2C3E]/40 focus:ring-0 w-full font-medium" 
                 />
               </div>
 
-              <div className="w-full md:w-[1px] h-[1px] md:h-8 bg-white/10 md:bg-gray-200/40 my-1 md:my-0" />
+              {/* Divider */}
+              <div className="w-[1px] bg-white/30 my-3" />
 
-              {/* Purchase Pod */}
+              {/* Purchase Section */}
               <div 
-                className="w-full md:flex-1 relative flex flex-col items-start px-4 py-3 md:py-2 cursor-pointer group"
+                className={`flex-1 flex flex-col justify-center px-6 py-4 cursor-pointer transition-all relative ${
+                  heroActiveDropdown === 'purchase' ? 'bg-white/40' : 'hover:bg-white/30'
+                }`}
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'purchase' ? null : 'purchase')}
               >
-                <div className="flex items-center space-x-1.5">
-                  <span className="text-[13px] font-bold text-[#1C2C3E]">Purchase</span>
-                  <ChevronDown size={12} className={`text-[#1C2C3E]/30 transition-transform ${heroActiveDropdown === 'purchase' ? 'rotate-180' : ''}`} />
-                </div>
-                <span className="text-[11px] text-[#1C2C3E]/50 truncate">{heroPurchase}</span>
+                <span className="text-[12px] font-bold text-[#1C2C3E] mb-0.5">Purchase</span>
+                <span className="text-[14px] text-[#1C2C3E]/70 font-medium truncate">{heroPurchase}</span>
 
                 <AnimatePresence>
                   {heroActiveDropdown === 'purchase' && (
                     <motion.div
-                      className="absolute top-full left-0 mt-4 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50 text-left"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute top-full left-0 mt-3 w-56 bg-white rounded-3xl shadow-2xl border border-gray-100 p-3 z-50"
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
                     >
                       {['For Rent', 'For Sale', 'Short Let'].map((p) => (
                         <button
                           key={p}
                           onClick={(e) => { e.stopPropagation(); setHeroPurchase(p); setHeroActiveDropdown(null); }}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded-xl text-sm font-medium text-[#1C2C3E] transition-colors"
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl text-[15px] font-medium text-[#1C2C3E] transition-colors"
                         >
                           {p}
                         </button>
@@ -399,32 +403,33 @@ const Home = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="w-full md:w-[1px] h-[1px] md:h-8 bg-white/10 md:bg-gray-200/40 my-1 md:my-0" />
+              {/* Divider */}
+              <div className="w-[1px] bg-white/30 my-3" />
 
-              {/* Type Pod */}
+              {/* Type Section */}
               <div 
-                className="w-full md:flex-1 relative flex flex-col items-start px-4 py-3 md:py-2 cursor-pointer group"
+                className={`flex-1 flex flex-col justify-center px-6 py-4 cursor-pointer transition-all relative ${
+                  heroActiveDropdown === 'type' ? 'bg-white/40' : 'hover:bg-white/30'
+                }`}
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'type' ? null : 'type')}
               >
-                <div className="flex items-center space-x-1.5">
-                  <span className="text-[13px] font-bold text-[#1C2C3E]">Type</span>
-                  <ChevronDown size={12} className={`text-[#1C2C3E]/30 transition-transform ${heroActiveDropdown === 'type' ? 'rotate-180' : ''}`} />
-                </div>
-                <span className="text-[11px] text-[#1C2C3E]/50 truncate">{heroType}</span>
+                <span className="text-[12px] font-bold text-[#1C2C3E] mb-0.5">Type</span>
+                <span className="text-[14px] text-[#1C2C3E]/70 font-medium truncate">{heroType}</span>
 
                 <AnimatePresence>
                   {heroActiveDropdown === 'type' && (
                     <motion.div
-                      className="absolute top-full left-0 mt-4 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50 text-left"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute top-full left-0 mt-3 w-56 bg-white rounded-3xl shadow-2xl border border-gray-100 p-3 z-50"
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
                     >
                       {['Apartment', 'House', 'Villa', 'Office'].map((t) => (
                         <button
                           key={t}
                           onClick={(e) => { e.stopPropagation(); setHeroType(t); setHeroActiveDropdown(null); }}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded-xl text-sm font-medium text-[#1C2C3E] transition-colors"
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl text-[15px] font-medium text-[#1C2C3E] transition-colors"
                         >
                           {t}
                         </button>
@@ -434,32 +439,33 @@ const Home = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="w-full md:w-[1px] h-[1px] md:h-8 bg-white/10 md:bg-gray-200/40 my-1 md:my-0" />
+              {/* Divider */}
+              <div className="w-[1px] bg-white/30 my-3" />
 
-              {/* Price Range Pod */}
+              {/* Price Section */}
               <div 
-                className="w-full md:flex-[1.2] relative flex flex-col items-start px-4 py-3 md:py-2 cursor-pointer group"
+                className={`flex-1 flex flex-col justify-center px-6 py-4 cursor-pointer transition-all relative ${
+                  heroActiveDropdown === 'budget' ? 'bg-white/40' : 'hover:bg-white/30'
+                }`}
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'budget' ? null : 'budget')}
               >
-                <div className="flex items-center space-x-1.5">
-                  <span className="text-[13px] font-bold text-[#1C2C3E]">Price Range</span>
-                  <ChevronDown size={12} className={`text-[#1C2C3E]/30 transition-transform ${heroActiveDropdown === 'budget' ? 'rotate-180' : ''}`} />
-                </div>
-                <span className="text-[11px] text-[#1C2C3E]/50 truncate">{heroBudget}</span>
+                <span className="text-[12px] font-bold text-[#1C2C3E] mb-0.5">Price</span>
+                <span className="text-[14px] text-[#1C2C3E]/70 font-medium truncate">{heroBudget}</span>
 
                 <AnimatePresence>
                   {heroActiveDropdown === 'budget' && (
                     <motion.div
-                      className="absolute top-full left-0 mt-4 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50 text-left"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute top-full left-0 mt-3 w-64 bg-white rounded-3xl shadow-2xl border border-gray-100 p-3 z-50"
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
                     >
                       {['Any Price', 'Under ₦2m', '₦2m - ₦5m', '₦5m - ₦10m', 'Above ₦10m'].map((b) => (
                         <button
                           key={b}
                           onClick={(e) => { e.stopPropagation(); setHeroBudget(b); setHeroActiveDropdown(null); }}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded-xl text-sm font-medium text-[#1C2C3E] transition-colors"
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl text-[15px] font-medium text-[#1C2C3E] transition-colors"
                         >
                           {b}
                         </button>
@@ -469,28 +475,149 @@ const Home = () => {
                 </AnimatePresence>
               </div>
 
-              {/* Mobile: Integrated Search Button */}
-              <div className="md:hidden w-full mt-2">
+              {/* Divider */}
+              <div className="w-[1px] bg-white/30 my-3" />
+
+              {/* Search Button Section */}
+              <div className="flex items-center justify-center px-2 py-2">
                 <button 
                   onClick={() => navigate('/properties')}
-                  className="w-full flex items-center justify-center space-x-2 bg-[#FF6B35] text-white px-6 py-3.5 rounded-2xl font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95 shadow-md"
+                  className="flex items-center justify-center space-x-2 bg-[#FF6B35] text-white pl-6 pr-6 py-4 rounded-full font-extrabold hover:bg-[#FF7B45] hover:scale-105 transition-all active:scale-95 shadow-lg shadow-orange-500/30"
                   aria-label="Search Properties"
                 >
-                  <Search size={18} />
-                  <span className="text-[14px]">Search Properties</span>
+                  <Search size={20} strokeWidth={2.5} />
+                  <span className="text-[15px]">Search</span>
                 </button>
               </div>
             </div>
 
-            {/* Desktop: Separate Action Capsule */}
-            <div className="hidden md:flex flex-none bg-white/30 backdrop-blur-xl border border-white/40 rounded-full p-1 items-center justify-center shadow-2xl shadow-black/5 min-w-[70px]">
-              <button 
-                onClick={() => navigate('/properties')}
-                className="flex items-center justify-center bg-[#FF6B35] text-white w-10 h-10 rounded-full font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95 group shadow-md"
-                aria-label="Search Properties"
+            {/* Mobile: Stacked Sections */}
+            <div className="md:hidden w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-3xl shadow-2xl shadow-black/10 p-4">
+              {/* Where Section */}
+              <div className="w-full flex flex-col px-4 py-3 hover:bg-white/20 rounded-2xl transition-all">
+                <span className="text-[12px] font-bold text-[#1C2C3E] mb-1">Where</span>
+                <input 
+                  type="text" 
+                  placeholder="Search destinations" 
+                  value={heroLocation}
+                  onChange={(e) => setHeroLocation(e.target.value)}
+                  className="bg-transparent border-none p-0 text-[14px] text-[#1C2C3E] placeholder-[#1C2C3E]/40 focus:ring-0 w-full font-medium" 
+                />
+              </div>
+
+              <div className="w-full h-[1px] bg-white/20 my-2" />
+
+              {/* Purchase Section */}
+              <div 
+                className={`w-full flex flex-col px-4 py-3 rounded-2xl cursor-pointer transition-all ${
+                  heroActiveDropdown === 'purchase' ? 'bg-white/30' : 'hover:bg-white/20'
+                }`}
+                onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'purchase' ? null : 'purchase')}
               >
-                <Search size={18} className="group-hover:scale-110 transition-transform" />
-              </button>
+                <span className="text-[12px] font-bold text-[#1C2C3E] mb-1">Purchase</span>
+                <span className="text-[14px] text-[#1C2C3E]/70 font-medium">{heroPurchase}</span>
+
+                <AnimatePresence>
+                  {heroActiveDropdown === 'purchase' && (
+                    <motion.div
+                      className="mt-3 w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-2"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                    >
+                      {['For Rent', 'For Sale', 'Short Let'].map((p) => (
+                        <button
+                          key={p}
+                          onClick={(e) => { e.stopPropagation(); setHeroPurchase(p); setHeroActiveDropdown(null); }}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl text-[14px] font-medium text-[#1C2C3E] transition-colors"
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div className="w-full h-[1px] bg-white/20 my-2" />
+
+              {/* Type Section */}
+              <div 
+                className={`w-full flex flex-col px-4 py-3 rounded-2xl cursor-pointer transition-all ${
+                  heroActiveDropdown === 'type' ? 'bg-white/30' : 'hover:bg-white/20'
+                }`}
+                onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'type' ? null : 'type')}
+              >
+                <span className="text-[12px] font-bold text-[#1C2C3E] mb-1">Type</span>
+                <span className="text-[14px] text-[#1C2C3E]/70 font-medium">{heroType}</span>
+
+                <AnimatePresence>
+                  {heroActiveDropdown === 'type' && (
+                    <motion.div
+                      className="mt-3 w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-2"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                    >
+                      {['Apartment', 'House', 'Villa', 'Office'].map((t) => (
+                        <button
+                          key={t}
+                          onClick={(e) => { e.stopPropagation(); setHeroType(t); setHeroActiveDropdown(null); }}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl text-[14px] font-medium text-[#1C2C3E] transition-colors"
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div className="w-full h-[1px] bg-white/20 my-2" />
+
+              {/* Price Section */}
+              <div 
+                className={`w-full flex flex-col px-4 py-3 rounded-2xl cursor-pointer transition-all ${
+                  heroActiveDropdown === 'budget' ? 'bg-white/30' : 'hover:bg-white/20'
+                }`}
+                onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'budget' ? null : 'budget')}
+              >
+                <span className="text-[12px] font-bold text-[#1C2C3E] mb-1">Price</span>
+                <span className="text-[14px] text-[#1C2C3E]/70 font-medium">{heroBudget}</span>
+
+                <AnimatePresence>
+                  {heroActiveDropdown === 'budget' && (
+                    <motion.div
+                      className="mt-3 w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-2"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                    >
+                      {['Any Price', 'Under ₦2m', '₦2m - ₦5m', '₦5m - ₦10m', 'Above ₦10m'].map((b) => (
+                        <button
+                          key={b}
+                          onClick={(e) => { e.stopPropagation(); setHeroBudget(b); setHeroActiveDropdown(null); }}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl text-[14px] font-medium text-[#1C2C3E] transition-colors"
+                        >
+                          {b}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Search Button */}
+              <div className="w-full mt-3">
+                <button 
+                  onClick={() => navigate('/properties')}
+                  className="w-full flex items-center justify-center space-x-2 bg-[#FF6B35] text-white px-6 py-4 rounded-2xl font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95 shadow-md"
+                  aria-label="Search Properties"
+                >
+                  <Search size={20} strokeWidth={2.5} />
+                  <span className="text-[15px]">Search Properties</span>
+                </button>
+              </div>
             </div>
           </motion.div>
         </motion.main>
