@@ -461,12 +461,12 @@ export const registerServiceWorker = async (onUpdate) => {
 // PWA Meta Tags Component (for index.html)
 export const PWAMetaTags = () => (
   <>
-    <meta name="theme-color" content="#FF6B35" />
+    <meta name="theme-color" content="#ffffff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="HomeSwift" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="msapplication-TileColor" content="#FF6B35" />
+    <meta name="msapplication-TileColor" content="#ffffff" />
     <meta name="msapplication-tap-highlight" content="no" />
 
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
