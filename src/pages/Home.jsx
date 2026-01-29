@@ -97,7 +97,7 @@ const Home = () => {
   };
 
   return (
-    <div className="bg-[#FAF9F6]">
+    <div className="bg-[#FAF9F6] overflow-x-hidden">
       <div
         className="h-screen w-full bg-cover bg-center hero-container flex flex-col overflow-hidden relative sticky top-0 z-0"
         style={{
@@ -345,13 +345,13 @@ const Home = () => {
 
           {/* Search Interface - Dual Capsule Style */}
           <motion.div
-            className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-center gap-3"
+            className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-center gap-3 px-4"
             initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
           >
-            {/* Left Capsule: Search Parameters */}
-            <div className="flex-[3] w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-[2rem] md:rounded-full p-4 md:px-3 md:py-1 flex flex-col md:flex-row items-center shadow-2xl shadow-black/5 transition-all hover:bg-white/25">
+            {/* Unified Capsule: Search Parameters + Action */}
+            <div className="flex-[3] w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-3xl md:rounded-full p-4 md:px-3 md:py-1 flex flex-col md:flex-row items-center shadow-2xl shadow-black/5 transition-all hover:bg-white/25">
               {/* Where Pod */}
               <div className="w-full md:flex-1 flex flex-col items-start px-4 py-3 md:py-2">
                 <span className="text-[13px] font-bold text-[#1C2C3E]">Where</span>
@@ -468,16 +468,28 @@ const Home = () => {
                   )}
                 </AnimatePresence>
               </div>
+
+              {/* Mobile: Integrated Search Button */}
+              <div className="md:hidden w-full mt-2">
+                <button 
+                  onClick={() => navigate('/properties')}
+                  className="w-full flex items-center justify-center space-x-2 bg-[#FF6B35] text-white px-6 py-3.5 rounded-2xl font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95 shadow-md"
+                  aria-label="Search Properties"
+                >
+                  <Search size={18} />
+                  <span className="text-[14px]">Search Properties</span>
+                </button>
+              </div>
             </div>
 
-            {/* Right Capsule: Actions */}
-            <div className="flex-none bg-white/30 backdrop-blur-xl border border-white/40 rounded-full p-2 md:p-1 flex flex-row items-center justify-center shadow-2xl shadow-black/5 md:min-w-[70px]">
+            {/* Desktop: Separate Action Capsule */}
+            <div className="hidden md:flex flex-none bg-white/30 backdrop-blur-xl border border-white/40 rounded-full p-1 items-center justify-center shadow-2xl shadow-black/5 min-w-[70px]">
               <button 
                 onClick={() => navigate('/properties')}
-                className="flex items-center justify-center bg-[#FF6B35] text-white w-12 h-12 md:w-10 md:h-10 rounded-full font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95 group shadow-md"
+                className="flex items-center justify-center bg-[#FF6B35] text-white w-10 h-10 rounded-full font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95 group shadow-md"
                 aria-label="Search Properties"
               >
-                <Search size={20} className="md:size-[18px] group-hover:scale-110 transition-transform" />
+                <Search size={18} className="group-hover:scale-110 transition-transform" />
               </button>
             </div>
           </motion.div>
@@ -657,7 +669,7 @@ const Home = () => {
           >
             <div className="bg-[#FAF9F7] rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden aspect-square flex flex-col justify-end shadow-xs group">
               <img src="/images/house-1.png" alt="Featured Property" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-1000" />
-              <div className="absolute inset-0 bg-linear-to-t from-white via-transparent to-transparent opacity-80" />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-80" />
               
               <div className="relative z-10 space-y-4">
                 {[
