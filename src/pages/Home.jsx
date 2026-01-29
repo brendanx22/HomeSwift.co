@@ -25,10 +25,11 @@ const Home = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 3;
   const [activeFAQ, setActiveFAQ] = useState(null);
-  const [heroActiveDropdown, setHeroActiveDropdown] = useState(null); // 'type', 'budget'
+  const [heroActiveDropdown, setHeroActiveDropdown] = useState(null); // 'purchase', 'type', 'budget'
   const [heroLocation, setHeroLocation] = useState('');
-  const [heroType, setHeroType] = useState('Any Type');
-  const [heroBudget, setHeroBudget] = useState('Any Price');
+  const [heroPurchase, setHeroPurchase] = useState('Add Purchase Type');
+  const [heroType, setHeroType] = useState('Add Type');
+  const [heroBudget, setHeroBudget] = useState('Select a price range');
 
   const fetchProperties = async (filters = {}) => {
     try {
@@ -342,116 +343,147 @@ const Home = () => {
             Connect directly with verified landlords and discover exclusive listings across Nigeria. No heavy agency fees, just transparent deals.
           </motion.p>
 
-          {/* Advanced Search Bar - Premium Capsule Style */}
+          {/* Search Interface - Dual Capsule Style */}
           <motion.div
-            className="w-full max-w-5xl"
+            className="w-full max-w-6xl flex flex-col md:flex-row items-center justify-center gap-4"
             initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
           >
-            <div className="bg-white/40 backdrop-blur-2xl border border-white/50 p-2 rounded-[3rem] shadow-[0_30px_100px_rgba(0,0,0,0.08)]">
-              <div className="bg-white rounded-[2.5rem] p-2 flex flex-col md:flex-row items-center gap-1">
-                {/* Location Section */}
-                <div className="flex-[1.2] flex items-center px-6 py-4 hover:bg-gray-50/50 rounded-2xl transition-all group cursor-pointer w-full">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#FF6B35] mr-4 shrink-0">
-                    <MapPin size={20} />
-                  </div>
-                  <div className="flex flex-col text-left flex-1">
-                    <span className="text-[10px] uppercase tracking-[0.15em] font-black text-[#FF6B35] mb-1">Where</span>
-                    <input 
-                      type="text" 
-                      placeholder="Enter city or area..." 
-                      value={heroLocation}
-                      onChange={(e) => setHeroLocation(e.target.value)}
-                      className="bg-transparent border-none p-0 text-base font-bold text-[#1C2C3E] placeholder-[#1C2C3E]/20 focus:ring-0 w-full" 
-                    />
-                  </div>
-                </div>
-
-                <div className="hidden md:block w-px h-10 bg-gray-100" />
-
-                {/* Property Type Section */}
-                <div 
-                  className="flex-1 relative flex items-center px-6 py-4 hover:bg-gray-50/50 rounded-2xl transition-all group cursor-pointer w-full"
-                  onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'type' ? null : 'type')}
-                >
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 mr-4 shrink-0">
-                    <Bed size={20} />
-                  </div>
-                  <div className="flex flex-col text-left">
-                    <span className="text-[10px] uppercase tracking-[0.15em] font-black text-[#1C2C3E]/30 mb-1">Property</span>
-                    <span className="text-base font-bold text-[#1C2C3E] truncate">{heroType}</span>
-                  </div>
-                  <ChevronDown size={14} className={`ml-auto text-[#1C2C3E]/20 transition-transform ${heroActiveDropdown === 'type' ? 'rotate-180' : ''}`} />
-
-                  <AnimatePresence>
-                    {heroActiveDropdown === 'type' && (
-                      <motion.div
-                        className="absolute top-full left-0 mt-4 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 z-50"
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 15 }}
-                      >
-                        {['Any Type', 'Apartment', 'House', 'Villa', 'Townhouse'].map((t) => (
-                          <button
-                            key={t}
-                            onClick={(e) => { e.stopPropagation(); setHeroType(t); setHeroActiveDropdown(null); }}
-                            className="w-full text-left px-4 py-2.5 text-sm font-bold text-[#1C2C3E] hover:bg-gray-50 rounded-xl transition-colors"
-                          >
-                            {t}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <div className="hidden md:block w-px h-10 bg-gray-100" />
-
-                {/* Budget Section */}
-                <div 
-                  className="flex-1 relative flex items-center px-6 py-4 hover:bg-gray-50/50 rounded-2xl transition-all group cursor-pointer w-full"
-                  onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'budget' ? null : 'budget')}
-                >
-                  <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-500 mr-4 shrink-0">
-                    <Ruler size={20} />
-                  </div>
-                  <div className="flex flex-col text-left">
-                    <span className="text-[10px] uppercase tracking-[0.15em] font-black text-[#1C2C3E]/30 mb-1">Budget</span>
-                    <span className="text-base font-bold text-[#1C2C3E] truncate">{heroBudget}</span>
-                  </div>
-                  <ChevronDown size={14} className={`ml-auto text-[#1C2C3E]/20 transition-transform ${heroActiveDropdown === 'budget' ? 'rotate-180' : ''}`} />
-
-                  <AnimatePresence>
-                    {heroActiveDropdown === 'budget' && (
-                      <motion.div
-                        className="absolute top-full left-0 mt-4 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 z-50"
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 15 }}
-                      >
-                        {['Any Price', 'Under ₦2m', '₦2m - ₦5m', '₦5m - ₦10m', 'Above ₦10m'].map((b) => (
-                          <button
-                            key={b}
-                            onClick={(e) => { e.stopPropagation(); setHeroBudget(b); setHeroActiveDropdown(null); }}
-                            className="w-full text-left px-4 py-2.5 text-sm font-bold text-[#1C2C3E] hover:bg-gray-50 rounded-xl transition-colors"
-                          >
-                            {b}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <button 
-                  onClick={() => navigate('/properties')}
-                  className="w-full md:w-auto flex items-center justify-center space-x-3 bg-[#1C2C3E] text-white px-10 py-5 rounded-[2rem] font-bold hover:bg-[#FF6B35] transition-all shadow-xl shadow-blue-100 group"
-                >
-                  <Search size={22} className="group-hover:scale-110 transition-transform" />
-                  <span className="md:hidden lg:inline text-lg">Find Home</span>
-                </button>
+            {/* Left Capsule: Search Parameters */}
+            <div className="flex-[3] w-full bg-[#F8F9FA]/80 backdrop-blur-md border border-gray-200/50 rounded-full px-4 py-1.5 flex flex-row items-center shadow-sm">
+              {/* Where Pod */}
+              <div className="flex-1 flex flex-col items-start px-6 py-2.5">
+                <span className="text-[15px] font-bold text-[#1C2C3E]">Where</span>
+                <input 
+                  type="text" 
+                  placeholder="Search location" 
+                  value={heroLocation}
+                  onChange={(e) => setHeroLocation(e.target.value)}
+                  className="bg-transparent border-none p-0 text-[13px] text-[#1C2C3E]/50 placeholder-[#1C2C3E]/40 focus:ring-0 w-full" 
+                />
               </div>
+
+              <div className="w-[1px] h-10 bg-gray-200/60" />
+
+              {/* Purchase Pod */}
+              <div 
+                className="flex-1 relative flex flex-col items-start px-6 py-2.5 cursor-pointer group"
+                onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'purchase' ? null : 'purchase')}
+              >
+                <div className="flex items-center space-x-2">
+                  <span className="text-[15px] font-bold text-[#1C2C3E]">Purchase</span>
+                  <ChevronDown size={14} className={`text-[#1C2C3E]/30 transition-transform ${heroActiveDropdown === 'purchase' ? 'rotate-180' : ''}`} />
+                </div>
+                <span className="text-[13px] text-[#1C2C3E]/50 truncate">{heroPurchase}</span>
+
+                <AnimatePresence>
+                  {heroActiveDropdown === 'purchase' && (
+                    <motion.div
+                      className="absolute top-full left-0 mt-4 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50 text-left"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                    >
+                      {['For Rent', 'For Sale', 'Short Let'].map((p) => (
+                        <button
+                          key={p}
+                          onClick={(e) => { e.stopPropagation(); setHeroPurchase(p); setHeroActiveDropdown(null); }}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded-xl text-sm font-medium text-[#1C2C3E] transition-colors"
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div className="w-[1px] h-10 bg-gray-200/60" />
+
+              {/* Type Pod */}
+              <div 
+                className="flex-1 relative flex flex-col items-start px-6 py-2.5 cursor-pointer group"
+                onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'type' ? null : 'type')}
+              >
+                <div className="flex items-center space-x-2">
+                  <span className="text-[15px] font-bold text-[#1C2C3E]">Type</span>
+                  <ChevronDown size={14} className={`text-[#1C2C3E]/30 transition-transform ${heroActiveDropdown === 'type' ? 'rotate-180' : ''}`} />
+                </div>
+                <span className="text-[13px] text-[#1C2C3E]/50 truncate">{heroType}</span>
+
+                <AnimatePresence>
+                  {heroActiveDropdown === 'type' && (
+                    <motion.div
+                      className="absolute top-full left-0 mt-4 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50 text-left"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                    >
+                      {['Apartment', 'House', 'Villa', 'Office'].map((t) => (
+                        <button
+                          key={t}
+                          onClick={(e) => { e.stopPropagation(); setHeroType(t); setHeroActiveDropdown(null); }}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded-xl text-sm font-medium text-[#1C2C3E] transition-colors"
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div className="w-[1px] h-10 bg-gray-200/60" />
+
+              {/* Price Range Pod */}
+              <div 
+                className="flex-1 relative flex flex-col items-start px-6 py-2.5 cursor-pointer group"
+                onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'budget' ? null : 'budget')}
+              >
+                <div className="flex items-center space-x-2">
+                  <span className="text-[15px] font-bold text-[#1C2C3E]">Price Range</span>
+                  <ChevronDown size={14} className={`text-[#1C2C3E]/30 transition-transform ${heroActiveDropdown === 'budget' ? 'rotate-180' : ''}`} />
+                </div>
+                <span className="text-[13px] text-[#1C2C3E]/50 truncate">{heroBudget}</span>
+
+                <AnimatePresence>
+                  {heroActiveDropdown === 'budget' && (
+                    <motion.div
+                      className="absolute top-full left-0 mt-4 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50 text-left"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                    >
+                      {['Any Price', 'Under ₦2m', '₦2m - ₦5m', '₦5m - ₦10m', 'Above ₦10m'].map((b) => (
+                        <button
+                          key={b}
+                          onClick={(e) => { e.stopPropagation(); setHeroBudget(b); setHeroActiveDropdown(null); }}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded-xl text-sm font-medium text-[#1C2C3E] transition-colors"
+                        >
+                          {b}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* Right Capsule: Actions */}
+            <div className="flex-1 w-full md:w-auto bg-white border border-gray-200/50 rounded-full p-1.5 flex flex-row items-center justify-between shadow-sm min-w-[240px]">
+              <button className="flex items-center space-x-2 px-6 py-2.5 rounded-full hover:bg-gray-50 transition-colors border border-gray-100">
+                <SlidersHorizontal size={16} className="text-[#1C2C3E]" />
+                <span className="text-[15px] font-bold text-[#1C2C3E]">Filter</span>
+              </button>
+
+              <button 
+                onClick={() => navigate('/properties')}
+                className="flex items-center space-x-2 bg-[#FF6B35] text-white px-8 py-3 rounded-full font-bold hover:bg-[#FF7B45] transition-all shadow-md shadow-orange-200"
+              >
+                <Search size={18} />
+                <span className="text-[15px]">Search</span>
+              </button>
             </div>
           </motion.div>
         </motion.main>
