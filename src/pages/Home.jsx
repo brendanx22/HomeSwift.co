@@ -97,7 +97,7 @@ const Home = () => {
   };
 
   return (
-    <div className="bg-[#FAF9F6] overflow-x-hidden">
+    <div className="bg-[#FAF9F6]">
       <div
         className="h-screen w-full bg-cover bg-center hero-container flex flex-col overflow-hidden relative sticky top-0 z-0"
         style={{
@@ -345,7 +345,7 @@ const Home = () => {
 
           {/* Search Interface - Dual Capsule Style */}
           <motion.div
-            className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-center gap-3 px-4"
+            className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-center gap-3 px-4 sm:px-6"
             initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
