@@ -97,7 +97,7 @@ const Home = () => {
   };
 
   return (
-    <div className="bg-[#FAF9F6] overflow-x-hidden max-w-[100vw]">
+    <div className="bg-[#FAF9F6]">
       <div
         className="h-screen w-full bg-cover bg-center hero-container flex flex-col overflow-hidden relative sticky top-0 z-0"
         style={{
@@ -343,57 +343,57 @@ const Home = () => {
             Connect directly with verified landlords and discover exclusive listings across Nigeria. No heavy agency fees, just transparent deals.
           </motion.p>
 
-          {/* Search Interface - Airbnb Style with Glassmorphism */}
+          {/* Search Interface - Compact Glassmorphism */}
           <motion.div
-            className="w-full max-w-5xl px-4 sm:px-6"
+            className="w-full max-w-4xl px-4 sm:px-6"
             initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
           >
             {/* Desktop: Unified Search Bar */}
-            <div className="hidden md:flex w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-full shadow-2xl shadow-black/10 overflow-hidden">
+            <div className="hidden md:flex w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-full shadow-xl shadow-black/10 overflow-hidden">
               {/* Where Section */}
               <div 
-                className="flex-1 flex flex-col justify-center px-6 py-4 cursor-pointer hover:bg-white/30 transition-all relative group"
+                className="flex-1 flex flex-col justify-center px-5 py-2.5 cursor-pointer hover:bg-white/30 transition-all relative group"
                 onClick={() => setHeroActiveDropdown(null)}
               >
-                <span className="text-[12px] font-bold text-[#1C2C3E] mb-0.5">Where</span>
+                <span className="text-[10px] font-bold text-[#1C2C3E] mb-0.5 uppercase tracking-wide">Where</span>
                 <input 
                   type="text" 
                   placeholder="Search destinations" 
                   value={heroLocation}
                   onChange={(e) => setHeroLocation(e.target.value)}
-                  className="bg-transparent border-none p-0 text-[14px] text-[#1C2C3E] placeholder-[#1C2C3E]/40 focus:ring-0 w-full font-medium" 
+                  className="bg-transparent border-none p-0 text-[13px] text-[#1C2C3E] placeholder-[#1C2C3E]/40 focus:ring-0 w-full font-medium" 
                 />
               </div>
 
               {/* Divider */}
-              <div className="w-[1px] bg-white/30 my-3" />
+              <div className="w-[1px] bg-white/30 my-2" />
 
               {/* Purchase Section */}
               <div 
-                className={`flex-1 flex flex-col justify-center px-6 py-4 cursor-pointer transition-all relative ${
+                className={`flex-1 flex flex-col justify-center px-5 py-2.5 cursor-pointer transition-all relative ${
                   heroActiveDropdown === 'purchase' ? 'bg-white/40' : 'hover:bg-white/30'
                 }`}
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'purchase' ? null : 'purchase')}
               >
-                <span className="text-[12px] font-bold text-[#1C2C3E] mb-0.5">Purchase</span>
-                <span className="text-[14px] text-[#1C2C3E]/70 font-medium truncate">{heroPurchase}</span>
+                <span className="text-[10px] font-bold text-[#1C2C3E] mb-0.5 uppercase tracking-wide">Purchase</span>
+                <span className="text-[13px] text-[#1C2C3E]/70 font-medium truncate">{heroPurchase}</span>
 
                 <AnimatePresence>
                   {heroActiveDropdown === 'purchase' && (
                     <motion.div
-                      className="absolute top-full left-0 mt-3 w-56 bg-white rounded-3xl shadow-2xl border border-gray-100 p-3 z-50"
+                      className="absolute top-full left-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50"
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ duration: 0.15 }}
                     >
                       {['For Rent', 'For Sale', 'Short Let'].map((p) => (
                         <button
                           key={p}
                           onClick={(e) => { e.stopPropagation(); setHeroPurchase(p); setHeroActiveDropdown(null); }}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl text-[15px] font-medium text-[#1C2C3E] transition-colors"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg text-[13px] font-medium text-[#1C2C3E] transition-colors"
                         >
                           {p}
                         </button>
@@ -404,32 +404,32 @@ const Home = () => {
               </div>
 
               {/* Divider */}
-              <div className="w-[1px] bg-white/30 my-3" />
+              <div className="w-[1px] bg-white/30 my-2" />
 
               {/* Type Section */}
               <div 
-                className={`flex-1 flex flex-col justify-center px-6 py-4 cursor-pointer transition-all relative ${
+                className={`flex-1 flex flex-col justify-center px-5 py-2.5 cursor-pointer transition-all relative ${
                   heroActiveDropdown === 'type' ? 'bg-white/40' : 'hover:bg-white/30'
                 }`}
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'type' ? null : 'type')}
               >
-                <span className="text-[12px] font-bold text-[#1C2C3E] mb-0.5">Type</span>
-                <span className="text-[14px] text-[#1C2C3E]/70 font-medium truncate">{heroType}</span>
+                <span className="text-[10px] font-bold text-[#1C2C3E] mb-0.5 uppercase tracking-wide">Type</span>
+                <span className="text-[13px] text-[#1C2C3E]/70 font-medium truncate">{heroType}</span>
 
                 <AnimatePresence>
                   {heroActiveDropdown === 'type' && (
                     <motion.div
-                      className="absolute top-full left-0 mt-3 w-56 bg-white rounded-3xl shadow-2xl border border-gray-100 p-3 z-50"
+                      className="absolute top-full left-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50"
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ duration: 0.15 }}
                     >
                       {['Apartment', 'House', 'Villa', 'Office'].map((t) => (
                         <button
                           key={t}
                           onClick={(e) => { e.stopPropagation(); setHeroType(t); setHeroActiveDropdown(null); }}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl text-[15px] font-medium text-[#1C2C3E] transition-colors"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg text-[13px] font-medium text-[#1C2C3E] transition-colors"
                         >
                           {t}
                         </button>
@@ -440,32 +440,32 @@ const Home = () => {
               </div>
 
               {/* Divider */}
-              <div className="w-[1px] bg-white/30 my-3" />
+              <div className="w-[1px] bg-white/30 my-2" />
 
               {/* Price Section */}
               <div 
-                className={`flex-1 flex flex-col justify-center px-6 py-4 cursor-pointer transition-all relative ${
+                className={`flex-1 flex flex-col justify-center px-5 py-2.5 cursor-pointer transition-all relative ${
                   heroActiveDropdown === 'budget' ? 'bg-white/40' : 'hover:bg-white/30'
                 }`}
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'budget' ? null : 'budget')}
               >
-                <span className="text-[12px] font-bold text-[#1C2C3E] mb-0.5">Price</span>
-                <span className="text-[14px] text-[#1C2C3E]/70 font-medium truncate">{heroBudget}</span>
+                <span className="text-[10px] font-bold text-[#1C2C3E] mb-0.5 uppercase tracking-wide">Price</span>
+                <span className="text-[13px] text-[#1C2C3E]/70 font-medium truncate">{heroBudget}</span>
 
                 <AnimatePresence>
                   {heroActiveDropdown === 'budget' && (
                     <motion.div
-                      className="absolute top-full left-0 mt-3 w-64 bg-white rounded-3xl shadow-2xl border border-gray-100 p-3 z-50"
+                      className="absolute top-full left-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50"
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ duration: 0.15 }}
                     >
                       {['Any Price', 'Under ₦2m', '₦2m - ₦5m', '₦5m - ₦10m', 'Above ₦10m'].map((b) => (
                         <button
                           key={b}
                           onClick={(e) => { e.stopPropagation(); setHeroBudget(b); setHeroActiveDropdown(null); }}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl text-[15px] font-medium text-[#1C2C3E] transition-colors"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg text-[13px] font-medium text-[#1C2C3E] transition-colors"
                         >
                           {b}
                         </button>
@@ -475,52 +475,49 @@ const Home = () => {
                 </AnimatePresence>
               </div>
 
-              {/* Divider */}
-              <div className="w-[1px] bg-white/30 my-3" />
-
               {/* Search Button Section */}
-              <div className="flex items-center justify-center px-2 py-2">
+              <div className="flex items-center justify-center px-1.5 py-1.5">
                 <button 
                   onClick={() => navigate('/properties')}
-                  className="flex items-center justify-center space-x-2 bg-[#FF6B35] text-white pl-6 pr-6 py-4 rounded-full font-extrabold hover:bg-[#FF7B45] hover:scale-105 transition-all active:scale-95 shadow-lg shadow-orange-500/30"
+                  className="flex items-center justify-center space-x-1.5 bg-[#FF6B35] text-white px-5 py-2.5 rounded-full font-extrabold hover:bg-[#FF7B45] hover:scale-105 transition-all active:scale-95 shadow-md shadow-orange-500/30"
                   aria-label="Search Properties"
                 >
-                  <Search size={20} strokeWidth={2.5} />
-                  <span className="text-[15px]">Search</span>
+                  <Search size={16} strokeWidth={2.5} />
+                  <span className="text-[13px]">Search</span>
                 </button>
               </div>
             </div>
 
-            {/* Mobile: Stacked Sections */}
-            <div className="md:hidden w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-3xl shadow-2xl shadow-black/10 p-4">
+            {/* Mobile: Compact Stacked */}
+            <div className="md:hidden w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-2xl shadow-xl shadow-black/10 p-3">
               {/* Where Section */}
-              <div className="w-full flex flex-col px-4 py-3 hover:bg-white/20 rounded-2xl transition-all">
-                <span className="text-[12px] font-bold text-[#1C2C3E] mb-1">Where</span>
+              <div className="w-full flex flex-col px-3 py-2 hover:bg-white/20 rounded-xl transition-all">
+                <span className="text-[9px] font-bold text-[#1C2C3E] mb-0.5 uppercase tracking-wide">Where</span>
                 <input 
                   type="text" 
                   placeholder="Search destinations" 
                   value={heroLocation}
                   onChange={(e) => setHeroLocation(e.target.value)}
-                  className="bg-transparent border-none p-0 text-[14px] text-[#1C2C3E] placeholder-[#1C2C3E]/40 focus:ring-0 w-full font-medium" 
+                  className="bg-transparent border-none p-0 text-[12px] text-[#1C2C3E] placeholder-[#1C2C3E]/40 focus:ring-0 w-full font-medium" 
                 />
               </div>
 
-              <div className="w-full h-[1px] bg-white/20 my-2" />
+              <div className="w-full h-[1px] bg-white/20 my-1.5" />
 
               {/* Purchase Section */}
               <div 
-                className={`w-full flex flex-col px-4 py-3 rounded-2xl cursor-pointer transition-all ${
+                className={`w-full flex flex-col px-3 py-2 rounded-xl cursor-pointer transition-all ${
                   heroActiveDropdown === 'purchase' ? 'bg-white/30' : 'hover:bg-white/20'
                 }`}
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'purchase' ? null : 'purchase')}
               >
-                <span className="text-[12px] font-bold text-[#1C2C3E] mb-1">Purchase</span>
-                <span className="text-[14px] text-[#1C2C3E]/70 font-medium">{heroPurchase}</span>
+                <span className="text-[9px] font-bold text-[#1C2C3E] mb-0.5 uppercase tracking-wide">Purchase</span>
+                <span className="text-[12px] text-[#1C2C3E]/70 font-medium">{heroPurchase}</span>
 
                 <AnimatePresence>
                   {heroActiveDropdown === 'purchase' && (
                     <motion.div
-                      className="mt-3 w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-2"
+                      className="mt-2 w-full bg-white rounded-xl shadow-lg border border-gray-100 p-1.5"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
@@ -529,7 +526,7 @@ const Home = () => {
                         <button
                           key={p}
                           onClick={(e) => { e.stopPropagation(); setHeroPurchase(p); setHeroActiveDropdown(null); }}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl text-[14px] font-medium text-[#1C2C3E] transition-colors"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg text-[12px] font-medium text-[#1C2C3E] transition-colors"
                         >
                           {p}
                         </button>
@@ -539,22 +536,22 @@ const Home = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="w-full h-[1px] bg-white/20 my-2" />
+              <div className="w-full h-[1px] bg-white/20 my-1.5" />
 
               {/* Type Section */}
               <div 
-                className={`w-full flex flex-col px-4 py-3 rounded-2xl cursor-pointer transition-all ${
+                className={`w-full flex flex-col px-3 py-2 rounded-xl cursor-pointer transition-all ${
                   heroActiveDropdown === 'type' ? 'bg-white/30' : 'hover:bg-white/20'
                 }`}
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'type' ? null : 'type')}
               >
-                <span className="text-[12px] font-bold text-[#1C2C3E] mb-1">Type</span>
-                <span className="text-[14px] text-[#1C2C3E]/70 font-medium">{heroType}</span>
+                <span className="text-[9px] font-bold text-[#1C2C3E] mb-0.5 uppercase tracking-wide">Type</span>
+                <span className="text-[12px] text-[#1C2C3E]/70 font-medium">{heroType}</span>
 
                 <AnimatePresence>
                   {heroActiveDropdown === 'type' && (
                     <motion.div
-                      className="mt-3 w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-2"
+                      className="mt-2 w-full bg-white rounded-xl shadow-lg border border-gray-100 p-1.5"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
@@ -563,7 +560,7 @@ const Home = () => {
                         <button
                           key={t}
                           onClick={(e) => { e.stopPropagation(); setHeroType(t); setHeroActiveDropdown(null); }}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl text-[14px] font-medium text-[#1C2C3E] transition-colors"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg text-[12px] font-medium text-[#1C2C3E] transition-colors"
                         >
                           {t}
                         </button>
@@ -573,22 +570,22 @@ const Home = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="w-full h-[1px] bg-white/20 my-2" />
+              <div className="w-full h-[1px] bg-white/20 my-1.5" />
 
               {/* Price Section */}
               <div 
-                className={`w-full flex flex-col px-4 py-3 rounded-2xl cursor-pointer transition-all ${
+                className={`w-full flex flex-col px-3 py-2 rounded-xl cursor-pointer transition-all ${
                   heroActiveDropdown === 'budget' ? 'bg-white/30' : 'hover:bg-white/20'
                 }`}
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'budget' ? null : 'budget')}
               >
-                <span className="text-[12px] font-bold text-[#1C2C3E] mb-1">Price</span>
-                <span className="text-[14px] text-[#1C2C3E]/70 font-medium">{heroBudget}</span>
+                <span className="text-[9px] font-bold text-[#1C2C3E] mb-0.5 uppercase tracking-wide">Price</span>
+                <span className="text-[12px] text-[#1C2C3E]/70 font-medium">{heroBudget}</span>
 
                 <AnimatePresence>
                   {heroActiveDropdown === 'budget' && (
                     <motion.div
-                      className="mt-3 w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-2"
+                      className="mt-2 w-full bg-white rounded-xl shadow-lg border border-gray-100 p-1.5"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
@@ -597,7 +594,7 @@ const Home = () => {
                         <button
                           key={b}
                           onClick={(e) => { e.stopPropagation(); setHeroBudget(b); setHeroActiveDropdown(null); }}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl text-[14px] font-medium text-[#1C2C3E] transition-colors"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg text-[12px] font-medium text-[#1C2C3E] transition-colors"
                         >
                           {b}
                         </button>
@@ -608,14 +605,14 @@ const Home = () => {
               </div>
 
               {/* Search Button */}
-              <div className="w-full mt-3">
+              <div className="w-full mt-2">
                 <button 
                   onClick={() => navigate('/properties')}
-                  className="w-full flex items-center justify-center space-x-2 bg-[#FF6B35] text-white px-6 py-4 rounded-2xl font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95 shadow-md"
+                  className="w-full flex items-center justify-center space-x-1.5 bg-[#FF6B35] text-white px-4 py-2.5 rounded-xl font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95 shadow-md"
                   aria-label="Search Properties"
                 >
-                  <Search size={20} strokeWidth={2.5} />
-                  <span className="text-[15px]">Search Properties</span>
+                  <Search size={16} strokeWidth={2.5} />
+                  <span className="text-[13px]">Search Properties</span>
                 </button>
               </div>
             </div>

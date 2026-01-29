@@ -12,6 +12,7 @@
   body {
     background-color: white;
     color: theme("colors.gray.900");
+    overflow-x: hidden;
   }
 }
 
