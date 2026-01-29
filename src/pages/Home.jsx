@@ -335,7 +335,7 @@ const Home = () => {
 
           {/* Sub-headline */}
           <motion.p
-            className="text-sm md:text-lg text-[#1C2C3E]/60 mb-10 sm:mb-14 max-w-2xl leading-relaxed font-medium"
+            className="text-sm md:text-lg text-[#1C2C3E]/80 mb-10 sm:mb-14 max-w-2xl leading-relaxed font-medium"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 }}
