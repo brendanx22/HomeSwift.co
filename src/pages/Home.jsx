@@ -351,7 +351,7 @@ const Home = () => {
             transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
           >
             {/* Desktop: Unified Search Bar */}
-            <div className="hidden md:flex w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-full shadow-xl shadow-black/10 overflow-hidden">
+            <div className="hidden md:flex w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-full shadow-xl shadow-black/10 overflow-visible">
               {/* Where Section */}
               <div 
                 className="flex-1 flex flex-col justify-center px-5 py-2.5 cursor-pointer hover:bg-white/30 transition-all relative group"
@@ -363,7 +363,7 @@ const Home = () => {
                   placeholder="Search destinations" 
                   value={heroLocation}
                   onChange={(e) => setHeroLocation(e.target.value)}
-                  className="bg-transparent border-none p-0 text-[13px] text-[#1C2C3E] placeholder-[#1C2C3E]/40 focus:ring-0 w-full font-medium" 
+                  className="bg-transparent border-none outline-none p-0 text-[13px] text-[#1C2C3E] placeholder-[#1C2C3E]/40 focus:ring-0 w-full font-medium" 
                 />
               </div>
 
@@ -383,7 +383,7 @@ const Home = () => {
                 <AnimatePresence>
                   {heroActiveDropdown === 'purchase' && (
                     <motion.div
-                      className="absolute top-full left-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50"
+                      className="absolute top-full left-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-[100]"
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -419,7 +419,7 @@ const Home = () => {
                 <AnimatePresence>
                   {heroActiveDropdown === 'type' && (
                     <motion.div
-                      className="absolute top-full left-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50"
+                      className="absolute top-full left-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-[100]"
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -455,7 +455,7 @@ const Home = () => {
                 <AnimatePresence>
                   {heroActiveDropdown === 'budget' && (
                     <motion.div
-                      className="absolute top-full left-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50"
+                      className="absolute top-full left-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-[100]"
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -488,134 +488,26 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Mobile: Compact Stacked */}
-            <div className="md:hidden w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-2xl shadow-xl shadow-black/10 p-3">
-              {/* Where Section */}
-              <div className="w-full flex flex-col px-3 py-2 hover:bg-white/20 rounded-xl transition-all">
-                <span className="text-[9px] font-bold text-[#1C2C3E] mb-0.5 uppercase tracking-wide">Where</span>
-                <input 
-                  type="text" 
-                  placeholder="Search destinations" 
-                  value={heroLocation}
-                  onChange={(e) => setHeroLocation(e.target.value)}
-                  className="bg-transparent border-none p-0 text-[12px] text-[#1C2C3E] placeholder-[#1C2C3E]/40 focus:ring-0 w-full font-medium" 
-                />
-              </div>
-
-              <div className="w-full h-[1px] bg-white/20 my-1.5" />
-
-              {/* Purchase Section */}
-              <div 
-                className={`w-full flex flex-col px-3 py-2 rounded-xl cursor-pointer transition-all ${
-                  heroActiveDropdown === 'purchase' ? 'bg-white/30' : 'hover:bg-white/20'
-                }`}
-                onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'purchase' ? null : 'purchase')}
+            {/* Mobile: Simple Search */}
+            <div className="md:hidden w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-full shadow-xl shadow-black/10 px-4 py-3 flex items-center gap-2">
+              <Search size={18} className="text-[#1C2C3E]/60 flex-shrink-0" />
+              <input 
+                type="text" 
+                placeholder="Search properties..." 
+                value={heroLocation}
+                onChange={(e) => setHeroLocation(e.target.value)}
+                onClick={() => navigate('/properties')}
+                className="flex-1 bg-transparent border-none outline-none p-0 text-[14px] text-[#1C2C3E] placeholder-[#1C2C3E]/50 focus:ring-0 font-medium" 
+              />
+              <button 
+                onClick={() => navigate('/properties')}
+                className="flex-shrink-0 bg-[#FF6B35] text-white p-2 rounded-full hover:bg-[#FF7B45] transition-all active:scale-95 shadow-md"
+                aria-label="Search"
               >
-                <span className="text-[9px] font-bold text-[#1C2C3E] mb-0.5 uppercase tracking-wide">Purchase</span>
-                <span className="text-[12px] text-[#1C2C3E]/70 font-medium">{heroPurchase}</span>
-
-                <AnimatePresence>
-                  {heroActiveDropdown === 'purchase' && (
-                    <motion.div
-                      className="mt-2 w-full bg-white rounded-xl shadow-lg border border-gray-100 p-1.5"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                    >
-                      {['For Rent', 'For Sale', 'Short Let'].map((p) => (
-                        <button
-                          key={p}
-                          onClick={(e) => { e.stopPropagation(); setHeroPurchase(p); setHeroActiveDropdown(null); }}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg text-[12px] font-medium text-[#1C2C3E] transition-colors"
-                        >
-                          {p}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              <div className="w-full h-[1px] bg-white/20 my-1.5" />
-
-              {/* Type Section */}
-              <div 
-                className={`w-full flex flex-col px-3 py-2 rounded-xl cursor-pointer transition-all ${
-                  heroActiveDropdown === 'type' ? 'bg-white/30' : 'hover:bg-white/20'
-                }`}
-                onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'type' ? null : 'type')}
-              >
-                <span className="text-[9px] font-bold text-[#1C2C3E] mb-0.5 uppercase tracking-wide">Type</span>
-                <span className="text-[12px] text-[#1C2C3E]/70 font-medium">{heroType}</span>
-
-                <AnimatePresence>
-                  {heroActiveDropdown === 'type' && (
-                    <motion.div
-                      className="mt-2 w-full bg-white rounded-xl shadow-lg border border-gray-100 p-1.5"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                    >
-                      {['Apartment', 'House', 'Villa', 'Office'].map((t) => (
-                        <button
-                          key={t}
-                          onClick={(e) => { e.stopPropagation(); setHeroType(t); setHeroActiveDropdown(null); }}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg text-[12px] font-medium text-[#1C2C3E] transition-colors"
-                        >
-                          {t}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              <div className="w-full h-[1px] bg-white/20 my-1.5" />
-
-              {/* Price Section */}
-              <div 
-                className={`w-full flex flex-col px-3 py-2 rounded-xl cursor-pointer transition-all ${
-                  heroActiveDropdown === 'budget' ? 'bg-white/30' : 'hover:bg-white/20'
-                }`}
-                onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'budget' ? null : 'budget')}
-              >
-                <span className="text-[9px] font-bold text-[#1C2C3E] mb-0.5 uppercase tracking-wide">Price</span>
-                <span className="text-[12px] text-[#1C2C3E]/70 font-medium">{heroBudget}</span>
-
-                <AnimatePresence>
-                  {heroActiveDropdown === 'budget' && (
-                    <motion.div
-                      className="mt-2 w-full bg-white rounded-xl shadow-lg border border-gray-100 p-1.5"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                    >
-                      {['Any Price', 'Under ₦2m', '₦2m - ₦5m', '₦5m - ₦10m', 'Above ₦10m'].map((b) => (
-                        <button
-                          key={b}
-                          onClick={(e) => { e.stopPropagation(); setHeroBudget(b); setHeroActiveDropdown(null); }}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg text-[12px] font-medium text-[#1C2C3E] transition-colors"
-                        >
-                          {b}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Search Button */}
-              <div className="w-full mt-2">
-                <button 
-                  onClick={() => navigate('/properties')}
-                  className="w-full flex items-center justify-center space-x-1.5 bg-[#FF6B35] text-white px-4 py-2.5 rounded-xl font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95 shadow-md"
-                  aria-label="Search Properties"
-                >
-                  <Search size={16} strokeWidth={2.5} />
-                  <span className="text-[13px]">Search Properties</span>
-                </button>
-              </div>
+                <Search size={16} strokeWidth={2.5} />
+              </button>
             </div>
+
           </motion.div>
         </motion.main>
       </div>
