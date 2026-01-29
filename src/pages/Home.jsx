@@ -324,7 +324,7 @@ const Home = () => {
 
           {/* Main Headline */}
           <motion.h1
-            className="text-center mb-6 sm:mb-8 max-w-5xl text-4xl md:text-5xl lg:text-7xl text-[#1C2C3E] leading-[1.05] font-bold tracking-tight"
+            className="text-center mb-6 sm:mb-8 max-w-4xl text-4xl md:text-5xl lg:text-6xl text-[#1C2C3E] leading-[1.1] font-bold tracking-tight"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: 'easeOut', delay: 0.3 }}
@@ -335,7 +335,7 @@ const Home = () => {
 
           {/* Sub-headline */}
           <motion.p
-            className="text-sm md:text-base text-[#1C2C3E]/60 mb-10 sm:mb-14 max-w-2xl leading-relaxed font-medium"
+            className="text-sm md:text-lg text-[#1C2C3E]/60 mb-10 sm:mb-14 max-w-2xl leading-relaxed font-medium"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 }}
@@ -442,10 +442,10 @@ const Home = () => {
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'budget' ? null : 'budget')}
               >
                 <div className="flex items-center space-x-2">
-                  <span className="text-[15px] font-bold text-[#1C2C3E]">Price Range</span>
+                  <span className="text-[14px] font-bold text-[#1C2C3E]">Price Range</span>
                   <ChevronDown size={14} className={`text-[#1C2C3E]/30 transition-transform ${heroActiveDropdown === 'budget' ? 'rotate-180' : ''}`} />
                 </div>
-                <span className="text-[13px] text-[#1C2C3E]/50 truncate">{heroBudget}</span>
+                <span className="text-[12px] text-[#1C2C3E]/50 truncate">{heroBudget}</span>
 
                 <AnimatePresence>
                   {heroActiveDropdown === 'budget' && (
