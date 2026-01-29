@@ -351,9 +351,9 @@ const Home = () => {
             transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
           >
             {/* Left Capsule: Search Parameters */}
-            <div className="flex-[3] w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-full px-3 py-1 flex flex-row items-center shadow-2xl shadow-black/5 transition-all hover:bg-white/30">
+            <div className="flex-[3] w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-[2rem] md:rounded-full p-4 md:px-3 md:py-1 flex flex-col md:flex-row items-center shadow-2xl shadow-black/5 transition-all hover:bg-white/25">
               {/* Where Pod */}
-              <div className="flex-1 flex flex-col items-start px-4 py-2">
+              <div className="w-full md:flex-1 flex flex-col items-start px-4 py-3 md:py-2">
                 <span className="text-[13px] font-bold text-[#1C2C3E]">Where</span>
                 <input 
                   type="text" 
@@ -364,11 +364,11 @@ const Home = () => {
                 />
               </div>
 
-              <div className="w-[1px] h-8 bg-gray-200/40" />
+              <div className="w-full md:w-[1px] h-[1px] md:h-8 bg-white/10 md:bg-gray-200/40 my-1 md:my-0" />
 
               {/* Purchase Pod */}
               <div 
-                className="flex-1 relative flex flex-col items-start px-4 py-2 cursor-pointer group"
+                className="w-full md:flex-1 relative flex flex-col items-start px-4 py-3 md:py-2 cursor-pointer group"
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'purchase' ? null : 'purchase')}
               >
                 <div className="flex items-center space-x-1.5">
@@ -399,11 +399,11 @@ const Home = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="w-[1px] h-8 bg-gray-200/40" />
+              <div className="w-full md:w-[1px] h-[1px] md:h-8 bg-white/10 md:bg-gray-200/40 my-1 md:my-0" />
 
               {/* Type Pod */}
               <div 
-                className="flex-1 relative flex flex-col items-start px-4 py-2 cursor-pointer group"
+                className="w-full md:flex-1 relative flex flex-col items-start px-4 py-3 md:py-2 cursor-pointer group"
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'type' ? null : 'type')}
               >
                 <div className="flex items-center space-x-1.5">
@@ -434,11 +434,11 @@ const Home = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="w-[1px] h-8 bg-gray-200/40" />
+              <div className="w-full md:w-[1px] h-[1px] md:h-8 bg-white/10 md:bg-gray-200/40 my-1 md:my-0" />
 
               {/* Price Range Pod */}
               <div 
-                className="flex-1 relative flex flex-col items-start px-4 py-2 cursor-pointer group"
+                className="w-full md:flex-[1.2] relative flex flex-col items-start px-4 py-3 md:py-2 cursor-pointer group"
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'budget' ? null : 'budget')}
               >
                 <div className="flex items-center space-x-1.5">
@@ -471,13 +471,13 @@ const Home = () => {
             </div>
 
             {/* Right Capsule: Actions */}
-            <div className="flex-none bg-white/30 backdrop-blur-xl border border-white/40 rounded-full p-1 flex flex-row items-center shadow-2xl shadow-black/5">
+            <div className="flex-none bg-white/30 backdrop-blur-xl border border-white/40 rounded-full p-2 md:p-1 flex flex-row items-center justify-center shadow-2xl shadow-black/5 md:min-w-[70px]">
               <button 
                 onClick={() => navigate('/properties')}
-                className="flex items-center justify-center bg-[#FF6B35] text-white w-10 h-10 rounded-full font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95 group shadow-md"
+                className="flex items-center justify-center bg-[#FF6B35] text-white w-12 h-12 md:w-10 md:h-10 rounded-full font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95 group shadow-md"
                 aria-label="Search Properties"
               >
-                <Search size={18} className="group-hover:scale-110 transition-transform" />
+                <Search size={20} className="md:size-[18px] group-hover:scale-110 transition-transform" />
               </button>
             </div>
           </motion.div>
