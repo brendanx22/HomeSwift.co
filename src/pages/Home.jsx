@@ -351,16 +351,16 @@ const Home = () => {
             transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
           >
             {/* Left Capsule: Search Parameters */}
-            <div className="flex-[3] w-full bg-[#F8F9FA]/80 backdrop-blur-md border border-gray-200/50 rounded-full px-4 py-1.5 flex flex-row items-center shadow-sm">
+            <div className="flex-[3] w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-full px-4 py-1.5 flex flex-row items-center shadow-2xl shadow-black/5 transition-all hover:bg-white/30">
               {/* Where Pod */}
               <div className="flex-1 flex flex-col items-start px-6 py-2.5">
-                <span className="text-[15px] font-bold text-[#1C2C3E]">Where</span>
+                <span className="text-[14px] font-bold text-[#1C2C3E]">Where</span>
                 <input 
                   type="text" 
                   placeholder="Search location" 
                   value={heroLocation}
                   onChange={(e) => setHeroLocation(e.target.value)}
-                  className="bg-transparent border-none p-0 text-[13px] text-[#1C2C3E]/50 placeholder-[#1C2C3E]/40 focus:ring-0 w-full" 
+                  className="bg-transparent border-none p-0 text-[12px] text-[#1C2C3E] placeholder-[#1C2C3E]/50 focus:ring-0 w-full font-medium" 
                 />
               </div>
 
@@ -471,9 +471,9 @@ const Home = () => {
             </div>
 
             {/* Right Capsule: Actions */}
-            <div className="flex-none bg-white/60 backdrop-blur-md border border-gray-200/30 rounded-full p-1 flex flex-row items-center gap-1 shadow-sm">
-              <button className="flex items-center space-x-2 px-5 py-2.5 rounded-full hover:bg-gray-100/50 transition-all group">
-                <SlidersHorizontal size={15} className="text-[#1C2C3E]/60 group-hover:text-[#1C2C3E]" />
+            <div className="flex-none bg-white/30 backdrop-blur-xl border border-white/40 rounded-full p-1.5 flex flex-row items-center gap-1.5 shadow-2xl shadow-black/5">
+              <button className="flex items-center space-x-2 px-5 py-2.5 rounded-full hover:bg-white/40 transition-all group border border-transparent hover:border-white/20">
+                <SlidersHorizontal size={15} className="text-[#1C2C3E] group-hover:scale-110 transition-transform" />
                 <span className="text-[14px] font-bold text-[#1C2C3E]">Filter</span>
               </button>
 
