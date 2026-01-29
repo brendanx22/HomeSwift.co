@@ -345,37 +345,37 @@ const Home = () => {
 
           {/* Search Interface - Dual Capsule Style */}
           <motion.div
-            className="w-full max-w-6xl flex flex-col md:flex-row items-center justify-center gap-4"
+            className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-center gap-3"
             initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut', delay: 0.7 }}
           >
             {/* Left Capsule: Search Parameters */}
-            <div className="flex-[3] w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-full px-4 py-1.5 flex flex-row items-center shadow-2xl shadow-black/5 transition-all hover:bg-white/30">
+            <div className="flex-[3] w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-full px-3 py-1 flex flex-row items-center shadow-2xl shadow-black/5 transition-all hover:bg-white/30">
               {/* Where Pod */}
-              <div className="flex-1 flex flex-col items-start px-6 py-2.5">
-                <span className="text-[14px] font-bold text-[#1C2C3E]">Where</span>
+              <div className="flex-1 flex flex-col items-start px-4 py-2">
+                <span className="text-[13px] font-bold text-[#1C2C3E]">Where</span>
                 <input 
                   type="text" 
                   placeholder="Search location" 
                   value={heroLocation}
                   onChange={(e) => setHeroLocation(e.target.value)}
-                  className="bg-transparent border-none p-0 text-[12px] text-[#1C2C3E] placeholder-[#1C2C3E]/50 focus:ring-0 w-full font-medium" 
+                  className="bg-transparent border-none p-0 text-[11px] text-[#1C2C3E] placeholder-[#1C2C3E]/50 focus:ring-0 w-full font-medium" 
                 />
               </div>
 
-              <div className="w-[1px] h-10 bg-gray-200/60" />
+              <div className="w-[1px] h-8 bg-gray-200/40" />
 
               {/* Purchase Pod */}
               <div 
-                className="flex-1 relative flex flex-col items-start px-6 py-2.5 cursor-pointer group"
+                className="flex-1 relative flex flex-col items-start px-4 py-2 cursor-pointer group"
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'purchase' ? null : 'purchase')}
               >
-                <div className="flex items-center space-x-2">
-                  <span className="text-[15px] font-bold text-[#1C2C3E]">Purchase</span>
-                  <ChevronDown size={14} className={`text-[#1C2C3E]/30 transition-transform ${heroActiveDropdown === 'purchase' ? 'rotate-180' : ''}`} />
+                <div className="flex items-center space-x-1.5">
+                  <span className="text-[13px] font-bold text-[#1C2C3E]">Purchase</span>
+                  <ChevronDown size={12} className={`text-[#1C2C3E]/30 transition-transform ${heroActiveDropdown === 'purchase' ? 'rotate-180' : ''}`} />
                 </div>
-                <span className="text-[13px] text-[#1C2C3E]/50 truncate">{heroPurchase}</span>
+                <span className="text-[11px] text-[#1C2C3E]/50 truncate">{heroPurchase}</span>
 
                 <AnimatePresence>
                   {heroActiveDropdown === 'purchase' && (
@@ -399,18 +399,18 @@ const Home = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="w-[1px] h-10 bg-gray-200/60" />
+              <div className="w-[1px] h-8 bg-gray-200/40" />
 
               {/* Type Pod */}
               <div 
-                className="flex-1 relative flex flex-col items-start px-6 py-2.5 cursor-pointer group"
+                className="flex-1 relative flex flex-col items-start px-4 py-2 cursor-pointer group"
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'type' ? null : 'type')}
               >
-                <div className="flex items-center space-x-2">
-                  <span className="text-[15px] font-bold text-[#1C2C3E]">Type</span>
-                  <ChevronDown size={14} className={`text-[#1C2C3E]/30 transition-transform ${heroActiveDropdown === 'type' ? 'rotate-180' : ''}`} />
+                <div className="flex items-center space-x-1.5">
+                  <span className="text-[13px] font-bold text-[#1C2C3E]">Type</span>
+                  <ChevronDown size={12} className={`text-[#1C2C3E]/30 transition-transform ${heroActiveDropdown === 'type' ? 'rotate-180' : ''}`} />
                 </div>
-                <span className="text-[13px] text-[#1C2C3E]/50 truncate">{heroType}</span>
+                <span className="text-[11px] text-[#1C2C3E]/50 truncate">{heroType}</span>
 
                 <AnimatePresence>
                   {heroActiveDropdown === 'type' && (
@@ -434,18 +434,18 @@ const Home = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="w-[1px] h-10 bg-gray-200/60" />
+              <div className="w-[1px] h-8 bg-gray-200/40" />
 
               {/* Price Range Pod */}
               <div 
-                className="flex-1 relative flex flex-col items-start px-6 py-2.5 cursor-pointer group"
+                className="flex-1 relative flex flex-col items-start px-4 py-2 cursor-pointer group"
                 onClick={() => setHeroActiveDropdown(heroActiveDropdown === 'budget' ? null : 'budget')}
               >
-                <div className="flex items-center space-x-2">
-                  <span className="text-[14px] font-bold text-[#1C2C3E]">Price Range</span>
-                  <ChevronDown size={14} className={`text-[#1C2C3E]/30 transition-transform ${heroActiveDropdown === 'budget' ? 'rotate-180' : ''}`} />
+                <div className="flex items-center space-x-1.5">
+                  <span className="text-[13px] font-bold text-[#1C2C3E]">Price Range</span>
+                  <ChevronDown size={12} className={`text-[#1C2C3E]/30 transition-transform ${heroActiveDropdown === 'budget' ? 'rotate-180' : ''}`} />
                 </div>
-                <span className="text-[12px] text-[#1C2C3E]/50 truncate">{heroBudget}</span>
+                <span className="text-[11px] text-[#1C2C3E]/50 truncate">{heroBudget}</span>
 
                 <AnimatePresence>
                   {heroActiveDropdown === 'budget' && (
@@ -471,13 +471,13 @@ const Home = () => {
             </div>
 
             {/* Right Capsule: Actions */}
-            <div className="flex-none bg-white/30 backdrop-blur-xl border border-white/40 rounded-full p-1.5 flex flex-row items-center shadow-2xl shadow-black/5">
+            <div className="flex-none bg-white/30 backdrop-blur-xl border border-white/40 rounded-full p-1 flex flex-row items-center shadow-2xl shadow-black/5">
               <button 
                 onClick={() => navigate('/properties')}
-                className="flex items-center justify-center bg-[#FF6B35] text-white w-12 h-12 rounded-full font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95 group shadow-md"
+                className="flex items-center justify-center bg-[#FF6B35] text-white w-10 h-10 rounded-full font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95 group shadow-md"
                 aria-label="Search Properties"
               >
-                <Search size={22} className="group-hover:scale-110 transition-transform" />
+                <Search size={18} className="group-hover:scale-110 transition-transform" />
               </button>
             </div>
           </motion.div>
