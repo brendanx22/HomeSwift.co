@@ -26,6 +26,7 @@ const Home = () => {
   const itemsPerPage = 3;
   const [activeFAQ, setActiveFAQ] = useState(null);
   const [heroActiveDropdown, setHeroActiveDropdown] = useState(null); // 'purchase', 'type', 'budget'
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [heroLocation, setHeroLocation] = useState('');
   const [heroPurchase, setHeroPurchase] = useState('Add Purchase Type');
   const [heroType, setHeroType] = useState('Add Type');
@@ -489,27 +490,151 @@ const Home = () => {
             </div>
 
             {/* Mobile: Simple Search */}
-            <div className="md:hidden w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-full shadow-xl shadow-black/10 px-4 py-3 flex items-center gap-2">
+            <div 
+              className="md:hidden w-full bg-white/20 backdrop-blur-xl border border-white/40 rounded-full shadow-xl shadow-black/10 px-4 py-3 flex items-center gap-2 cursor-pointer"
+              onClick={() => setShowMobileSearch(true)}
+            >
               <Search size={18} className="text-[#1C2C3E]/60 flex-shrink-0" />
-              <input 
-                type="text" 
-                placeholder="Search properties..." 
-                value={heroLocation}
-                onChange={(e) => setHeroLocation(e.target.value)}
-                onClick={() => navigate('/properties')}
-                className="flex-1 bg-transparent border-none outline-none p-0 text-[14px] text-[#1C2C3E] placeholder-[#1C2C3E]/50 focus:ring-0 font-medium" 
-              />
-              <button 
-                onClick={() => navigate('/properties')}
-                className="flex-shrink-0 bg-[#FF6B35] text-white p-2 rounded-full hover:bg-[#FF7B45] transition-all active:scale-95 shadow-md"
-                aria-label="Search"
-              >
+              <span className="flex-1 text-[14px] text-[#1C2C3E]/50 font-medium">Search properties...</span>
+              <div className="flex-shrink-0 bg-[#FF6B35] text-white p-2 rounded-full shadow-md">
                 <Search size={16} strokeWidth={2.5} />
-              </button>
+              </div>
             </div>
 
           </motion.div>
         </motion.main>
+
+        {/* Mobile Search Overlay */}
+        <AnimatePresence>
+          {showMobileSearch && (
+            <motion.div
+              className="md:hidden fixed inset-0 z-[200] flex items-end"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              {/* Backdrop */}
+              <motion.div
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={() => setShowMobileSearch(false)}
+              />
+
+              {/* Search Panel */}
+              <motion.div
+                className="relative w-full bg-white rounded-t-3xl shadow-2xl max-h-[90vh] overflow-y-auto"
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              >
+                {/* Header */}
+                <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-5 flex items-center justify-between z-10">
+                  <h3 className="text-xl font-bold text-[#1C2C3E]">Browse Properties</h3>
+                  <button
+                    onClick={() => setShowMobileSearch(false)}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <X size={20} className="text-[#1C2C3E]" />
+                  </button>
+                </div>
+
+                {/* Search Fields */}
+                <div className="p-6 space-y-8 pb-32">
+                  {/* Where */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold text-[#1C2C3E] uppercase tracking-widest">Where to?</label>
+                    <div className="relative group">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#1C2C3E]/40">
+                        <MapPin size={18} />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Search location or area"
+                        value={heroLocation}
+                        onChange={(e) => setHeroLocation(e.target.value)}
+                        className="w-full bg-gray-50 border-none outline-none rounded-2xl pl-12 pr-4 py-4 text-sm text-[#1C2C3E] placeholder-[#1C2C3E]/30 focus:ring-2 focus:ring-[#FF6B35]/20 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Purchase Type */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold text-[#1C2C3E] uppercase tracking-widest">Purchase Type</label>
+                    <div className="flex flex-wrap gap-2">
+                      {['For Rent', 'For Sale', 'Short Let'].map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setHeroPurchase(p)}
+                          className={`flex-1 min-w-[100px] px-4 py-3.5 rounded-2xl text-[13px] font-bold transition-all ${
+                            heroPurchase === p
+                              ? 'bg-[#1C2C3E] text-white shadow-lg'
+                              : 'bg-gray-50 text-[#1C2C3E]/60 hover:bg-gray-100'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Property Type */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold text-[#1C2C3E] uppercase tracking-widest">Property Type</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['Apartment', 'House', 'Villa', 'Office'].map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => setHeroType(t)}
+                          className={`px-4 py-3.5 rounded-2xl text-[13px] font-bold transition-all ${
+                            heroType === t
+                              ? 'bg-[#1C2C3E] text-white shadow-lg'
+                              : 'bg-gray-50 text-[#1C2C3E]/60 hover:bg-gray-100'
+                          }`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Price Range */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold text-[#1C2C3E] uppercase tracking-widest">Budget</label>
+                    <div className="space-y-2">
+                      {['Any Price', 'Under ₦2m', '₦2m - ₦5m', '₦5m - ₦10m', 'Above ₦10m'].map((b) => (
+                        <button
+                          key={b}
+                          onClick={() => setHeroBudget(b)}
+                          className={`w-full px-5 py-3.5 rounded-2xl text-[13px] font-bold text-left transition-all ${
+                            heroBudget === b
+                              ? 'bg-[#1C2C3E] text-white shadow-lg'
+                              : 'bg-gray-50 text-[#1C2C3E]/60 hover:bg-gray-100'
+                          }`}
+                        >
+                          {b}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Search Button Area */}
+                <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-gray-100 p-6 z-20">
+                  <button
+                    onClick={() => {
+                      setShowMobileSearch(false);
+                      navigate('/properties');
+                    }}
+                    className="w-full flex items-center justify-center space-x-2 bg-[#FF6B35] text-white px-6 py-4 rounded-2xl font-extrabold hover:bg-[#FF7B45] transition-all active:scale-95 shadow-xl shadow-orange-500/20"
+                  >
+                    <Search size={20} strokeWidth={2.5} />
+                    <span className="text-base uppercase tracking-wider">Search Properties</span>
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Spacer to allow scrolling and trigger sticky behavior */}
