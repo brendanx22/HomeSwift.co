@@ -471,18 +471,13 @@ const Home = () => {
             </div>
 
             {/* Right Capsule: Actions */}
-            <div className="flex-none bg-white/30 backdrop-blur-xl border border-white/40 rounded-full p-1.5 flex flex-row items-center gap-1.5 shadow-2xl shadow-black/5">
-              <button className="flex items-center space-x-2 px-5 py-2.5 rounded-full hover:bg-white/40 transition-all group border border-transparent hover:border-white/20">
-                <SlidersHorizontal size={15} className="text-[#1C2C3E] group-hover:scale-110 transition-transform" />
-                <span className="text-[14px] font-bold text-[#1C2C3E]">Filter</span>
-              </button>
-
+            <div className="flex-none bg-white/30 backdrop-blur-xl border border-white/40 rounded-full p-1.5 flex flex-row items-center shadow-2xl shadow-black/5">
               <button 
                 onClick={() => navigate('/properties')}
-                className="flex items-center space-x-2 bg-[#FF6B35] text-white px-7 py-3 rounded-full font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95"
+                className="flex items-center justify-center bg-[#FF6B35] text-white w-12 h-12 rounded-full font-extrabold hover:bg-[#FF7B45] hover:shadow-lg hover:shadow-orange-200/50 transition-all active:scale-95 group shadow-md"
+                aria-label="Search Properties"
               >
-                <Search size={16} />
-                <span className="text-[14px]">Search</span>
+                <Search size={22} className="group-hover:scale-110 transition-transform" />
               </button>
             </div>
           </motion.div>
