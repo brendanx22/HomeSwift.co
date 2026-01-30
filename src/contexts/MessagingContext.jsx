@@ -29,18 +29,9 @@ export const MessagingProvider = ({ children }) => {
   const localStream = useRef(null);
   const typingTimeout = useRef(null);
 
-  // Get the backend JWT token for API calls
+  // Get the Supabase session token for API calls
   const getAuthToken = useCallback(async () => {
     try {
-      // First try to get the backend token from localStorage
-      let backendToken = localStorage.getItem('backendToken');
-      
-      if (backendToken) {
-        console.log('✅ Backend JWT token found in localStorage');
-        return backendToken;
-      }
-      
-      // If no backend token, try to get Supabase session as fallback
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
         console.error('❌ Error getting Supabase session:', error);
@@ -50,8 +41,7 @@ export const MessagingProvider = ({ children }) => {
         console.warn('⚠️ No Supabase access token available');
         return null;
       }
-      
-      console.log('⚠️ Using Supabase access token as fallback (backend token not available)');
+      console.log('✅ Supabase access token retrieved');
       return session.access_token;
     } catch (error) {
       console.error('❌ Error getting auth token:', error);
@@ -83,6 +73,7 @@ export const MessagingProvider = ({ children }) => {
       });
 
       console.log('📊 Response status:', response.status);
+      console.log('📊 Response headers:', response.headers);
 
       if (response.ok) {
         const data = await response.json();
@@ -109,8 +100,15 @@ export const MessagingProvider = ({ children }) => {
         console.log('📝 Setting enhanced conversations:', enhancedConversations.length);
         setConversations(enhancedConversations);
       } else {
+        console.error('❌ Failed to load conversations:', response.status, response.statusText);
         const errorText = await response.text();
-        console.error('❌ Failed to load conversations:', response.status, errorText);
+        console.error('❌ Error response body:', errorText);
+        
+        // Handle specific error cases
+        if (response.status === 403) {
+          console.error('❌ Authentication failed - Supabase session may be expired');
+          console.log('🔄 User may need to re-authenticate with Supabase');
+        }
       }
     } catch (error) {
       console.error('❌ Error loading conversations:', error);
