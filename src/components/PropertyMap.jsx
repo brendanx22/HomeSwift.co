@@ -5,22 +5,29 @@ import { Star, MapPin, Layers } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-// Map style options - using reliable working sources
+// Map style options - using Geoapify
+const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY || 'YOUR_GEOAPIFY_API_KEY'; // User should set this in .env
+
 const mapStyles = [
     { 
-        id: 'streets', 
-        name: 'Streets', 
-        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+        id: 'osm-bright', 
+        name: 'OSM Bright', 
+        url: `https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_API_KEY}`
     },
     { 
-        id: 'carto-light', 
-        name: 'CartoDB Light', 
-        url: 'https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png'
+        id: 'osm-carto', 
+        name: 'OSM Carto', 
+        url: `https://maps.geoapify.com/v1/tile/osm-carto/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_API_KEY}`
     },
     { 
-        id: 'carto-voyager', 
-        name: 'CartoDB Voyager', 
-        url: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+        id: 'dark-matter', 
+        name: 'Dark Matter', 
+        url: `https://maps.geoapify.com/v1/tile/dark-matter-brown/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_API_KEY}`
+    },
+    { 
+        id: 'klokantech-basic', 
+        name: 'Basic', 
+        url: `https://maps.geoapify.com/v1/tile/klokantech-basic/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_API_KEY}`
     }
 ];
 

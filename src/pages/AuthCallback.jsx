@@ -134,26 +134,43 @@ const AuthCallback = () => {
             // Since the user is explicitly logging in as this role, we should make it PRIMARY
             // This ensures they stay in this context
             
-            // First, set all other roles to non-primary
-            if (userRoles && userRoles.length > 0) {
-               await supabase
+            console.log(`🔄 Attempting to add '${userType}' via RPC first...`);
+            
+            // Try using RPC first - this is often more reliable with RLS
+            // We'll try to use set_primary_role which might implicitly handle things or check specific rpcs
+            
+            // NOTE: Using a hypothetical 'add_user_role' RPC if exists, or just direct insert as fallback
+            const { error: rpcError } = await supabase.rpc('add_user_role', {
+              p_user_id: user.id,
+              p_role: userType,
+              p_is_primary: true
+            });
+            
+            if (!rpcError) {
+              console.log(`✅ Successfully added role via RPC`);
+            } else {
+              console.warn(`⚠️ RPC failed (${rpcError.message}), falling back to direct table manipulation`);
+              
+              // First, set all other roles to non-primary
+              if (userRoles && userRoles.length > 0) {
+                 await supabase
+                  .from('user_roles')
+                  .update({ is_primary: false })
+                  .eq('user_id', user.id);
+              }
+              
+              // Add new role as PRIMARY
+              const { error: roleError } = await supabase
                 .from('user_roles')
-                .update({ is_primary: false })
-                .eq('user_id', user.id);
+                .insert({
+                  user_id: user.id,
+                  role: userType,
+                  is_primary: true 
+                });
+  
+              if (roleError) console.error("Error inserting role:", roleError);
+              else console.log(`✅ Successfully added extra role: ${userType} (Primary via Insert)`);
             }
-            
-            // Add new role as PRIMARY
-            const { error: roleError } = await supabase
-              .from('user_roles')
-              .insert({
-                user_id: user.id,
-                role: userType,
-                is_primary: true 
-              });
-
-            if (roleError) console.error("Error inserting role:", roleError);
-            
-            console.log(`✅ Successfully added extra role: ${userType} (Primary)`);
             
             // Refresh roles list for local storage
             const updatedRoles = [...(userRoles || []).map(r => ({...r, is_primary: false})), { role: userType, is_primary: true }];
