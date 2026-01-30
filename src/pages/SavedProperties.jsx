@@ -167,7 +167,7 @@ export default function SavedProperties() {
   // Render helpers.
   // ---------------------------------------------------------------------
   const renderHeader = () => (
-    <header className="flex items-center justify-between p-4 bg-white shadow-sm">
+    <header className="flex items-center justify-between p-4 bg-white shadow-sm pt-safe">
       <button
         onClick={() => navigate('/chat')}
         className="p-2 rounded-full hover:bg-gray-100 transition"

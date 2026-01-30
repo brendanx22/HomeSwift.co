@@ -347,455 +347,343 @@ export default function Settings() {
     );
   }
 
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gray-50"
-    >
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/chat')}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                <X className="w-5 h-5" />
-                <span>Back to Chat</span>
-              </button>
-              <div className="h-6 w-px bg-gray-300"></div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Settings</h1>
-                <p className="text-sm sm:text-base text-gray-600">Manage your account and preferences</p>
-              </div>
-            </div>
-          </div>
-        </div>
+  // Helper component for settings rows
+  const SettingsRow = ({ label, value, actionLabel = 'Edit', onAction, isEditing, children }) => (
+    <div className="settings-row">
+      <div className="settings-row-info">
+        <div className="settings-label">{label}</div>
+        {!isEditing ? (
+          <div className="settings-value">{value || `Not provided`}</div>
+        ) : (
+          <div className="mt-4">{children}</div>
+        )}
       </div>
+      {!isEditing ? (
+        <button onClick={onAction} className="settings-action">
+          {value ? actionLabel : 'Add'}
+        </button>
+      ) : null}
+    </div>
+  );
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Airbnb Style Header */}
+      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-50 pt-safe">
+        <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+          <img src="/images/logo.png" alt="HomeSwift" className="h-8 w-auto object-contain" />
+        </div>
+        <button
+          onClick={() => navigate('/chat')}
+          className="px-4 py-2 rounded-lg font-semibold text-gray-900 border border-gray-300 hover:bg-gray-50 transition-colors text-sm"
+        >
+          Done
+        </button>
+      </header>
+
+      <main className="settings-container">
+        <div className="settings-grid">
           {/* Sidebar Navigation */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <nav className="space-y-2">
-                {[
-                  { id: 'profile', label: 'Profile', icon: User },
-                  { id: 'preferences', label: 'Preferences', icon: SettingsIcon },
-                  { id: 'security', label: 'Security', icon: Shield },
-                  { id: 'billing', label: 'Billing', icon: CreditCard },
-                  { id: 'notifications', label: 'Notifications', icon: Bell }
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-[#FF6B35] text-white'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
+          <aside className="settings-sidebar">
+            <h1 className="text-3xl font-extrabold text-gray-900 mb-8">Account settings</h1>
+            <nav className="space-y-1">
+              {[
+                { id: 'profile', label: 'Personal information', icon: User },
+                { id: 'security', label: 'Login & security', icon: Shield },
+                { id: 'preferences', label: 'Privacy & sharing', icon: SettingsIcon },
+                { id: 'notifications', label: 'Notifications', icon: Bell },
+                { id: 'billing', label: 'Payments & payouts', icon: CreditCard },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center space-x-4 p-4 rounded-xl transition-all ${
+                    activeTab === item.id
+                      ? 'bg-gray-50 shadow-sm'
+                      : 'hover:bg-gray-50/50'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === item.id ? 'text-gray-900' : 'text-gray-500'}`}>
+                    <item.icon size={24} strokeWidth={1.5} />
+                  </div>
+                  <span className={`text-base ${activeTab === item.id ? 'font-semibold text-gray-900' : 'text-gray-600'}`}>
+                    {item.label}
+                  </span>
+                </button>
+              ))}
+            </nav>
+          </aside>
+
+          {/* Content Area */}
+          <div className="settings-content">
+            {/* Profile Tab */}
+            {activeTab === 'profile' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Personal information</h2>
+                <p className="text-gray-500 mb-8">Manage your profile details and how we can reach you</p>
+
+                <div className="divide-y divide-gray-100">
+                  <SettingsRow 
+                    label="Legal name" 
+                    value={`${profileData.firstName} ${profileData.lastName}`.trim() || 'Not set'}
+                    onAction={() => setActiveTab('profile-edit-name')}
+                  />
+                  <SettingsRow 
+                    label="Email address" 
+                    value={profileData.email}
+                    actionLabel="Edit"
+                    onAction={() => toast.error('Email cannot be changed directly')}
+                  />
+                  <SettingsRow 
+                    label="Phone numbers" 
+                    value={profileData.phone}
+                    onAction={() => setActiveTab('profile-edit-phone')}
+                  />
+                  <SettingsRow 
+                    label="Location" 
+                    value={profileData.location}
+                    onAction={() => setActiveTab('profile-edit-location')}
+                  />
+                  <SettingsRow 
+                    label="Bio" 
+                    value={profileData.bio}
+                    onAction={() => setActiveTab('profile-edit-bio')}
+                  />
+                </div>
+
+                {/* Edit Modes */}
+                {(activeTab.startsWith('profile-edit')) && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-8 p-6 bg-gray-50 rounded-2xl border border-gray-200"
                   >
-                    <tab.icon className="w-5 h-5" />
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
-              </nav>
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-lg shadow-sm p-8">
-              {/* Profile Tab */}
-              {activeTab === 'profile' && (
-                <div className="space-y-8">
-                  <div className="flex items-center space-x-6">
-                    <div className="relative">
-                      <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                        {profileData.avatar_url ? (
-                          <img
-                            src={profileData.avatar_url}
-                            alt="Avatar"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User className="w-12 h-12 text-gray-400" />
-                        )}
-                      </div>
-                      <label className="absolute bottom-0 right-0 bg-[#FF6B35] text-white p-2 rounded-full cursor-pointer hover:bg-orange-600 transition-colors">
-                        <Camera className="w-4 h-4" />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAvatarUpload}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">
-                        {profileData.firstName} {profileData.lastName}
-                      </h2>
-                      <p className="text-gray-600">{user?.email}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        value={profileData.firstName}
-                        onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
-                        placeholder="Enter first name"
-                      />
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="font-bold text-lg">
+                        {activeTab === 'profile-edit-name' && 'Edit Name'}
+                        {activeTab === 'profile-edit-phone' && 'Edit Phone Number'}
+                        {activeTab === 'profile-edit-location' && 'Edit Location'}
+                        {activeTab === 'profile-edit-bio' && 'Edit Bio'}
+                      </h3>
+                      <button onClick={() => setActiveTab('profile')} className="p-2 hover:bg-white rounded-full transition-colors">
+                        <X size={20} />
+                      </button>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        value={profileData.lastName}
-                        onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
-                        placeholder="Enter last name"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        value={profileData.email}
-                        disabled
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
-                      />
-                      <p className="text-sm text-gray-500 mt-1">Email cannot be changed</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        value={profileData.phone}
-                        onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
-                        placeholder="Enter phone number"
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Location
-                      </label>
-                      <input
-                        type="text"
-                        value={profileData.location}
-                        onChange={(e) => setProfileData(prev => ({ ...prev, location: e.target.value }))}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
-                        placeholder="Enter your location"
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Bio
-                      </label>
-                      <textarea
-                        value={profileData.bio}
-                        onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
-                        rows={4}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
-                        placeholder="Tell us about yourself..."
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <button
-                      onClick={handleProfileUpdate}
-                      disabled={saving}
-                      className="flex items-center space-x-2 bg-[#FF6B35] text-white px-6 py-3 rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
-                    >
-                      {saving ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4" />
-                          <span>Save Profile</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Preferences Tab */}
-              {activeTab === 'preferences' && (
-                <div className="space-y-8">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-6">Notification Preferences</h3>
                     <div className="space-y-4">
-                      {[
-                        { key: 'emailNotifications', label: 'Email Notifications', description: 'Receive notifications via email' },
-                        { key: 'pushNotifications', label: 'Push Notifications', description: 'Receive push notifications in browser' },
-                        { key: 'propertyAlerts', label: 'Property Alerts', description: 'Get notified about new properties matching your criteria' },
-                        { key: 'marketingEmails', label: 'Marketing Emails', description: 'Receive promotional emails and updates' }
-                      ].map((pref) => (
-                        <div key={pref.key} className="flex items-center justify-between">
-                          <div>
-                            <label className="text-sm font-medium text-gray-700">{pref.label}</label>
-                            <p className="text-sm text-gray-500">{pref.description}</p>
-                          </div>
-                          <button
-                            onClick={() => setPreferences(prev => ({ ...prev, [pref.key]: !prev[pref.key] }))}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                              preferences[pref.key] ? 'bg-[#FF6B35]' : 'bg-gray-200'
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                preferences[pref.key] ? 'translate-x-6' : 'translate-x-1'
-                              }`}
-                            />
-                          </button>
+                      {activeTab === 'profile-edit-name' && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <input
+                            type="text"
+                            value={profileData.firstName}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
+                            className="bg-white px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                            placeholder="First name"
+                          />
+                          <input
+                            type="text"
+                            value={profileData.lastName}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
+                            className="bg-white px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                            placeholder="Last name"
+                          />
                         </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-6">Display Preferences</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
-                        <select
-                          value={preferences.language}
-                          onChange={(e) => setPreferences(prev => ({ ...prev, language: e.target.value }))}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
-                        >
-                          <option value="en">English</option>
-                          <option value="es">Spanish</option>
-                          <option value="fr">French</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
-                        <select
-                          value={preferences.currency}
-                          onChange={(e) => setPreferences(prev => ({ ...prev, currency: e.target.value }))}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
-                        >
-                          <option value="NGN">Nigerian Naira (₦)</option>
-                          <option value="USD">US Dollar ($)</option>
-                          <option value="EUR">Euro (€)</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <button
-                      onClick={handlePreferencesUpdate}
-                      disabled={saving}
-                      className="flex items-center space-x-2 bg-[#FF6B35] text-white px-6 py-3 rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
-                    >
-                      {saving ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4" />
-                          <span>Save Preferences</span>
-                        </>
                       )}
-                    </button>
-                  </div>
-                </div>
-              )}
 
-              {/* Security Tab */}
-              {activeTab === 'security' && (
-                <div className="space-y-8">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-6">Security Settings</h3>
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div>
-                          <h4 className="font-medium text-gray-900">Two-Factor Authentication</h4>
-                          <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
-                        </div>
+                      {activeTab === 'profile-edit-phone' && (
+                        <input
+                          type="tel"
+                          value={profileData.phone}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
+                          className="w-full bg-white px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                          placeholder="Phone number"
+                        />
+                      )}
+
+                      {activeTab === 'profile-edit-location' && (
+                        <input
+                          type="text"
+                          value={profileData.location}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, location: e.target.value }))}
+                          className="w-full bg-white px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                          placeholder="Location"
+                        />
+                      )}
+
+                      {activeTab === 'profile-edit-bio' && (
+                        <textarea
+                          value={profileData.bio}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
+                          rows={4}
+                          className="w-full bg-white px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none resize-none"
+                          placeholder="Tell us about yourself..."
+                        />
+                      )}
+
+                      <div className="flex space-x-3 pt-4 border-t border-gray-200 mt-6">
                         <button
-                          onClick={() => setSecuritySettings(prev => ({ ...prev, twoFactorEnabled: !prev.twoFactorEnabled }))}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            securitySettings.twoFactorEnabled ? 'bg-[#FF6B35]' : 'bg-gray-200'
-                          }`}
+                          onClick={handleProfileUpdate}
+                          disabled={saving}
+                          className="flex-1 bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors disabled:opacity-50"
                         >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              securitySettings.twoFactorEnabled ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
+                          {saving ? 'Saving...' : 'Save Changes'}
                         </button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div>
-                          <h4 className="font-medium text-gray-900">Login Alerts</h4>
-                          <p className="text-sm text-gray-600">Get notified when someone logs into your account</p>
-                        </div>
                         <button
-                          onClick={() => setSecuritySettings(prev => ({ ...prev, loginAlerts: !prev.loginAlerts }))}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            securitySettings.loginAlerts ? 'bg-[#FF6B35]' : 'bg-gray-200'
-                          }`}
+                          onClick={() => setActiveTab('profile')}
+                          className="flex-1 bg-white border border-gray-300 text-gray-900 px-6 py-3 rounded-xl font-bold hover:bg-gray-50 transition-colors"
                         >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              securitySettings.loginAlerts ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
+                          Cancel
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
+                )}
+              </div>
+            )}
 
-                  <div className="flex justify-end mt-8">
-                    <button
-                      onClick={handleSecurityUpdate}
-                      disabled={saving}
-                      className="flex items-center space-x-2 bg-[#FF6B35] text-white px-6 py-3 rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
+            {/* Security Tab */}
+            {activeTab === 'security' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Login & security</h2>
+                <p className="text-gray-500 mb-8">Update your password and secure your account</p>
+
+                <div className="divide-y divide-gray-100">
+                  <div className="settings-row">
+                    <div className="settings-row-info">
+                      <div className="settings-label">Two-Factor Authentication</div>
+                      <div className="settings-value">
+                        {securitySettings.twoFactorEnabled ? 'On' : 'Off'}
+                      </div>
+                    </div>
+                    <button 
+                      onClick={async () => {
+                        setSecuritySettings(prev => ({ ...prev, twoFactorEnabled: !prev.twoFactorEnabled }));
+                        setTimeout(handleSecurityUpdate, 0);
+                      }}
+                      className="settings-action"
                     >
-                      {saving ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4" />
-                          <span>Save Security Settings</span>
-                        </>
-                      )}
+                      {securitySettings.twoFactorEnabled ? 'Deactivate' : 'Activate'}
                     </button>
                   </div>
 
-                  <div className="border-t pt-8 mt-8">
-                    <h3 className="text-lg font-semibold text-red-600 mb-4">Danger Zone</h3>
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                      <div className="flex items-center mb-4">
-                        <AlertTriangle className="w-6 h-6 text-red-500 mr-3" />
-                        <h4 className="font-medium text-red-900">Delete Account</h4>
+                  <div className="settings-row">
+                    <div className="settings-row-info">
+                      <div className="settings-label">Login Alerts</div>
+                      <div className="settings-value">
+                        {securitySettings.loginAlerts ? 'On' : 'Off'}
                       </div>
-                      <p className="text-red-700 mb-6">
-                        Once you delete your account, there is no going back. Please be certain.
-                      </p>
+                    </div>
+                    <button 
+                      onClick={async () => {
+                        setSecuritySettings(prev => ({ ...prev, loginAlerts: !prev.loginAlerts }));
+                        setTimeout(handleSecurityUpdate, 0);
+                      }}
+                      className="settings-action"
+                    >
+                      {securitySettings.loginAlerts ? 'Deactivate' : 'Activate'}
+                    </button>
+                  </div>
+
+                  <div className="py-8">
+                    <h3 className="text-lg font-bold text-red-600 mb-4">Danger Zone</h3>
+                    <div className="p-6 border border-red-100 bg-red-50 rounded-2xl">
+                      <p className="text-red-700 mb-6 font-medium">Once you delete your account, there is no going back. Please be certain.</p>
                       <button
                         onClick={handleDeleteAccount}
-                        disabled={saving}
-                        className="flex items-center space-x-2 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                        className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-red-700 transition-colors"
                       >
-                        <Trash2 className="w-4 h-4" />
-                        <span>Delete Account</span>
+                        Delete Account
                       </button>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Billing Tab */}
-              {activeTab === 'billing' && (
-                <div className="space-y-8">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-6">Billing & Subscription</h3>
-                    <div className="text-center py-12">
-                      <CreditCard className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                      <h4 className="text-lg font-medium text-gray-900 mb-2">No Active Subscriptions</h4>
-                      <p className="text-gray-600 mb-6">You don&apos;t have any active subscriptions at the moment.</p>
-                      <button className="bg-[#FF6B35] text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors">
-                        View Plans
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+            {/* Preferences Tab */}
+            {activeTab === 'preferences' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Privacy & sharing</h2>
+                <p className="text-gray-500 mb-8">Manage your data and privacy settings</p>
 
-              {/* Notifications Tab */}
-              {activeTab === 'notifications' && (
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Notification Preferences</h2>
-                  <div className="space-y-4">
-                    {[
-                      { key: 'emailNotifications', label: 'Email Notifications', description: 'Receive notifications via email' },
-                      { key: 'pushNotifications', label: 'Push Notifications', description: 'Receive push notifications in browser' },
-                      { key: 'propertyAlerts', label: 'Property Alerts', description: 'Get notified about new properties matching your criteria' },
-                      { key: 'marketingEmails', label: 'Marketing Emails', description: 'Receive promotional emails and updates' }
-                    ].map((pref) => (
-                      <div key={pref.key} className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-medium text-gray-900">{pref.label}</h3>
-                          <p className="text-sm text-gray-600">{pref.description}</p>
-                        </div>
-                        <button
-                          onClick={() => setPreferences(prev => ({ ...prev, [pref.key]: !prev[pref.key] }))}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            preferences[pref.key] ? 'bg-[#FF6B35]' : 'bg-gray-200'
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              preferences[pref.key] ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
-                        </button>
+                <div className="divide-y divide-gray-100">
+                  <div className="settings-row">
+                    <div className="settings-row-info">
+                      <div className="settings-label">Language</div>
+                      <div className="settings-value">
+                        {preferences.language === 'en' ? 'English' : preferences.language}
                       </div>
-                    ))}
+                    </div>
+                    <button className="settings-action">Change</button>
                   </div>
 
-                  <div className="flex justify-end mt-8">
-                    <button
-                      onClick={handlePreferencesUpdate}
-                      disabled={saving}
-                      className="flex items-center space-x-2 bg-[#FF6B35] text-white px-6 py-3 rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
-                    >
-                      {saving ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4" />
-                          <span>Save Preferences</span>
-                        </>
-                      )}
-                    </button>
+                  <div className="settings-row">
+                    <div className="settings-row-info">
+                      <div className="settings-label">Currency</div>
+                      <div className="settings-value">
+                        {preferences.currency}
+                      </div>
+                    </div>
+                    <button className="settings-action">Change</button>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Notifications Tab */}
+            {activeTab === 'notifications' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Notifications</h2>
+                <p className="text-gray-500 mb-8">Choose which notifications you receive and how</p>
+
+                <div className="divide-y divide-gray-100">
+                  {[
+                    { key: 'emailNotifications', label: 'Email Notifications' },
+                    { key: 'pushNotifications', label: 'Push Notifications' },
+                    { key: 'propertyAlerts', label: 'Property Alerts' },
+                  ].map((pref) => (
+                    <div className="settings-row" key={pref.key}>
+                      <div className="settings-row-info">
+                        <div className="settings-label">{pref.label}</div>
+                        <div className="settings-value">
+                          {preferences[pref.key] ? 'On' : 'Off'}
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setPreferences(prev => ({ ...prev, [pref.key]: !prev[pref.key] }));
+                          setTimeout(handlePreferencesUpdate, 0);
+                        }}
+                        className="settings-action"
+                      >
+                        {preferences[pref.key] ? 'Turn off' : 'Turn on'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Billing Tab */}
+            {activeTab === 'billing' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Payments & payouts</h2>
+                <p className="text-gray-500 mb-8">Review payments, payouts, coupons, and gift cards</p>
+
+                <div className="p-12 text-center border-2 border-dashed border-gray-100 rounded-3xl bg-gray-50/30">
+                  <CreditCard className="mx-auto text-gray-300 mb-4" size={48} strokeWidth={1} />
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">No payment methods</h3>
+                  <p className="text-gray-500 max-w-sm mx-auto">Add a payment method to start booking properties on HomeSwift.</p>
+                  <button className="mt-6 px-8 py-3 bg-black text-white rounded-xl font-bold hover:bg-gray-800 transition-colors">
+                    Add payment method
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
-    </motion.div>
+      </main>
+    </div>
   );
 }
 

@@ -804,7 +804,7 @@ const LandlordDashboard = () => {
     <div className="min-h-screen bg-white flex flex-col">
       {/* Fixed Header - Optimized for mobile */}
       <div className="relative">
-        <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm pt-safe">
           <div className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
             <div className="flex items-center justify-between max-w-full">
               {/* Logo - Better mobile sizing */}
@@ -902,9 +902,9 @@ const LandlordDashboard = () => {
         />
       </div>
 
-      <div className="flex flex-1 pt-[56px] sm:pt-[64px] lg:pt-[76px]">
+      <div className="flex flex-1 pt-[56px] sm:pt-[64px] lg:pt-[76px] mt-safe">
         {/* Fixed Sidebar - Desktop */}
-        <aside className={`hidden lg:block fixed left-0 top-[56px] sm:top-[64px] lg:top-[76px] bottom-0 bg-white border-r border-gray-200 transition-all duration-300 ${compactMode ? 'w-16' : 'w-64'} overflow-y-auto`}>
+        <aside className={`hidden lg:block fixed left-0 top-[56px] sm:top-[64px] lg:top-[76px] bottom-0 bg-white border-r border-gray-200 transition-all duration-300 ${compactMode ? 'w-16' : 'w-64'} overflow-y-auto mt-safe flex flex-col`}>
           <div className="flex flex-col h-full">
             <div className="p-4 flex-1">
               <div className="flex items-center justify-between mb-8">

@@ -606,7 +606,7 @@ const RenterHomePage = () => {
   return (
     <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-10">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 pt-safe">
         <div className="px-4 sm:px-6 lg:px-10">
           {/* Top Bar */}
           <div className="flex items-center justify-end h-16 lg:h-20">

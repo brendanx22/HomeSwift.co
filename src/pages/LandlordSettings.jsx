@@ -15,7 +15,8 @@ import {
   Trash2,
   Eye,
   EyeOff,
-  AlertTriangle
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -438,419 +439,240 @@ const LandlordSettings = () => {
     return null;
   }
 
-  const tabs = [
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'security', label: 'Security', icon: Shield },
-    { id: 'billing', label: 'Billing', icon: CreditCard },
-    { id: 'help', label: 'Help & Support', icon: HelpCircle }
-  ];
+  // Helper component for settings rows
+  const SettingsRow = ({ label, value, actionLabel = 'Edit', onAction, isEditing, children }) => (
+    <div className="settings-row">
+      <div className="settings-row-info">
+        <div className="settings-label">{label}</div>
+        {!isEditing ? (
+          <div className="settings-value">{value || `Not provided`}</div>
+        ) : (
+          <div className="mt-4">{children}</div>
+        )}
+      </div>
+      {!isEditing ? (
+        <button onClick={onAction} className="settings-action">
+          {value ? actionLabel : 'Add'}
+        </button>
+      ) : null}
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-6">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/landlord/dashboard')}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-                <p className="text-gray-600">Manage your account and preferences</p>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-white">
+      {/* Airbnb Style Header */}
+      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-50 pt-safe">
+        <div className="flex items-center cursor-pointer" onClick={() => navigate('/landlord/dashboard')}>
+          <img src="/images/logo.png" alt="HomeSwift" className="h-8 w-auto object-contain" />
         </div>
-      </div>
+        <button
+          onClick={() => navigate('/landlord/dashboard')}
+          className="px-4 py-2 rounded-lg font-semibold text-gray-900 border border-gray-300 hover:bg-gray-50 transition-colors text-sm"
+        >
+          Done
+        </button>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <nav className="space-y-2">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
+      <main className="settings-container">
+        <div className="settings-grid">
+          {/* Sidebar Navigation */}
+          <aside className="settings-sidebar">
+            <h1 className="text-3xl font-extrabold text-gray-900 mb-8">Account settings</h1>
+            <nav className="space-y-1">
+              {[
+                { id: 'profile', label: 'Personal information', icon: User },
+                { id: 'payouts', label: 'Payout details', icon: CreditCard },
+                { id: 'security', label: 'Login & security', icon: Shield },
+                { id: 'notifications', label: 'Notifications', icon: Bell },
+                { id: 'help', label: 'Help & support', icon: HelpCircle },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center space-x-4 p-4 rounded-xl transition-all ${
+                    activeTab === item.id
+                      ? 'bg-gray-50 shadow-sm'
+                      : 'hover:bg-gray-50/50'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${activeTab === item.id ? 'text-gray-900' : 'text-gray-500'}`}>
+                    <item.icon size={24} strokeWidth={1.5} />
+                  </div>
+                  <span className={`text-base ${activeTab === item.id ? 'font-semibold text-gray-900' : 'text-gray-600'}`}>
+                    {item.label}
+                  </span>
+                </button>
+              ))}
+            </nav>
+          </aside>
 
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        isActive
-                          ? 'bg-orange-50 text-orange-700 border border-orange-200'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span>{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-          </div>
+          {/* Content Area */}
+          <div className="settings-content">
+            {/* Profile Tab */}
+            {activeTab === 'profile' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Personal information</h2>
+                <p className="text-gray-500 mb-8">Manage your profile details and how we can reach you</p>
 
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              {activeTab === 'profile' && (
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Profile Information</h2>
+                <div className="divide-y divide-gray-100">
+                  <SettingsRow 
+                    label="Legal name" 
+                    value={`${profileData.first_name} ${profileData.last_name}`.trim() || 'Not set'}
+                    onAction={() => setActiveTab('profile-edit-name')}
+                  />
+                  <SettingsRow 
+                    label="Email address" 
+                    value={profileData.email}
+                    actionLabel="Edit"
+                    onAction={() => toast.error('Email cannot be changed directly')}
+                  />
+                  <SettingsRow 
+                    label="Phone numbers" 
+                    value={profileData.phone}
+                    onAction={() => setActiveTab('profile-edit-phone')}
+                  />
+                  <SettingsRow 
+                    label="Location" 
+                    value={profileData.location}
+                    onAction={() => setActiveTab('profile-edit-location')}
+                  />
+                  <SettingsRow 
+                    label="Bio" 
+                    value={profileData.bio}
+                    onAction={() => setActiveTab('profile-edit-bio')}
+                  />
+                </div>
 
-                  <form onSubmit={handleProfileUpdate} className="space-y-6">
-                    {/* Avatar Section */}
-                    <div className="flex items-center space-x-6">
-                      <div className="relative">
-                        <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                          {profileData.avatar_url ? (
-                            <img
-                              src={profileData.avatar_url}
-                              alt="Avatar"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <User className="w-8 h-8 text-gray-400" />
-                          )}
-                        </div>
-                        <label className="absolute bottom-0 right-0 bg-orange-500 rounded-full p-1 cursor-pointer hover:bg-orange-600 transition-colors">
-                          <Camera className="w-4 h-4 text-white" />
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (file) handleAvatarUpload(file);
-                            }}
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">Profile Photo</h3>
-                        <p className="text-sm text-gray-600">Upload a new profile picture</p>
-                      </div>
+                {/* Edit Modes for Profile */}
+                {activeTab.startsWith('profile-edit') && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-8 p-6 bg-gray-50 rounded-2xl border border-gray-200"
+                  >
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="font-bold text-lg text-gray-900">
+                        {activeTab === 'profile-edit-name' && 'Edit Name'}
+                        {activeTab === 'profile-edit-phone' && 'Edit Phone Number'}
+                        {activeTab === 'profile-edit-location' && 'Edit Location'}
+                        {activeTab === 'profile-edit-bio' && 'Edit Bio'}
+                      </h3>
+                      <button onClick={() => setActiveTab('profile')} className="p-2 hover:bg-white rounded-full transition-colors">
+                        <X size={20} />
+                      </button>
                     </div>
 
-                    {/* Form Fields */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          First Name
-                        </label>
-                        <input
-                          type="text"
-                          value={profileData.first_name || ''}
-                          onChange={(e) => handleInputChange('first_name', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                          placeholder="Enter your first name"
-                        />
-                      </div>
+                    <div className="space-y-4">
+                      {activeTab === 'profile-edit-name' && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <input
+                            type="text"
+                            value={profileData.first_name}
+                            onChange={(e) => handleInputChange('first_name', e.target.value)}
+                            className="bg-white px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none text-gray-900"
+                            placeholder="First name"
+                          />
+                          <input
+                            type="text"
+                            value={profileData.last_name}
+                            onChange={(e) => handleInputChange('last_name', e.target.value)}
+                            className="bg-white px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none text-gray-900"
+                            placeholder="Last name"
+                          />
+                        </div>
+                      )}
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Last Name
-                        </label>
-                        <input
-                          type="text"
-                          value={profileData.last_name || ''}
-                          onChange={(e) => handleInputChange('last_name', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                          placeholder="Enter your last name"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          value={profileData.email || ''}
-                          onChange={(e) => handleInputChange('email', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                          placeholder="Enter your email"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Phone
-                        </label>
+                      {activeTab === 'profile-edit-phone' && (
                         <input
                           type="tel"
-                          value={profileData.phone || ''}
+                          value={profileData.phone}
                           onChange={(e) => handleInputChange('phone', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                          placeholder="Enter your phone number"
+                          className="w-full bg-white px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none text-gray-900"
+                          placeholder="Phone number"
                         />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Bio
-                      </label>
-                      <textarea
-                        value={profileData.bio || ''}
-                        onChange={(e) => handleInputChange('bio', e.target.value)}
-                        rows={4}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                        placeholder="Tell us about yourself..."
-                      />
-                    </div>
-
-                    <div className="flex justify-end">
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                      >
-                        {loading ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        ) : (
-                          <Save className="w-4 h-4" />
-                        )}
-                        <span>Save Changes</span>
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
-
-              {activeTab === 'notifications' && (
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Notification Preferences</h2>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Email Notifications</h3>
-                        <p className="text-sm text-gray-600">Receive notifications via email</p>
-                      </div>
-                      <button
-                        onClick={() => setPreferences(prev => ({ ...prev, emailNotifications: !prev.emailNotifications }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          preferences.emailNotifications ? 'bg-[#FF6B35]' : 'bg-gray-200'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            preferences.emailNotifications ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Push Notifications</h3>
-                        <p className="text-sm text-gray-600">Receive push notifications in your browser</p>
-                      </div>
-                      <button
-                        onClick={() => setPreferences(prev => ({ ...prev, pushNotifications: !prev.pushNotifications }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          preferences.pushNotifications ? 'bg-[#FF6B35]' : 'bg-gray-200'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            preferences.pushNotifications ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Property Alerts</h3>
-                        <p className="text-sm text-gray-600">Get notified about new properties matching your criteria</p>
-                      </div>
-                      <button
-                        onClick={() => setPreferences(prev => ({ ...prev, propertyAlerts: !prev.propertyAlerts }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          preferences.propertyAlerts ? 'bg-[#FF6B35]' : 'bg-gray-200'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            preferences.propertyAlerts ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Marketing Emails</h3>
-                        <p className="text-sm text-gray-600">Receive promotional emails and updates</p>
-                      </div>
-                      <button
-                        onClick={() => setPreferences(prev => ({ ...prev, marketingEmails: !prev.marketingEmails }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          preferences.marketingEmails ? 'bg-[#FF6B35]' : 'bg-gray-200'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            preferences.marketingEmails ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end mt-8">
-                    <button
-                      onClick={handlePreferencesUpdate}
-                      disabled={loading}
-                      className="flex items-center space-x-2 bg-[#FF6B35] text-white px-6 py-3 rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
-                    >
-                      {loading ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4" />
-                          <span>Save Preferences</span>
-                        </>
                       )}
-                    </button>
-                  </div>
-                </div>
-              )}
 
-              {activeTab === 'security' && (
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Security Settings</h2>
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Two-Factor Authentication</h3>
-                        <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
-                      </div>
-                      <button
-                        onClick={() => setSecuritySettings(prev => ({ ...prev, twoFactorEnabled: !prev.twoFactorEnabled }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          securitySettings.twoFactorEnabled ? 'bg-[#FF6B35]' : 'bg-gray-200'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            securitySettings.twoFactorEnabled ? 'translate-x-6' : 'translate-x-1'
-                          }`}
+                      {activeTab === 'profile-edit-location' && (
+                        <input
+                          type="text"
+                          value={profileData.location}
+                          onChange={(e) => handleInputChange('location', e.target.value)}
+                          className="w-full bg-white px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none text-gray-900"
+                          placeholder="Location"
                         />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Login Alerts</h3>
-                        <p className="text-sm text-gray-600">Get notified when someone logs into your account</p>
-                      </div>
-                      <button
-                        onClick={() => setSecuritySettings(prev => ({ ...prev, loginAlerts: !prev.loginAlerts }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          securitySettings.loginAlerts ? 'bg-[#FF6B35]' : 'bg-gray-200'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            securitySettings.loginAlerts ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div>
-                      <h3 className="font-medium text-gray-900 mb-2">Change Password</h3>
-                      <p className="text-sm text-gray-600 mb-4">Update your password to keep your account secure</p>
-                      <button className="bg-[#FF6B35] text-white px-4 py-2 rounded-lg hover:bg-orange-600">
-                        Change Password
-                      </button>
-                    </div>
-
-                    <div>
-                      <h3 className="font-medium text-gray-900 mb-2">Login Sessions</h3>
-                      <p className="text-sm text-gray-600 mb-4">Manage your active login sessions</p>
-                      <button className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
-                        View Sessions
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end mt-8">
-                    <button
-                      onClick={handleSecurityUpdate}
-                      disabled={loading}
-                      className="flex items-center space-x-2 bg-[#FF6B35] text-white px-6 py-3 rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
-                    >
-                      {loading ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4" />
-                          <span>Save Security Settings</span>
-                        </>
                       )}
-                    </button>
-                  </div>
 
-                  <div className="border-t pt-8 mt-8">
-                    <h3 className="text-lg font-semibold text-red-600 mb-4">Danger Zone</h3>
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                      <div className="flex items-center mb-4">
-                        <AlertTriangle className="w-6 h-6 text-red-500 mr-3" />
-                        <h4 className="font-medium text-red-900">Delete Account</h4>
+                      {activeTab === 'profile-edit-bio' && (
+                        <textarea
+                          value={profileData.bio}
+                          onChange={(e) => handleInputChange('bio', e.target.value)}
+                          rows={4}
+                          className="w-full bg-white px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none resize-none text-gray-900"
+                          placeholder="Tell us about yourself..."
+                        />
+                      )}
+
+                      <div className="flex space-x-3 pt-4 border-t border-gray-200 mt-6">
+                        <button
+                          onClick={handleProfileUpdate}
+                          disabled={saving}
+                          className="flex-1 bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors disabled:opacity-50"
+                        >
+                          {loading ? 'Saving...' : 'Save Changes'}
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('profile')}
+                          className="flex-1 bg-white border border-gray-300 text-gray-900 px-6 py-3 rounded-xl font-bold hover:bg-gray-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
                       </div>
-                      <p className="text-red-700 mb-6">
-                        Once you delete your account, there is no going back. Please be certain.
-                      </p>
-                      <button
-                        onClick={handleDeleteAccount}
-                        disabled={loading}
-                        className="flex items-center space-x-2 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span>Delete Account</span>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            )}
+
+            {/* Payout Details Tab */}
+            {activeTab === 'payouts' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Payout details</h2>
+                <p className="text-gray-500 mb-8">Manage your bank details to receive payments</p>
+
+                <div className="divide-y divide-gray-100">
+                  <SettingsRow 
+                    label="Bank Name" 
+                    value={payoutSettings.bank_name}
+                    onAction={() => setActiveTab('payouts-edit')}
+                  />
+                  <SettingsRow 
+                    label="Account Number" 
+                    value={payoutSettings.account_number}
+                    onAction={() => setActiveTab('payouts-edit')}
+                  />
+                  <SettingsRow 
+                    label="Account Name" 
+                    value={payoutSettings.account_name}
+                    onAction={() => setActiveTab('payouts-edit')}
+                  />
+                </div>
+
+                {activeTab === 'payouts-edit' && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-8 p-6 bg-gray-50 rounded-2xl border border-gray-200"
+                  >
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="font-bold text-lg text-gray-900">Edit Payout Details</h3>
+                      <button onClick={() => setActiveTab('payouts')} className="p-2 hover:bg-white rounded-full transition-colors">
+                        <X size={20} />
                       </button>
                     </div>
-                  </div>
-                </div>
-              )}
 
-              {activeTab === 'billing' && (
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Payout Settings</h2>
-                  <div className="space-y-6">
-                    <div className="border border-green-100 bg-green-50 rounded-lg p-4 mb-6">
-                      <div className="flex items-start gap-3">
-                        <CreditCard className="w-5 h-5 text-green-600 mt-0.5" />
-                        <div>
-                          <h3 className="font-medium text-green-900">Direct Deposit</h3>
-                          <p className="text-sm text-green-700">
-                            Connect your bank account to receive rent payments automatically.
-                            Payments are processed securely via Paystack.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <form className="space-y-4">
-                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Bank Name
-                        </label>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Bank Name</label>
                         <select
                           value={payoutSettings.bank_code}
                           onChange={(e) => {
@@ -858,7 +680,7 @@ const LandlordSettings = () => {
                              const label = e.target.options[idx].text;
                              setPayoutSettings({...payoutSettings, bank_code: e.target.value, bank_name: label});
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                          className="w-full bg-white px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black outline-none text-gray-900"
                         >
                           <option value="">Select your bank</option>
                           <option value="044">Access Bank</option>
@@ -873,82 +695,159 @@ const LandlordSettings = () => {
                         </select>
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Account Number
-                        </label>
-                        <input
-                          type="text"
-                          maxLength="10"
-                          value={payoutSettings.account_number}
-                          onChange={(e) => setPayoutSettings({...payoutSettings, account_number: e.target.value})}
-                          placeholder="0123456789"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        maxLength="10"
+                        value={payoutSettings.account_number}
+                        onChange={(e) => setPayoutSettings({...payoutSettings, account_number: e.target.value})}
+                        className="w-full bg-white px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black outline-none text-gray-900"
+                        placeholder="Account Number (10 digits)"
+                      />
+                      <input
+                        type="text"
+                        value={payoutSettings.account_name}
+                        onChange={(e) => setPayoutSettings({...payoutSettings, account_name: e.target.value})}
+                        className="w-full bg-white px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black outline-none text-gray-900"
+                        placeholder="Account Holder Name"
+                      />
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Account Name
-                        </label>
-                         <input
-                          type="text"
-                          value={payoutSettings.account_name}
-                          onChange={(e) => setPayoutSettings({...payoutSettings, account_name: e.target.value})}
-                          placeholder="Account Name (e.g. John Doe)"
-                          className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
-                        />
-                      </div>
-
-                      <div className="pt-4">
-                        <button 
-                          type="button"
+                      <div className="flex space-x-3 pt-4 border-t border-gray-200 mt-6">
+                        <button
                           onClick={handleSavePayoutDetails}
                           disabled={loading}
-                          className="w-full bg-[#FF6B35] text-white px-4 py-3 rounded-lg hover:bg-orange-600 font-medium transition-colors disabled:opacity-50"
+                          className="flex-1 bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors disabled:opacity-50"
                         >
-                          {loading ? 'Saving...' : 'Save Payout Details'}
+                          {loading ? 'Saving...' : 'Save Details'}
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('payouts')}
+                          className="flex-1 bg-white border border-gray-300 text-gray-900 px-6 py-3 rounded-xl font-bold hover:bg-gray-50 transition-colors"
+                        >
+                          Cancel
                         </button>
                       </div>
-                    </form>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            )}
+
+            {/* Security Tab */}
+            {activeTab === 'security' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Login & security</h2>
+                <p className="text-gray-500 mb-8">Update your password and secure your account</p>
+
+                <div className="divide-y divide-gray-100">
+                  <div className="settings-row">
+                    <div className="settings-row-info">
+                      <div className="settings-label">Two-Factor Authentication</div>
+                      <div className="settings-value">
+                        {securitySettings.twoFactorEnabled ? 'On' : 'Off'}
+                      </div>
+                    </div>
+                    <button 
+                      onClick={async () => {
+                        setSecuritySettings(prev => ({ ...prev, twoFactorEnabled: !prev.twoFactorEnabled }));
+                        setTimeout(handleSecurityUpdate, 0);
+                      }}
+                      className="settings-action"
+                    >
+                      {securitySettings.twoFactorEnabled ? 'Deactivate' : 'Activate'}
+                    </button>
+                  </div>
+
+                  <div className="settings-row">
+                    <div className="settings-row-info">
+                      <div className="settings-label">Login Alerts</div>
+                      <div className="settings-value">
+                        {securitySettings.loginAlerts ? 'On' : 'Off'}
+                      </div>
+                    </div>
+                    <button 
+                      onClick={async () => {
+                        setSecuritySettings(prev => ({ ...prev, loginAlerts: !prev.loginAlerts }));
+                        setTimeout(handleSecurityUpdate, 0);
+                      }}
+                      className="settings-action"
+                    >
+                      {securitySettings.loginAlerts ? 'Deactivate' : 'Activate'}
+                    </button>
+                  </div>
+
+                  <div className="py-8">
+                    <h3 className="text-lg font-bold text-red-600 mb-4">Danger Zone</h3>
+                    <div className="p-6 border border-red-100 bg-red-50 rounded-2xl">
+                      <p className="text-red-700 mb-6 font-medium">Once you delete your account, there is no going back. Please be certain.</p>
+                      <button
+                        onClick={handleDeleteAccount}
+                        className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-red-700 transition-colors"
+                      >
+                        Delete Account
+                      </button>
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {activeTab === 'help' && (
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Help & Support</h2>
-                  <div className="space-y-6">
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h3 className="font-medium text-gray-900 mb-2">Contact Support</h3>
-                      <p className="text-sm text-gray-600 mb-4">Need help? Our support team is here to assist you.</p>
-                      <button className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600">
-                        Contact Support
+            {/* Notifications Tab */}
+            {activeTab === 'notifications' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Notifications</h2>
+                <p className="text-gray-500 mb-8">Choose which notifications you receive and how</p>
+
+                <div className="divide-y divide-gray-100">
+                  {[
+                    { key: 'emailNotifications', label: 'Email Notifications' },
+                    { key: 'pushNotifications', label: 'Push Notifications' },
+                    { key: 'propertyAlerts', label: 'Property Alerts' },
+                  ].map((pref) => (
+                    <div className="settings-row" key={pref.key}>
+                      <div className="settings-row-info">
+                        <div className="settings-label">{pref.label}</div>
+                        <div className="settings-value">
+                          {preferences[pref.key] ? 'On' : 'Off'}
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setPreferences(prev => ({ ...prev, [pref.key]: !prev[pref.key] }));
+                          setTimeout(handlePreferencesUpdate, 0);
+                        }}
+                        className="settings-action"
+                      >
+                        {preferences[pref.key] ? 'Turn off' : 'Turn on'}
                       </button>
                     </div>
-
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h3 className="font-medium text-gray-900 mb-2">Documentation</h3>
-                      <p className="text-sm text-gray-600 mb-4">Browse our comprehensive documentation.</p>
-                      <button className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
-                        View Docs
-                      </button>
-                    </div>
-
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h3 className="font-medium text-gray-900 mb-2">Report Issue</h3>
-                      <p className="text-sm text-gray-600 mb-4">Found a bug or have a suggestion? Let us know.</p>
-                      <button className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
-                        Report Issue
-                      </button>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Help & Support Tab */}
+            {activeTab === 'help' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Help & support</h2>
+                <p className="text-gray-500 mb-8">Get the help you need</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button className="flex flex-col items-start p-6 border border-gray-100 rounded-2xl hover:bg-gray-50 transition-colors text-left">
+                    <HelpCircle className="mb-4 text-gray-900" size={32} strokeWidth={1.5} />
+                    <span className="font-bold text-gray-900">Visit our Help Center</span>
+                    <span className="text-sm text-gray-500 mt-1">Found answers and learn how HomeSwift works</span>
+                  </button>
+                  <button className="flex flex-col items-start p-6 border border-gray-100 rounded-2xl hover:bg-gray-50 transition-colors text-left">
+                    <Bell className="mb-4 text-gray-900" size={32} strokeWidth={1.5} />
+                    <span className="font-bold text-gray-900">Contact Support</span>
+                    <span className="text-sm text-gray-500 mt-1">Get in touch with our team for assistance</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

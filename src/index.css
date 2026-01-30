@@ -18,16 +18,54 @@
 
 /* Safe Area Utilities */
 .pt-safe {
-  padding-top: env(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 .pb-safe {
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .mt-safe {
-  margin-top: env(safe-area-inset-top);
+  margin-top: env(safe-area-inset-top, 0px);
 }
 .mb-safe {
-  margin-bottom: env(safe-area-inset-bottom);
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@layer utilities {
+  .settings-container {
+    @apply max-w-7xl mx-auto px-6 py-12;
+  }
+
+  .settings-grid {
+    @apply grid grid-cols-1 lg:grid-cols-3 gap-16;
+  }
+
+  .settings-sidebar {
+    @apply lg:col-span-1;
+  }
+
+  .settings-content {
+    @apply lg:col-span-2 space-y-8;
+  }
+
+  .settings-row {
+    @apply flex flex-col sm:flex-row sm:items-center justify-between py-6 border-b border-gray-100 min-h-[92px];
+  }
+
+  .settings-row-info {
+    @apply flex-1 pr-4;
+  }
+
+  .settings-label {
+    @apply text-base font-semibold text-gray-900;
+  }
+
+  .settings-value {
+    @apply text-sm text-gray-500 mt-0.5;
+  }
+
+  .settings-action {
+    @apply text-sm font-semibold text-gray-900 underline hover:no-underline transition-all mt-3 sm:mt-0;
+  }
 }
 
 /* Add any custom styles below */

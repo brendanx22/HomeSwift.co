@@ -145,7 +145,7 @@ const MessageCenter = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Mobile Header - Static */}
-      <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3">
+      <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 pt-safe">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <h2 className="text-lg font-bold text-gray-900">Messages</h2>

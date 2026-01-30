@@ -161,244 +161,196 @@ export default function Profile() {
     );
   }
 
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gray-50"
-    >
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Profile</h1>
-              <p className="text-gray-600">Manage your account settings and preferences</p>
-            </div>
-            {!isEditing && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center space-x-2 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
-                style={{ backgroundColor: '#FF6B35' }}
-              >
-                <Edit className="w-4 h-4" />
-                <span>Edit Profile</span>
-              </button>
-            )}
-          </div>
-        </div>
+  // Helper component for settings rows
+  const SettingsRow = ({ label, value, actionLabel = 'Edit', onAction, isEditing, children }) => (
+    <div className="settings-row">
+      <div className="settings-row-info">
+        <div className="settings-label">{label}</div>
+        {!isEditing ? (
+          <div className="settings-value">{value || `Not provided`}</div>
+        ) : (
+          <div className="mt-4">{children}</div>
+        )}
       </div>
+      {!isEditing ? (
+        <button onClick={onAction} className="settings-action">
+          {value ? actionLabel : 'Add'}
+        </button>
+      ) : null}
+    </div>
+  );
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Profile Card */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center">
-              <div className="w-24 h-24 bg-gradient-to-br from-[#FF6B35] to-[#e85e2f] rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-white">
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-50 pt-safe">
+        <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+          <img src="/images/logo.png" alt="HomeSwift" className="h-8 w-auto object-contain" />
+        </div>
+        <button
+          onClick={() => navigate('/')}
+          className="px-4 py-2 rounded-lg font-semibold text-gray-900 border border-gray-300 hover:bg-gray-50 transition-colors text-sm"
+        >
+          Done
+        </button>
+      </header>
+
+      <main className="settings-container">
+        <div className="settings-grid">
+          {/* Sidebar */}
+          <aside className="settings-sidebar text-center">
+            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm inline-block w-full">
+              <div className="relative inline-block mb-6">
+                <div className="w-32 h-32 bg-gradient-to-br from-[#FF6B35] to-orange-600 rounded-full flex items-center justify-center mx-auto text-4xl font-extrabold text-white shadow-lg">
                   {profileData.full_name ? profileData.full_name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase()}
-                </span>
+                </div>
+                <button className="absolute bottom-0 right-0 p-2 bg-white border border-gray-200 rounded-full shadow-md text-gray-900 hover:scale-105 transition-transform">
+                  <Edit size={16} />
+                </button>
               </div>
 
-              <h3 className="text-xl font-bold text-gray-900 mb-1">
-                {profileData.full_name || 'No name set'}
-              </h3>
-
-              <p className="text-gray-600 mb-4">{user?.email}</p>
-
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex items-center justify-center">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  <span>Member since {new Date(user?.created_at || Date.now()).getFullYear()}</span>
+              <h2 className="text-2xl font-bold text-gray-900 mb-1">{profileData.full_name || 'Your Profile'}</h2>
+              <p className="text-gray-500 mb-6">Member since {new Date(user?.created_at).getFullYear()}</p>
+              
+              <div className="pt-6 border-t border-gray-100 space-y-4 text-left">
+                <div className="flex items-center text-gray-700">
+                  <Calendar className="w-5 h-5 mr-3 text-gray-400" />
+                  <span className="text-sm">Verified Account</span>
+                </div>
+                <div className="flex items-center text-gray-700">
+                  <User className="w-5 h-5 mr-3 text-gray-400" />
+                  <span className="text-sm">2 Reviews from Hosts</span>
                 </div>
                 {profileData.location && (
-                  <div className="flex items-center justify-center">
-                    <MapPin className="w-4 h-4 mr-2" />
-                    <span>{profileData.location}</span>
+                  <div className="flex items-center text-gray-700">
+                    <MapPin className="w-5 h-5 mr-3 text-gray-400" />
+                    <span className="text-sm">{profileData.location}</span>
                   </div>
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Profile Details */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Personal Information</h2>
+            <button
+               onClick={() => navigate('/settings')}
+               className="mt-6 w-full py-4 px-6 border border-gray-900 rounded-xl font-bold text-gray-900 hover:bg-gray-50 transition-colors"
+            >
+              Manage Account
+            </button>
+          </aside>
 
-              <div className="space-y-6">
-                {/* Full Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name
-                  </label>
-                  {isEditing ? (
+          {/* Content Area */}
+          <div className="settings-content">
+            <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Personal Information</h1>
+            <p className="text-gray-500 mb-12">Confirm your information and how we can reach you</p>
+
+            <div className="divide-y divide-gray-100">
+              <SettingsRow 
+                label="Full name" 
+                value={profileData.full_name}
+                onAction={() => setIsEditing(true)}
+              />
+              <SettingsRow 
+                label="Email address" 
+                value={user?.email}
+                actionLabel="Edit"
+                onAction={() => toast.error('Email cannot be changed directly')}
+              />
+              <SettingsRow 
+                label="Phone number" 
+                value={profileData.phone}
+                onAction={() => setIsEditing(true)}
+              />
+              <SettingsRow 
+                label="Location" 
+                value={profileData.location}
+                onAction={() => setIsEditing(true)}
+              />
+              <SettingsRow 
+                label="About" 
+                value={profileData.bio}
+                onAction={() => setIsEditing(true)}
+              />
+            </div>
+
+            {isEditing && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-8 p-8 bg-gray-50 rounded-2xl border border-gray-200"
+              >
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-xl font-bold text-gray-900">Edit Profile Details</h3>
+                  <button onClick={() => setIsEditing(false)} className="p-2 hover:bg-white rounded-full transition-colors">
+                    <SettingsIcon size={20} />
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">Full Name</label>
                     <input
                       type="text"
                       value={profileData.full_name}
                       onChange={(e) => handleInputChange('full_name', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
-                      placeholder="Enter your full name"
+                      className="w-full bg-white px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black outline-none transition-all"
+                      placeholder="e.g. John Doe"
                     />
-                  ) : (
-                    <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                      <User className="w-5 h-5 text-gray-400 mr-3" />
-                      <span>{profileData.full_name || 'Not provided'}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Email (Read-only) */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                    <Mail className="w-5 h-5 text-gray-400 mr-3" />
-                    <span>{user?.email}</span>
                   </div>
-                </div>
 
-                {/* Phone */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="tel"
-                      value={profileData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
-                      placeholder="Enter your phone number"
-                    />
-                  ) : (
-                    <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                      <Phone className="w-5 h-5 text-gray-400 mr-3" />
-                      <span>{profileData.phone || 'Not provided'}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">Phone Number</label>
+                      <input
+                        type="tel"
+                        value={profileData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        className="w-full bg-white px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black outline-none transition-all"
+                        placeholder="+234..."
+                      />
                     </div>
-                  )}
-                </div>
-
-                {/* Location */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Location
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={profileData.location}
-                      onChange={(e) => handleInputChange('location', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
-                      placeholder="Enter your location"
-                    />
-                  ) : (
-                    <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                      <MapPin className="w-5 h-5 text-gray-400 mr-3" />
-                      <span>{profileData.location || 'Not provided'}</span>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">Location</label>
+                      <input
+                        type="text"
+                        value={profileData.location}
+                        onChange={(e) => handleInputChange('location', e.target.value)}
+                        className="w-full bg-white px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black outline-none transition-all"
+                        placeholder="e.g. Lagos, Nigeria"
+                      />
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                {/* Bio */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Bio
-                  </label>
-                  {isEditing ? (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">About (Bio)</label>
                     <textarea
                       value={profileData.bio}
                       onChange={(e) => handleInputChange('bio', e.target.value)}
                       rows={4}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent resize-none"
-                      placeholder="Tell us about yourself..."
+                      className="w-full bg-white px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black outline-none resize-none transition-all"
+                      placeholder="Tell hosts and other users about yourself..."
                     />
-                  ) : (
-                    <div className="p-3 bg-gray-50 rounded-lg min-h-[100px]">
-                      {profileData.bio ? (
-                        <p className="text-gray-700">{profileData.bio}</p>
-                      ) : (
-                        <p className="text-gray-500 italic">No bio provided</p>
-                      )}
-                    </div>
-                  )}
+                  </div>
+
+                  <div className="flex space-x-4 pt-6 mt-6 border-t border-gray-200">
+                    <button
+                      onClick={handleSave}
+                      className="flex-1 bg-black text-white py-4 rounded-xl font-bold hover:bg-gray-800 transition-colors"
+                    >
+                      Save Changes
+                    </button>
+                    <button
+                      onClick={handleCancel}
+                      className="flex-1 bg-white border border-gray-300 text-gray-900 py-4 rounded-xl font-bold hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              {isEditing && (
-                <div className="flex space-x-4 mt-8">
-                  <button
-                    onClick={handleSave}
-                    className="flex-1 bg-[#FF6B35] text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors"
-                  >
-                    Save Changes
-                  </button>
-                  <button
-                    onClick={handleCancel}
-                    className="flex-1 border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Account Settings */}
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 mt-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Settings</h2>
-
-              <div className="space-y-4">
-                <button
-                  onClick={() => navigate('/settings')}
-                  className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <SettingsIcon className="w-5 h-5 text-gray-400 mr-3" />
-                    <span className="text-gray-700">Settings</span>
-                  </div>
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-
-                <button
-                  onClick={() => navigate('/settings')}
-                  className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <SettingsIcon className="w-5 h-5 text-gray-400 mr-3" />
-                    <span className="text-gray-700">Privacy Settings</span>
-                  </div>
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                      // TODO: Implement account deletion
-                      console.log('Account deletion requested');
-                    }
-                  }}
-                  className="w-full flex items-center justify-between p-4 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <SettingsIcon className="w-5 h-5 text-red-400 mr-3" />
-                    <span className="text-red-700">Delete Account</span>
-                  </div>
-                  <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+              </motion.div>
+            )}
           </div>
         </div>
-      </div>
-    </motion.div>
+      </main>
+    </div>
   );
 }
