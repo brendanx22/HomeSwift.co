@@ -182,132 +182,98 @@ const Home = () => {
         
           <motion.button 
             onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="md:hidden text-[#FF6B35] p-2 ml-auto"
-            whileHover={{ scale: 1.1, rotate: 90 }}
-            whileTap={{ scale: 0.9 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            className="md:hidden flex items-center bg-white/90 backdrop-blur-md border border-gray-100 p-2.5 rounded-2xl shadow-sm ml-auto text-[#1C2C3E]"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <AnimatePresence mode="wait">
-              {showMobileMenu ? (
-                <motion.div
-                  key="close"
-                  initial={{ rotate: -90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <X size={24} />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="menu"
-                  initial={{ rotate: 90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: -90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Menu size={24} />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {showMobileMenu ? <X size={22} /> : <Menu size={22} />}
           </motion.button>
         </motion.header>
 
         <AnimatePresence>
           {showMobileMenu && (
             <motion.div
-              className="md:hidden fixed inset-0 z-[100]"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              className="md:hidden fixed inset-0 z-[100] bg-white flex flex-col"
+              initial={{ opacity: 0, scale: 1.1 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.1 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             >
-              {/* Backdrop */}
-              <motion.div
-                className="absolute inset-0 bg-[#1C2C3E]/40 backdrop-blur-xl"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setShowMobileMenu(false)}
-              />
-              
-              {/* Menu Content */}
-              <motion.div
-                className="absolute right-0 top-0 h-full w-[85%] bg-white shadow-2xl overflow-hidden flex flex-col"
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              >
-                <div className="p-8 flex items-center justify-between border-b border-gray-100 pt-safe">
-                  <img src="/images/logo.png" alt="HomeSwift Logo" className="w-28 h-7 object-contain" />
+              {/* Header inside menu */}
+              <div className="flex items-center justify-between px-6 py-6 border-b border-gray-50 pt-safe">
+                <img src="/images/logo.png" alt="HomeSwift Logo" className="w-40 h-8 object-contain" />
+                <button 
+                  onClick={() => setShowMobileMenu(false)}
+                  className="p-2.5 rounded-2xl bg-gray-50 text-[#1C2C3E]"
+                >
+                  <X size={22} />
+                </button>
+              </div>
+
+              {/* Menu Items */}
+              <div className="flex-1 px-6 py-12 overflow-y-auto">
+                <nav className="space-y-2">
+                  {[
+                    { name: 'Home', href: '/', icon: HomeIcon, active: true },
+                    { name: 'Browse Properties', href: '/properties', icon: Search },
+                    { name: 'About Us', href: '/about', icon: Info },
+                    { name: 'FAQs', href: '/faq', icon: Mail },
+                  ].map((item, i) => (
+                    <motion.a
+                      key={item.name}
+                      href={item.href}
+                      className={`group flex items-center justify-between p-6 rounded-[2rem] transition-all ${
+                        item.active 
+                        ? 'bg-[#FF6B35] text-white shadow-xl shadow-orange-100' 
+                        : 'text-gray-900 border border-transparent hover:border-gray-100 hover:bg-gray-50'
+                      }`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 + i * 0.05 }}
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      <div className="flex items-center">
+                        <div className={`p-3 rounded-2xl mr-5 ${item.active ? 'bg-white/20' : 'bg-gray-100 text-gray-500'}`}>
+                          <item.icon size={20} />
+                        </div>
+                        <span className="text-xl font-bold tracking-tight">{item.name}</span>
+                      </div>
+                      <ArrowUpRight size={20} className={item.active ? 'opacity-70' : 'opacity-20'} />
+                    </motion.a>
+                  ))}
+                </nav>
+
+                <div className="mt-16 space-y-4">
                   <motion.button
-                    onClick={() => setShowMobileMenu(false)}
-                    className="p-2 rounded-xl bg-gray-50 text-[#1C2C3E] mt-[-env(safe-area-inset-top)]"
-                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => { handleLoginClick(e); setShowMobileMenu(false); }}
+                    className="w-full py-5 rounded-[2rem] border-2 border-gray-900 text-gray-900 font-extrabold text-lg hover:bg-gray-900 hover:text-white transition-all"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
                   >
-                    <X size={20} />
+                    Log In
+                  </motion.button>
+                  <motion.button
+                    onClick={(e) => { handleGetStartedClick(e); setShowMobileMenu(false); }}
+                    className="w-full py-5 rounded-[2rem] bg-[#FF6B35] text-white font-extrabold text-lg shadow-xl shadow-orange-100 hover:bg-orange-600 transition-all"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    Get Started
                   </motion.button>
                 </div>
+              </div>
 
-                <div className="flex-1 overflow-y-auto py-10 px-8">
-                  <nav className="space-y-4">
-                    {[
-                      { name: 'Home', href: '/', icon: ArrowRight, active: true },
-                      { name: 'Browse Properties', href: '/properties', icon: Search },
-                      { name: 'About Us', href: '/about', icon: Info },
-                      { name: 'FAQs', href: '/faq', icon: Mail },
-                    ].map((item, i) => (
-                      <motion.a
-                        key={item.name}
-                        href={item.href}
-                        className={`flex items-center justify-between p-5 rounded-2xl text-lg font-bold transition-all ${item.active ? 'bg-[#FF6B35] text-white shadow-lg shadow-orange-100' : 'text-[#1C2C3E] hover:bg-gray-50'}`}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 + i * 0.1 }}
-                        onClick={() => setShowMobileMenu(false)}
-                      >
-                        <span className="flex items-center">
-                          <item.icon size={20} className="mr-4 opacity-70" />
-                          {item.name}
-                        </span>
-                        <ArrowUpRight size={18} className="opacity-40" />
-                      </motion.a>
-                    ))}
-                  </nav>
-
-                  <div className="mt-12 pt-12 border-t border-gray-100 space-y-4">
-                    <motion.button
-                      onClick={(e) => { handleLoginClick(e); setShowMobileMenu(false); }}
-                      className="w-full py-4 rounded-2xl border-2 border-[#1C2C3E] text-[#1C2C3E] font-bold"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 }}
-                    >
-                      Login
-                    </motion.button>
-                    <motion.button
-                      onClick={(e) => { handleGetStartedClick(e); setShowMobileMenu(false); }}
-                      className="w-full py-4 rounded-2xl bg-[#FF6B35] text-white font-bold shadow-lg shadow-orange-100"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.6 }}
-                    >
-                      Get Started
-                    </motion.button>
-                  </div>
+              {/* Footer inside menu */}
+              <div className="p-8 border-t border-gray-50 flex items-center justify-between">
+                <div className="flex space-x-4">
+                  <a href="#" className="p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-[#FF6B35] transition-colors"><Facebook size={18}/></a>
+                  <a href="#" className="p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-[#FF6B35] transition-colors"><Twitter size={18}/></a>
+                  <a href="#" className="p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-[#FF6B35] transition-colors"><Instagram size={18}/></a>
                 </div>
-
-                <div className="p-8 bg-gray-50 flex items-center justify-between">
-                  <div className="flex space-x-4">
-                    {[Instagram, Twitter, Facebook].map((Icon, i) => (
-                      <a key={i} href="#" className="p-2 text-[#1C2C3E]/40 hover:text-[#FF6B35] transition-colors">
-                        <Icon size={20} />
-                      </a>
-                    ))}
-                  </div>
-                  <span className="text-[10px] font-bold text-[#1C2C3E]/30 uppercase tracking-widest">Connect with us</span>
-                </div>
-              </motion.div>
+                <p className="text-sm font-medium text-gray-400">© 2024 HomeSwift</p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
