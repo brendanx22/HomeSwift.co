@@ -126,37 +126,73 @@ const AuthCallback = () => {
 
         // ROLE MANAGEMENT
         // 1. If user doesn't have the role, add it.
-        // 2. If user has the role, ensure it's set as primary for this session context if needed (optional)
-        
+        // 2. If user has the role, ensure it's set as primary for this session
         if (!hasCurrentRole) {
           console.log(`🆕 Adding new role '${userType}' for existing user`);
           
           try {
-            const isFirstRole = !userRoles || userRoles.length === 0;
+            // Since the user is explicitly logging in as this role, we should make it PRIMARY
+            // This ensures they stay in this context
             
-            // Add new role
+            // First, set all other roles to non-primary
+            if (userRoles && userRoles.length > 0) {
+               await supabase
+                .from('user_roles')
+                .update({ is_primary: false })
+                .eq('user_id', user.id);
+            }
+            
+            // Add new role as PRIMARY
             const { error: roleError } = await supabase
               .from('user_roles')
               .insert({
                 user_id: user.id,
                 role: userType,
-                is_primary: false // Don't override primary permanently unless explicit logic exists
+                is_primary: true 
               });
 
             if (roleError) console.error("Error inserting role:", roleError);
             
-            console.log(`✅ Successfully added extra role: ${userType}`);
+            console.log(`✅ Successfully added extra role: ${userType} (Primary)`);
             
             // Refresh roles list for local storage
-            const updatedRoles = [...(userRoles || []), { role: userType, is_primary: false }];
+            const updatedRoles = [...(userRoles || []).map(r => ({...r, is_primary: false})), { role: userType, is_primary: true }];
             localStorage.setItem('userRoles', JSON.stringify(updatedRoles));
             
           } catch (err) {
             console.error('Error managing roles:', err);
           }
         } else {
-           console.log(`✅ User already has '${userType}' role, proceeding.`);
-           localStorage.setItem('userRoles', JSON.stringify(userRoles));
+          console.log(`✅ User already has '${userType}' role, checking primary status`);
+          
+          const currentRole = userRoles.find(r => r.role === userType);
+          
+          // ALWAYS set as primary if explicitly logging in as this type
+          if (currentRole && !currentRole.is_primary) {
+            console.log(`🔄 Setting '${userType}' as primary role to match login intent`);
+            
+            // First, set all roles to non-primary
+            await supabase
+              .from('user_roles')
+              .update({ is_primary: false })
+              .eq('user_id', user.id);
+              
+            // Then set this role as primary
+            await supabase
+              .from('user_roles')
+              .update({ is_primary: true })
+              .eq('user_id', user.id)
+              .eq('role', userType);
+              
+             // Refresh local userRoles to reflect change
+             const updatedRoles = userRoles.map(r => ({
+               ...r,
+               is_primary: r.role === userType
+             }));
+             localStorage.setItem('userRoles', JSON.stringify(updatedRoles));
+          } else {
+             localStorage.setItem('userRoles', JSON.stringify(userRoles));
+          }
         }
 
         // Force current role in local storage to match INTENT
