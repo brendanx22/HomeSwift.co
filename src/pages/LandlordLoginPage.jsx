@@ -211,7 +211,7 @@ const LandlordLoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-start pt-16 sm:pt-24 md:pt-32 pb-16 px-4 sm:px-6 bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen flex justify-center items-start pt-24 sm:pt-32 md:pt-40 pb-16 px-4 sm:px-6 bg-gradient-to-br from-gray-50 to-gray-100">
       <button
         onClick={handleBackToHome}
         className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex items-center space-x-2 bg-white border border-[#2C3E50]/20 rounded-full px-4 py-2 text-[#2C3E50] hover:text-[#FF6B35] hover:border-[#FF6B35] transition-all duration-300 min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto shadow-sm"
