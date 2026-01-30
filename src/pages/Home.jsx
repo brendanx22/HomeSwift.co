@@ -3,7 +3,43 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowUp, ArrowRight, ArrowUpRight, Sparkles, Menu, X, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronDown, MapPin, Bed, Bath, Ruler, Heart, Plus, Minus, Facebook, Twitter, Instagram, Linkedin, Mail, Phone, Info, Home as HomeIcon } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useScroll } from 'framer-motion';
 import { PropertyAPI } from '../lib/propertyAPI';
+import { supabase } from '../lib/supabaseClient';
 import { useDynamicThemeColor } from '../hooks/useDynamicThemeColor';
+
+// Animated Counter Component
+const CountUp = ({ to, duration = 2, suffix = '' }) => {
+  const [count, setCount] = useState(0);
+  const nodeRef = React.useRef(null);
+  const isInView = useTransform(useMotionValue(0), v => v); // Placeholder for view detection
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          let start = 0;
+          const end = parseInt(to.replace(/\D/g, ''));
+          const increment = end / (duration * 60);
+          const timer = setInterval(() => {
+            start += increment;
+            if (start >= end) {
+              setCount(end);
+              clearInterval(timer);
+            } else {
+              setCount(Math.floor(start));
+            }
+          }, 1000 / 60);
+          return () => clearInterval(timer);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    
+    if (nodeRef.current) observer.observe(nodeRef.current);
+    return () => observer.disconnect();
+  }, [to, duration]);
+
+  return <span ref={nodeRef}>{count.toLocaleString()}{suffix}</span>;
+};
 
 const Home = () => {
   const navigate = useNavigate();
@@ -15,6 +51,9 @@ const Home = () => {
   const [properties, setProperties] = useState([]);
   const [loadingProperties, setLoadingProperties] = useState(true);
   
+  // Real-time updates state
+  const [realtimeUpdate, setRealtimeUpdate] = useState(null);
+
   // Filter States
   const [locationQuery, setLocationQuery] = useState('');
   const [purchaseType, setPurchaseType] = useState(''); // 'for-rent', 'for-sale'
@@ -50,6 +89,20 @@ const Home = () => {
 
   React.useEffect(() => {
     fetchProperties();
+
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('public:properties')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'properties' }, (payload) => {
+        console.log('Real-time property update:', payload);
+        fetchProperties(); // Refetch to get fresh data including relations
+        setRealtimeUpdate(payload.eventType); // Trigger any visual indicator if needed
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleSearch = () => {
@@ -182,7 +235,7 @@ const Home = () => {
         
           <motion.button 
             onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="md:hidden flex items-center bg-white/90 backdrop-blur-md border border-gray-100 p-2.5 rounded-2xl shadow-sm ml-auto text-[#1C2C3E]"
+            className="md:hidden flex items-center p-2.5 rounded-2xl ml-auto text-[#1C2C3E]"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -757,7 +810,9 @@ const Home = () => {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
               >
-                <span className="text-3xl md:text-4xl font-bold text-[#1C2C3E] mb-2 group-hover:text-white transition-colors tracking-tight">{stat.value}</span>
+                <span className="text-3xl md:text-4xl font-bold text-[#1C2C3E] mb-2 group-hover:text-white transition-colors tracking-tight">
+                  <CountUp to={stat.value} suffix={stat.value.includes('+') ? '+' : (stat.value.includes('%') ? '%' : '')} />
+                </span>
                 <span className="text-[#1C2C3E]/50 text-[10px] md:text-xs font-medium group-hover:text-white/80 transition-colors uppercase tracking-widest">{stat.label}</span>
               </motion.div>
             ))}
