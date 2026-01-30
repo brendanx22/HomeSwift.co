@@ -120,10 +120,10 @@ const AppLayout = () => {
       const primaryRole = allRoles.find(r => r.is_primary)?.role;
       const firstRole = allRoles[0]?.role;
       
-      // During login flow, prioritize pendingUserType and login page context
+      // During login flow, prioritize login page context above everything else
       const detectedRole = (isLoginPage || isLandlordLoginPage) ? 
-                          (isLandlordLoginPage ? 'landlord' : pendingUserType || currentRole || primaryRole || firstRole || userType || 'renter') :
-                          (pendingUserType || currentRole || primaryRole || firstRole || userType || 'renter');
+                          (isLandlordLoginPage ? 'landlord' : (pendingUserType || currentRole || primaryRole || firstRole || userType || 'renter')) :
+                          (currentRole || pendingUserType || primaryRole || firstRole || userType || 'renter');
 
       // Enhanced debug logging
       console.log('AppLayout Auth Debug:', {
@@ -144,6 +144,12 @@ const AppLayout = () => {
       if (isLoginPage || isLandlordLoginPage) {
         const dashboardPath = detectedRole === 'landlord' ? '/landlord/dashboard' : '/chat';
         console.log('🔄 Redirecting from login to:', dashboardPath, 'based on detectedRole:', detectedRole);
+        
+        // Immediately set the detected role to prevent race conditions
+        if (detectedRole && detectedRole !== currentRole) {
+          console.log('🔄 Setting currentRole to detectedRole:', detectedRole);
+          localStorage.setItem('currentRole', detectedRole);
+        }
         
         // Clear pendingUserType after successful redirection
         if (pendingUserType) {
