@@ -64,16 +64,16 @@ const AuthCallback = () => {
 
         console.log('🔍 Existing user profile:', userProfile);
 
-        // Determine the user type for this login attempt
-        // PRIORITY 1: Pending User Type (Explicit intent from login/signup page)
-        // PRIORITY 2: Existing Profile Type
-        // PRIORITY 3: Metadata
-        // PRIORITY 4: Default 'renter'
+        // PRIORITY:
+        // 1. Pending User Type (Explicit intent from login/signup page) - WINS over everything to support multi-role accounts
+        // 2. Existing Profile Type (Fallback)
+        // 3. Metadata
+        // 4. Default 'renter'
         
         let userType;
         if (pendingUserType) {
           userType = pendingUserType;
-          console.log('✅ Using pending user type from OAuth:', userType);
+          console.log('✅ Using pending user type from OAuth (High Priority):', userType);
         } else if (userProfile?.user_type) {
           userType = userProfile.user_type;
           console.log('✅ Using existing profile user type:', userType);
@@ -87,9 +87,29 @@ const AuthCallback = () => {
         
         let isNewUser = !userProfile;
 
-        console.log('📋 Summary - User type:', userType, '| Is new user:', isNewUser, '| Has pending type:', !!pendingUserType);
+        // Fetch existing user roles FIRST to check conflicts
+        const { data: userRoles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('*')
+          .eq('user_id', user.id);
 
-        // Always create/update user profile
+        console.log('🔍 Existing user roles:', userRoles);
+        
+        // If user exists but using a new role (e.g. Renter logging in as Landlord)
+        // We need to ensure they get the new role added
+        const hasCurrentRole = userRoles?.some(r => r.role === userType);
+        
+        console.log(`🔍 Checking logic: Login intent='${userType}', Has role=${hasCurrentRole}`);
+
+        // Update user metadata with current role intent for this session
+        await supabase.auth.updateUser({
+          data: { 
+            current_role: userType,
+            // If new user or adding role, we'll update 'roles' metadata later
+          }
+        });
+
+        // Always attempt to upsert profile to ensure it exists
         const { error: upsertError } = await supabase
           .from('user_profiles')
           .upsert({
@@ -97,145 +117,68 @@ const AuthCallback = () => {
             email: user.email,
             full_name: user.user_metadata?.full_name || user.user_metadata?.name,
             avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
-            user_type: userType,
-            updated_at: new Date().toISOString()
+            // Only update user_type if it's a new user, otherwise keep original primary type
+            // or if we want to migrate them. For now, let's preserve original type unless empty.
+            ...(isNewUser ? { user_type: userType } : {})
           }, { onConflict: 'id' });
 
-        if (upsertError) {
-          console.error('Error creating/updating user profile:', upsertError);
-        }
+        if (upsertError) console.error('Error creating/updating user profile:', upsertError);
 
-        // Update user metadata
-        const { error: updateError } = await supabase.auth.updateUser({
-          data: { user_type: userType }
-        });
-
-        if (updateError) {
-          console.error('Error updating user metadata:', updateError);
-        }
-
-        // Fetch existing user roles FIRST before using them
-        const { data: userRoles, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', user.id);
-
-        console.log('🔍 Existing user roles:', userRoles);
-        console.log('🔍 Checking if user has role:', userType);
-
-        // Check if user already has the current role
-        const hasCurrentRole = userRoles?.some(r => r.role === userType);
-        console.log('🔍 Has current role?', hasCurrentRole);
-
-        // Store user in localStorage for consistency
-        const userData = {
-          id: user.id,
-          email: user.email,
-          full_name: user.user_metadata?.full_name || user.user_metadata?.name,
-          avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
-          user_metadata: {
-            ...user.user_metadata,
-            user_type: userType,
-            // Store all roles in user metadata for quick access
-            roles: [...new Set([
-              ...(userRoles?.map(r => r.role) || []),
-              ...(hasCurrentRole ? [] : [userType])
-            ])]
-          }
-        };
-        localStorage.setItem('user', JSON.stringify(userData));
+        // ROLE MANAGEMENT
+        // 1. If user doesn't have the role, add it.
+        // 2. If user has the role, ensure it's set as primary for this session context if needed (optional)
         
-        // Always update the current role in localStorage to match the login type
-        console.log(`🔄 Setting current role to: ${userType}`);
-        localStorage.setItem('currentRole', userType);
-        
-        // If user doesn't have this role yet, add it
         if (!hasCurrentRole) {
-          console.log(`🆕 Adding new role '${userType}' for user`);
+          console.log(`🆕 Adding new role '${userType}' for existing user`);
           
           try {
-            // Add the new role as primary if it's the first role, otherwise non-primary
             const isFirstRole = !userRoles || userRoles.length === 0;
             
-            const { data: insertedRole, error: roleError } = await supabase
+            // Add new role
+            const { error: roleError } = await supabase
               .from('user_roles')
               .insert({
                 user_id: user.id,
                 role: userType,
-                is_primary: isFirstRole
-              })
-              .select()
-              .single();
-
-            if (roleError) throw roleError;
-            
-            console.log(`✅ Successfully added '${userType}' role:`, insertedRole);
-            
-            // If we added a new role, update the user_metadata with all roles
-            if (insertedRole) {
-              const allRoles = [...(userRoles || []).map(r => r.role), userType];
-              await supabase.auth.updateUser({
-                data: { 
-                  roles: allRoles,
-                  current_role: userType
-                }
+                is_primary: false // Don't override primary permanently unless explicit logic exists
               });
-              
-              console.log('🔄 Updated user metadata with roles:', allRoles);
-            }
+
+            if (roleError) console.error("Error inserting role:", roleError);
             
-          } catch (error) {
-            console.error('❌ Error in role management:', error);
-            // If role already exists (race condition), continue
-            if (!error.message.includes('duplicate key')) {
-              throw error;
-            }
+            console.log(`✅ Successfully added extra role: ${userType}`);
+            
+            // Refresh roles list for local storage
+            const updatedRoles = [...(userRoles || []), { role: userType, is_primary: false }];
+            localStorage.setItem('userRoles', JSON.stringify(updatedRoles));
+            
+          } catch (err) {
+            console.error('Error managing roles:', err);
           }
         } else {
-          console.log(`✅ User already has '${userType}' role, updating as current`);
-          
-          // Update the current role in the database
-          await supabase.auth.updateUser({
-            data: { 
-              current_role: userType
-            }
-          });
-          
-          // Set this role as primary if it's not already
-          const currentRole = userRoles.find(r => r.role === userType);
-          if (currentRole && !currentRole.is_primary) {
-            console.log(`🔄 Setting '${userType}' as primary role`);
-            
-            // First, set all roles to non-primary
-            await supabase
-              .from('user_roles')
-              .update({ is_primary: false })
-              .eq('user_id', user.id);
-              
-            // Then set this role as primary
-            await supabase
-              .from('user_roles')
-              .update({ is_primary: true })
-              .eq('user_id', user.id)
-              .eq('role', userType);
+           console.log(`✅ User already has '${userType}' role, proceeding.`);
+           localStorage.setItem('userRoles', JSON.stringify(userRoles));
+        }
+
+        // Force current role in local storage to match INTENT
+        console.log(`🔄 Setting current active role to: ${userType}`);
+        localStorage.setItem('currentRole', userType);
+        
+        // Store user data
+        const userData = {
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name,
+          avatar_url: user.user_metadata?.avatar_url,
+          user_metadata: {
+            ...user.user_metadata,
+            current_role: userType
           }
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
 
-          // Refetch roles after adding new one
-          const { data: updatedRoles } = await supabase
-            .from('user_roles')
-            .select('*')
-            .eq('user_id', user.id);
-
-          console.log('🔍 Updated roles after insert:', updatedRoles);
-
-          if (updatedRoles) {
-            localStorage.setItem('userRoles', JSON.stringify(updatedRoles));
-            localStorage.setItem('currentRole', userType);
-            console.log('✅ Stored updated roles in localStorage');
-            
-            // Dispatch custom event to notify auth context to refetch roles
-            window.dispatchEvent(new CustomEvent('rolesUpdated', { detail: { userId: user.id } }));
-          }
+        // Clear pending intent
+        if (pendingUserType) {
+          localStorage.removeItem('pendingUserType');
         }
 
         // Ensure we have the latest roles
