@@ -99,7 +99,7 @@ const AppLayout = () => {
 
       // IMPORTANT: Don't redirect if we're processing OAuth callback
       if (path === '/auth/callback') {
-        console.log('🔄 On OAuth callback page, skipping redirects to let AuthCallback handle it');
+        console.log('📄 On OAuth callback page, skipping redirects to let AuthCallback handle it');
         return;
       }
 
@@ -110,22 +110,27 @@ const AppLayout = () => {
       const authContextRoles = roles || [];
       const allRoles = authContextRoles.length > 0 ? authContextRoles : storedRoles;
       
-      // Priority order for role detection during login:
-      // 1. pendingUserType (highest priority during login flow)
-      // 2. localStorage currentRole (for OAuth persistence)
+      // FIXED: Priority order for role detection
+      // 1. pendingUserType (highest priority - OAuth signup/login intent)
+      // 2. localStorage currentRole (persisted role)
       // 3. currentRole from AuthContext
       // 4. primary role from roles array  
-      // 5. fallback to user_type metadata
+      // 5. user_type metadata
       // 6. default to 'renter' as last resort
       const pendingUserType = localStorage.getItem('pendingUserType');
       const localStorageCurrentRole = localStorage.getItem('currentRole');
       const primaryRole = allRoles.find(r => r.is_primary)?.role;
       const firstRole = allRoles[0]?.role;
       
-      // During login flow, prioritize login page context above everything else
-      const detectedRole = (isLoginPage || isLandlordLoginPage) ? 
-                          (isLandlordLoginPage ? 'landlord' : (pendingUserType || localStorageCurrentRole || currentRole || primaryRole || firstRole || userType || 'renter')) :
-                          (localStorageCurrentRole || currentRole || pendingUserType || primaryRole || firstRole || userType || 'renter');
+      // CRITICAL FIX: Always prioritize pendingUserType first, regardless of page
+      // This ensures OAuth callbacks work correctly
+      const detectedRole = pendingUserType || 
+                          localStorageCurrentRole || 
+                          currentRole || 
+                          primaryRole || 
+                          firstRole || 
+                          userType || 
+                          'renter';
 
       // Enhanced debug logging
       console.log('AppLayout Auth Debug:', {
@@ -193,7 +198,7 @@ const AppLayout = () => {
       // If user is on a landlord route but not a landlord, redirect to renter dashboard
       // Exclude signup pages from this check since they should be accessible to unauthenticated users
       if (isLandlordRoute && detectedRole !== 'landlord' && !path.includes('signup')) {
-        // console.log('Not a landlord, redirecting to chat');
+        console.log('Not a landlord, redirecting to chat');
         navigate('/chat', { replace: true });
         return;
       }
@@ -201,7 +206,7 @@ const AppLayout = () => {
       // If user is a renter but on a landlord route, redirect to renter dashboard
       // Exclude signup pages from this check
       if (detectedRole === 'renter' && isLandlordRoute && !path.includes('/signup')) {
-        // console.log('Renter on landlord route, redirecting to chat');
+        console.log('Renter on landlord route, redirecting to chat');
         navigate('/chat', { replace: true });
         return;
       }
@@ -215,7 +220,7 @@ const AppLayout = () => {
       if (!authPages.includes(path) && !publicPages.includes(path)) {
         // For landlord routes, redirect to landlord login, otherwise regular login
         const loginPath = isLandlordRoute ? '/landlord/login' : '/login';
-        // console.log('Unauthenticated user, redirecting to:', loginPath, 'from path:', path);
+        console.log('Unauthenticated user, redirecting to:', loginPath, 'from path:', path);
         if (path !== loginPath) {
           navigate(`${loginPath}?redirected=true&from=${encodeURIComponent(path)}`, {
             replace: true,
