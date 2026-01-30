@@ -623,6 +623,9 @@ export const AuthProvider = ({ children }) => {
           console.log('🔄 OAuth flow in progress with pending type:', pendingUserType, '- letting AuthCallback handle it');
           setUser(session.user);
           setIsAuthenticated(true);
+          // Set the pending role as currentRole to ensure proper routing after callback
+          setCurrentRole(pendingUserType);
+          localStorage.setItem('currentRole', pendingUserType);
           setLoading(false);
           return; // Exit early, let AuthCallback handle role creation
         }

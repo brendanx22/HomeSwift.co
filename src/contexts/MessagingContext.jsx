@@ -29,9 +29,18 @@ export const MessagingProvider = ({ children }) => {
   const localStream = useRef(null);
   const typingTimeout = useRef(null);
 
-  // Get the current Supabase session token (memoized to prevent infinite loops)
+  // Get the backend JWT token for API calls
   const getAuthToken = useCallback(async () => {
     try {
+      // First try to get the backend token from localStorage
+      let backendToken = localStorage.getItem('backendToken');
+      
+      if (backendToken) {
+        console.log('✅ Backend JWT token found in localStorage');
+        return backendToken;
+      }
+      
+      // If no backend token, try to get Supabase session as fallback
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
         console.error('❌ Error getting Supabase session:', error);
@@ -41,7 +50,8 @@ export const MessagingProvider = ({ children }) => {
         console.warn('⚠️ No Supabase access token available');
         return null;
       }
-      console.log('✅ Supabase access token retrieved');
+      
+      console.log('⚠️ Using Supabase access token as fallback (backend token not available)');
       return session.access_token;
     } catch (error) {
       console.error('❌ Error getting auth token:', error);

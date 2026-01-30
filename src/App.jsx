@@ -123,17 +123,22 @@ const AppLayout = () => {
       // During login flow, prioritize pendingUserType and login page context
       const detectedRole = (isLoginPage || isLandlordLoginPage) ? 
                           (isLandlordLoginPage ? 'landlord' : pendingUserType || currentRole || primaryRole || firstRole || userType || 'renter') :
-                          (currentRole || pendingUserType || primaryRole || firstRole || userType || 'renter');
+                          (pendingUserType || currentRole || primaryRole || firstRole || userType || 'renter');
 
-      // Enhanced debug logging (disabled in production)
-      if (import.meta.env.DEV) {
-        console.log('AppLayout Auth Debug:', {
-          isAuthenticated,
-          user: user ? 'exists' : 'null',
-          detectedRole,
-          path
-        });
-      }
+      // Enhanced debug logging
+      console.log('AppLayout Auth Debug:', {
+        isAuthenticated,
+        user: user ? 'exists' : 'null',
+        detectedRole,
+        path,
+        isLandlordLoginPage,
+        isLoginPage,
+        pendingUserType,
+        currentRole,
+        primaryRole,
+        firstRole,
+        userType
+      });
 
       // If we're on a login page, redirect to the appropriate dashboard
       if (isLoginPage || isLandlordLoginPage) {
