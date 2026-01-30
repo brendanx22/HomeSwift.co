@@ -133,21 +133,26 @@ const AppLayout = () => {
                           'renter';
 
       // Enhanced debug logging
-      console.log('AppLayout Auth Debug:', {
-        isAuthenticated,
-        user: user ? 'exists' : 'null',
-        detectedRole,
-        path,
-        isLandlordLoginPage,
-        isLoginPage,
-        pendingUserType,
-        localStorageCurrentRole,
-        currentRole,
-        primaryRole,
-        firstRole,
-        userType,
-        localStorageUserRoles: localStorage.getItem('userRoles')
-      });
+      console.log('🎯 AppLayout Role Detection:');
+      console.log('  - Path:', path);
+      console.log('  - Is Authenticated:', isAuthenticated);
+      console.log('  - User exists:', user ? 'yes' : 'no');
+      console.log('  - Detected Role:', detectedRole);
+      console.log('  - Is Landlord Route:', isLandlordRoute);
+      console.log('  - Is Landlord Login Page:', isLandlordLoginPage);
+      console.log('  - Is Login Page:', isLoginPage);
+      console.log('  - pendingUserType:', pendingUserType);
+      console.log('  - localStorageCurrentRole:', localStorageCurrentRole);
+      console.log('  - AuthContext currentRole:', currentRole);
+      console.log('  - Primary Role:', primaryRole);
+      console.log('  - First Role:', firstRole);
+      console.log('  - User Type Metadata:', userType);
+      console.log('  - localStorageUserRoles:', localStorage.getItem('userRoles'));
+      console.log('  - AuthContext roles:', roles);
+      
+      // Check if this is right after OAuth callback
+      const isAfterOAuth = path === '/landlord/dashboard' && pendingUserType === null && localStorageCurrentRole === 'landlord';
+      console.log('  - Is After OAuth:', isAfterOAuth);
 
       // If we're on a login page, redirect to the appropriate dashboard
       if (isLoginPage || isLandlordLoginPage) {

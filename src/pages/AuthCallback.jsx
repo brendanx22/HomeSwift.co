@@ -94,12 +94,20 @@ const AuthCallback = () => {
           .eq('user_id', user.id);
 
         console.log('🔍 Existing user roles:', userRoles);
+        console.log('🔍 User role details:', JSON.stringify(userRoles, null, 2));
         
         // If user exists but using a new role (e.g. Renter logging in as Landlord)
         // We need to ensure they get the new role added
         const hasCurrentRole = userRoles?.some(r => r.role === userType);
+        const currentRoleData = userRoles?.find(r => r.role === userType);
+        const primaryRoleData = userRoles?.find(r => r.is_primary);
         
-        console.log(`🔍 Checking logic: Login intent='${userType}', Has role=${hasCurrentRole}`);
+        console.log(`🔍 Role Analysis:`);
+        console.log(`  - Login intent: '${userType}'`);
+        console.log(`  - Has role: ${hasCurrentRole}`);
+        console.log(`  - Role data:`, currentRoleData);
+        console.log(`  - Primary role:`, primaryRoleData);
+        console.log(`  - All roles:`, userRoles?.map(r => `${r.role}(${r.is_primary ? 'primary' : 'secondary'})`).join(', '));
 
         // Update user metadata with current role intent for this session
         await supabase.auth.updateUser({
@@ -215,8 +223,10 @@ const AuthCallback = () => {
         // Force current role in local storage to match INTENT
         console.log(`🔄 Setting current active role to: ${userType}`);
         localStorage.setItem('currentRole', userType);
+        console.log('✅ localStorage currentRole set to:', localStorage.getItem('currentRole'));
         
         // Force AuthContext to refresh roles by dispatching event
+        console.log('🔄 Dispatching rolesUpdated event to AuthContext...');
         window.dispatchEvent(new CustomEvent('rolesUpdated', {
           detail: {
             userId: user.id,
@@ -225,6 +235,7 @@ const AuthCallback = () => {
             timestamp: Date.now()
           }
         }));
+        console.log('✅ rolesUpdated event dispatched');
         
         // Store user data
         const userData = {
@@ -296,8 +307,17 @@ const AuthCallback = () => {
         localStorage.removeItem('pendingUserType');
         console.log('🧹 Cleared pendingUserType after successful OAuth');
         
+        // Log final state before redirect
+        console.log('📊 Final OAuth State:');
+        console.log('  - currentRole:', localStorage.getItem('currentRole'));
+        console.log('  - pendingUserType:', localStorage.getItem('pendingUserType'));
+        console.log('  - userRoles:', localStorage.getItem('userRoles'));
+        console.log('  - redirectPath:', redirectPath);
+        
         // Force state update before redirect
         setTimeout(() => {
+          console.log('🔄 Starting redirect sequence...');
+          
           // Dispatch event to update all components
           window.dispatchEvent(new CustomEvent('authStateChanged', {
             detail: {
@@ -318,6 +338,7 @@ const AuthCallback = () => {
           
           // Navigate to the appropriate dashboard with slight delay to ensure role sync
           setTimeout(() => {
+            console.log('🚀 Navigating to:', redirectPath);
             navigate(redirectPath, { 
               replace: true,
               state: { 
