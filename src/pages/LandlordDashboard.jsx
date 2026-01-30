@@ -839,13 +839,13 @@ const LandlordDashboard = () => {
                 <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 shrink-0">
                   <button
                     onClick={() => setShowProfilePopup(true)}
-                    className="w-7 h-7 sm:w-8 sm:h-8 bg-[#FF6B35] rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-shadow"
+                    className="w-7 h-7 sm:w-8 sm:h-8 bg-[#FF6B35] rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-shadow overflow-hidden aspect-square"
                   >
                     {userAvatar ? (
                       <img
                         src={userAvatar}
                         alt="Profile"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover rounded-full"
                         onLoad={() => console.log('🔍 LandlordDashboard - Navbar avatar loaded:', userAvatar)}
                         onError={() => console.log('❌ LandlordDashboard - Navbar avatar failed to load:', userAvatar)}
                       />
@@ -868,19 +868,7 @@ const LandlordDashboard = () => {
                   </div>
                 </div>
 
-                {/* Add Property Button - Much improved mobile styling */}
-                <button
-                  onClick={() => navigate('/list-property')}
-                  className="text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold flex items-center space-x-1.5 sm:space-x-2 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 shrink-0"
-                  style={{ backgroundColor: '#FF6B35' }}
-                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#e85e2f')}
-                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#FF6B35')}
-                >
-                  <Plus className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
-                  <span className="hidden sm:inline text-sm">Add Property</span>
-                  <span className="sm:hidden text-sm font-bold">+</span>
-                </button>
-              </div>
+                </div>
             </div>
           </div>
         </header>

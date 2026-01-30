@@ -112,18 +112,20 @@ const AppLayout = () => {
       
       // Priority order for role detection during login:
       // 1. pendingUserType (highest priority during login flow)
-      // 2. currentRole from AuthContext
-      // 3. primary role from roles array  
-      // 4. fallback to user_type metadata
-      // 5. default to 'renter' as last resort
+      // 2. localStorage currentRole (for OAuth persistence)
+      // 3. currentRole from AuthContext
+      // 4. primary role from roles array  
+      // 5. fallback to user_type metadata
+      // 6. default to 'renter' as last resort
       const pendingUserType = localStorage.getItem('pendingUserType');
+      const localStorageCurrentRole = localStorage.getItem('currentRole');
       const primaryRole = allRoles.find(r => r.is_primary)?.role;
       const firstRole = allRoles[0]?.role;
       
       // During login flow, prioritize login page context above everything else
       const detectedRole = (isLoginPage || isLandlordLoginPage) ? 
-                          (isLandlordLoginPage ? 'landlord' : (pendingUserType || currentRole || primaryRole || firstRole || userType || 'renter')) :
-                          (currentRole || pendingUserType || primaryRole || firstRole || userType || 'renter');
+                          (isLandlordLoginPage ? 'landlord' : (pendingUserType || localStorageCurrentRole || currentRole || primaryRole || firstRole || userType || 'renter')) :
+                          (localStorageCurrentRole || currentRole || pendingUserType || primaryRole || firstRole || userType || 'renter');
 
       // Enhanced debug logging
       console.log('AppLayout Auth Debug:', {
@@ -134,10 +136,12 @@ const AppLayout = () => {
         isLandlordLoginPage,
         isLoginPage,
         pendingUserType,
+        localStorageCurrentRole,
         currentRole,
         primaryRole,
         firstRole,
-        userType
+        userType,
+        localStorageUserRoles: localStorage.getItem('userRoles')
       });
 
       // If we're on a login page, redirect to the appropriate dashboard
