@@ -192,96 +192,77 @@ const Home = () => {
 
         <AnimatePresence>
           {showMobileMenu && (
-            <motion.div
-              className="md:hidden fixed inset-0 z-[100] bg-white flex flex-col"
-              initial={{ opacity: 0, scale: 1.1 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.1 }}
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-            >
-              {/* Header inside menu */}
-              <div className="flex items-center justify-between px-6 py-6 pt-safe">
-                <img src="/images/logo.png" alt="HomeSwift Logo" className="w-40 h-8 object-contain" />
-                <button 
-                  onClick={() => setShowMobileMenu(false)}
-                  className="p-2.5 rounded-full hover:bg-gray-50 text-[#1C2C3E] transition-colors"
-                >
-                  <X size={22} />
-                </button>
-              </div>
+            <div className="md:hidden fixed inset-0 z-[100] px-4 pt-20 flex flex-col items-end pointer-events-none">
+              {/* Overlay Backdrop to close on click outside */}
+              <div 
+                className="fixed inset-0 bg-transparent pointer-events-auto" 
+                onClick={() => setShowMobileMenu(false)}
+              />
 
-              {/* Menu Items */}
-              <div className="flex-1 overflow-y-auto">
-                <nav>
-                  {/* Section 1: Help */}
-                  <div className="px-6 py-4 border-b border-gray-100">
-                    <a 
-                      href="/faq" 
-                      className="flex items-center space-x-4 py-3 text-gray-900 hover:text-orange-600 transition-colors"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      <Info size={20} className="text-gray-400" />
-                      <span className="text-lg font-medium">Help Center</span>
-                    </a>
-                  </div>
-
-                  {/* Section 2: Hosting/Prominent Action */}
-                  <div className="px-6 py-6 border-b border-gray-100">
-                    <button 
-                      onClick={(e) => { handleGetStartedClick(e); setShowMobileMenu(false); }}
-                      className="w-full text-left flex items-center justify-between group"
-                    >
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors">Become a landlord</h3>
-                        <p className="text-sm text-gray-500 mt-1">It's easy to start listing and find verified tenants.</p>
-                      </div>
-                      <div className="w-12 h-12 flex items-center justify-center opacity-80">
-                        <HomeIcon className="w-8 h-8 text-orange-500/20" />
-                      </div>
-                    </button>
-                  </div>
-
-                  {/* Section 3: Navigation Links */}
-                  <div className="px-6 py-4 space-y-1">
-                    {[
-                      { name: 'Browse Properties', href: '/properties' },
-                      { name: 'About HomeSwift', href: '/about' },
-                      { name: 'Contact Support', href: '/faq' },
-                      { name: 'Terms of Service', href: '/terms' },
-                    ].map((item, i) => (
-                      <a
-                        key={item.name}
-                        href={item.href}
-                        className="block py-4 text-lg font-medium text-gray-900 hover:text-orange-600 transition-colors"
+              {/* Popover Menu Card */}
+              <motion.div
+                className="relative w-full max-w-[320px] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col pointer-events-auto border border-gray-100"
+                initial={{ opacity: 0, scale: 0.9, y: -20, transformOrigin: 'top right' }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: -20 }}
+                transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+              >
+                <div className="flex-1 overflow-y-auto max-h-[80vh]">
+                  <nav>
+                    {/* Section 1: Help */}
+                    <div className="px-6 py-4 border-b border-gray-100">
+                      <a 
+                        href="/faq" 
+                        className="flex items-center space-x-3 py-2 text-gray-900 hover:text-orange-600 transition-colors"
                         onClick={() => setShowMobileMenu(false)}
                       >
-                        {item.name}
+                        <Info size={18} className="text-gray-400" />
+                        <span className="font-medium">Help Center</span>
                       </a>
-                    ))}
-                  </div>
+                    </div>
 
-                  {/* Section 4: Auth */}
-                  <div className="mt-4 px-6 py-6 border-t border-gray-100">
-                    <button 
-                      onClick={(e) => { handleLoginClick(e); setShowMobileMenu(false); }}
-                      className="text-xl font-bold text-gray-900 hover:text-orange-600 transition-colors"
-                    >
-                      Log in or sign up
-                    </button>
-                  </div>
-                </nav>
-              </div>
+                    {/* Section 2: Hosting */}
+                    <div className="px-6 py-5 border-b border-gray-100">
+                      <button 
+                        onClick={(e) => { handleGetStartedClick(e); setShowMobileMenu(false); }}
+                        className="w-full text-left group"
+                      >
+                        <h3 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors">Become a landlord</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Start listing properties and find tenants.</p>
+                      </button>
+                    </div>
 
-              {/* Footer */}
-              <div className="p-8 border-t border-gray-50 flex items-center justify-between bg-gray-50/50">
-                <div className="flex space-x-4">
-                  <a href="#" className="p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-[#FF6B35] transition-colors"><Facebook size={18}/></a>
-                  <a href="#" className="p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-[#FF6B35] transition-colors"><Twitter size={18}/></a>
-                  <a href="#" className="p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-[#FF6B35] transition-colors"><Instagram size={18}/></a>
+                    {/* Section 3: Navigation */}
+                    <div className="px-6 py-3">
+                      {[
+                        { name: 'Browse Properties', href: '/properties' },
+                        { name: 'About HomeSwift', href: '/about' },
+                        { name: 'Contact Support', href: '/faq' },
+                      ].map((item) => (
+                        <a
+                          key={item.name}
+                          href={item.href}
+                          className="block py-3 font-medium text-gray-900 hover:text-orange-600 transition-colors"
+                          onClick={() => setShowMobileMenu(false)}
+                        >
+                          {item.name}
+                        </a>
+                      ))}
+                    </div>
+
+                    {/* Section 4: Auth */}
+                    <div className="mt-2 px-6 py-5 border-t border-gray-100 bg-gray-50/30">
+                      <button 
+                        onClick={(e) => { handleLoginClick(e); setShowMobileMenu(false); }}
+                        className="font-bold text-gray-900 hover:text-orange-600 transition-colors"
+                      >
+                        Log in or sign up
+                      </button>
+                    </div>
+                  </nav>
                 </div>
-                <p className="text-sm font-medium text-gray-400">© 2024 HomeSwift</p>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
 
