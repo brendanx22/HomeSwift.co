@@ -216,6 +216,16 @@ const AuthCallback = () => {
         console.log(`🔄 Setting current active role to: ${userType}`);
         localStorage.setItem('currentRole', userType);
         
+        // Force AuthContext to refresh roles by dispatching event
+        window.dispatchEvent(new CustomEvent('rolesUpdated', {
+          detail: {
+            userId: user.id,
+            action: 'oauth_role_update',
+            newRole: userType,
+            timestamp: Date.now()
+          }
+        }));
+        
         // Store user data
         const userData = {
           id: user.id,
@@ -306,14 +316,16 @@ const AuthCallback = () => {
           // Force refresh any cached data
           window.dispatchEvent(new Event('storage'));
           
-          // Navigate to the appropriate dashboard
-          navigate(redirectPath, { 
-            replace: true,
-            state: { 
-              forceRefresh: true,
-              roleChanged: true
-            } 
-          });
+          // Navigate to the appropriate dashboard with slight delay to ensure role sync
+          setTimeout(() => {
+            navigate(redirectPath, { 
+              replace: true,
+              state: { 
+                forceRefresh: true,
+                roleChanged: true
+              } 
+            });
+          }, 300); // 300ms delay for role synchronization
         }, 100);
 
       } catch (err) {
