@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowUp, ArrowRight, ArrowUpRight, Sparkles, Menu, X, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronDown, MapPin, Bed, Bath, Ruler, Heart, Plus, Minus, Facebook, Twitter, Instagram, Linkedin, Mail, Phone, Info, Home as HomeIcon } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useScroll } from 'framer-motion';
 import { PropertyAPI } from '../lib/propertyAPI';
+import { useDynamicThemeColor } from '../hooks/useDynamicThemeColor';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -67,6 +68,9 @@ const Home = () => {
   const totalPages = Math.ceil(properties.length / itemsPerPage) || 1;
   const currentItems = properties.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
 
+  // Dynamic status bar color
+  useDynamicThemeColor('#FAF9F6');
+
   const nextPage = () => setCurrentPage((prev) => (prev + 1) % totalPages);
   const prevPage = () => setCurrentPage((prev) => (prev - 1 + totalPages) % totalPages);
 
@@ -101,6 +105,7 @@ const Home = () => {
     <div className="bg-[#FAF9F6]">
       <div
         className="h-screen w-full bg-cover bg-center hero-container flex flex-col overflow-hidden relative sticky top-0 z-0"
+        data-theme-color="#FAF9F6"
         style={{
           backgroundImage: 'url("/images/hero-bg-new.png")',
           backgroundSize: 'cover',
@@ -136,7 +141,7 @@ const Home = () => {
 
         {/* Header */}
         <motion.header
-          className="relative z-20 flex items-center justify-between px-2 py-1 sm:px-6 sm:py-6 lg:px-12 w-full"
+          className="relative z-20 flex items-center justify-between px-2 py-1 sm:px-6 sm:py-6 lg:px-12 w-full pt-safe"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -233,11 +238,11 @@ const Home = () => {
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               >
-                <div className="p-8 flex items-center justify-between border-b border-gray-100">
+                <div className="p-8 flex items-center justify-between border-b border-gray-100 pt-safe">
                   <img src="/images/logo.png" alt="HomeSwift Logo" className="w-28 h-7 object-contain" />
                   <motion.button
                     onClick={() => setShowMobileMenu(false)}
-                    className="p-2 rounded-xl bg-gray-50 text-[#1C2C3E]"
+                    className="p-2 rounded-xl bg-gray-50 text-[#1C2C3E] mt-[-env(safe-area-inset-top)]"
                     whileTap={{ scale: 0.9 }}
                   >
                     <X size={20} />
@@ -641,7 +646,10 @@ const Home = () => {
       <div className="h-[30vh]" />
 
       {/* Trust Section */}
-      <section className="bg-white py-32 px-6 sm:px-12 lg:px-24 relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.05)] rounded-t-[3rem]">
+      <section 
+        className="bg-white py-32 px-6 sm:px-12 lg:px-24 relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.05)] rounded-t-[3rem]"
+        data-theme-color="#FFFFFF"
+      >
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Left Column */}
           <motion.div
@@ -718,7 +726,10 @@ const Home = () => {
       </section>
 
       {/* Who are we Section */}
-      <section className="bg-white py-20 px-6 sm:px-12 lg:px-24 relative z-10">
+      <section 
+        className="bg-white py-20 px-6 sm:px-12 lg:px-24 relative z-10"
+        data-theme-color="#FFFFFF"
+      >
         <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
           <motion.div
             className="inline-flex items-center px-3 py-1 rounded-full bg-[#FF6B35]/10 border border-[#FF6B35]/20 mb-8"
@@ -762,7 +773,10 @@ const Home = () => {
       </section>
 
       {/* Achievements Section */}
-      <section className="bg-white py-20 px-6 sm:px-12 lg:px-24 relative z-10">
+      <section 
+        className="bg-white py-20 px-6 sm:px-12 lg:px-24 relative z-10"
+        data-theme-color="#FFFFFF"
+      >
         <div className="max-w-7xl mx-auto flex flex-col items-center">
           <motion.div
             className="inline-flex items-center px-3 py-1 rounded-full bg-[#FF6B35]/10 border border-[#FF6B35]/20 mb-12"
@@ -798,7 +812,10 @@ const Home = () => {
       </section>
 
       {/* Detailed About Section */}
-      <section className="bg-white py-24 px-6 sm:px-12 lg:px-24 relative z-10">
+      <section 
+        className="bg-white py-24 px-6 sm:px-12 lg:px-24 relative z-10"
+        data-theme-color="#FFFFFF"
+      >
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
           {/* Left Visual representation */}
           <motion.div
@@ -879,7 +896,10 @@ const Home = () => {
       </section>
 
       {/* Popular Listings Section */}
-      <section className="bg-white py-24 px-6 sm:px-12 lg:px-24 relative z-10">
+      <section 
+        className="bg-white py-24 px-6 sm:px-12 lg:px-24 relative z-10"
+        data-theme-color="#FFFFFF"
+      >
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
@@ -1162,7 +1182,10 @@ const Home = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="bg-white py-24 px-6 sm:px-12 lg:px-24 relative z-10">
+      <section 
+        className="bg-white py-24 px-6 sm:px-12 lg:px-24 relative z-10"
+        data-theme-color="#FFFFFF"
+      >
         <div className="max-w-3xl mx-auto">
           <motion.div
             className="text-center mb-16"
@@ -1238,10 +1261,14 @@ const Home = () => {
       </section>
 
       {/* Final CTA Section */}
-      <section className="py-24 px-6 sm:px-12 lg:px-24 relative z-10">
+      <section 
+        className="py-24 px-6 sm:px-12 lg:px-24 relative z-10"
+        data-theme-color="#FAF9F6"
+      >
         <div className="max-w-7xl mx-auto">
           <motion.div
             className="bg-[#1C2C3E] rounded-[3rem] p-12 md:p-24 relative overflow-hidden text-center"
+            data-theme-color="#1C2C3E"
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
@@ -1291,7 +1318,10 @@ const Home = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white pt-24 pb-12 px-6 sm:px-12 lg:px-24 border-t border-gray-100 relative z-10">
+      <footer 
+        className="bg-white pt-24 pb-12 px-6 sm:px-12 lg:px-24 border-t border-gray-100 relative z-10"
+        data-theme-color="#FFFFFF"
+      >
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
             {/* Brand Column */}
