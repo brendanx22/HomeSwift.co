@@ -195,7 +195,7 @@ export default function Profile() {
         </button>
       </header>
 
-      <main className="settings-container">
+      <main className="settings-container pt-8">
         <div className="settings-grid">
           {/* Sidebar */}
           <aside className="settings-sidebar text-center">

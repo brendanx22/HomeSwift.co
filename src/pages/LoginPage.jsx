@@ -148,7 +148,7 @@ export default function LoginPage() {
 
   return (
     <div 
-      className="min-h-screen flex justify-center items-start pt-24 sm:pt-32 md:pt-40 pb-24 sm:pb-32 md:pb-40 px-6 bg-cover bg-center bg-no-repeat relative"
+      className="min-h-screen flex justify-center items-start pt-32 sm:pt-40 md:pt-48 pb-24 sm:pb-32 md:pb-40 px-6 bg-cover bg-center bg-no-repeat relative"
      
     >
       {/* Background overlay for better text readability */}

@@ -381,7 +381,7 @@ export default function Settings() {
         </button>
       </header>
 
-      <main className="settings-container">
+      <main className="settings-container pt-8">
         <div className="settings-grid">
           {/* Sidebar Navigation */}
           <aside className="settings-sidebar">
