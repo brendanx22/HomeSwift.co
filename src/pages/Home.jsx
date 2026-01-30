@@ -200,73 +200,80 @@ const Home = () => {
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             >
               {/* Header inside menu */}
-              <div className="flex items-center justify-between px-6 py-6 border-b border-gray-50 pt-safe">
+              <div className="flex items-center justify-between px-6 py-6 pt-safe">
                 <img src="/images/logo.png" alt="HomeSwift Logo" className="w-40 h-8 object-contain" />
                 <button 
                   onClick={() => setShowMobileMenu(false)}
-                  className="p-2.5 rounded-2xl bg-gray-50 text-[#1C2C3E]"
+                  className="p-2.5 rounded-full hover:bg-gray-50 text-[#1C2C3E] transition-colors"
                 >
                   <X size={22} />
                 </button>
               </div>
 
               {/* Menu Items */}
-              <div className="flex-1 px-6 py-12 overflow-y-auto">
-                <nav className="space-y-2">
-                  {[
-                    { name: 'Home', href: '/', icon: HomeIcon, active: true },
-                    { name: 'Browse Properties', href: '/properties', icon: Search },
-                    { name: 'About Us', href: '/about', icon: Info },
-                    { name: 'FAQs', href: '/faq', icon: Mail },
-                  ].map((item, i) => (
-                    <motion.a
-                      key={item.name}
-                      href={item.href}
-                      className={`group flex items-center justify-between p-6 rounded-[2rem] transition-all ${
-                        item.active 
-                        ? 'bg-[#FF6B35] text-white shadow-xl shadow-orange-100' 
-                        : 'text-gray-900 border border-transparent hover:border-gray-100 hover:bg-gray-50'
-                      }`}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 + i * 0.05 }}
+              <div className="flex-1 overflow-y-auto">
+                <nav>
+                  {/* Section 1: Help */}
+                  <div className="px-6 py-4 border-b border-gray-100">
+                    <a 
+                      href="/faq" 
+                      className="flex items-center space-x-4 py-3 text-gray-900 hover:text-orange-600 transition-colors"
                       onClick={() => setShowMobileMenu(false)}
                     >
-                      <div className="flex items-center">
-                        <div className={`p-3 rounded-2xl mr-5 ${item.active ? 'bg-white/20' : 'bg-gray-100 text-gray-500'}`}>
-                          <item.icon size={20} />
-                        </div>
-                        <span className="text-xl font-bold tracking-tight">{item.name}</span>
-                      </div>
-                      <ArrowUpRight size={20} className={item.active ? 'opacity-70' : 'opacity-20'} />
-                    </motion.a>
-                  ))}
-                </nav>
+                      <Info size={20} className="text-gray-400" />
+                      <span className="text-lg font-medium">Help Center</span>
+                    </a>
+                  </div>
 
-                <div className="mt-16 space-y-4">
-                  <motion.button
-                    onClick={(e) => { handleLoginClick(e); setShowMobileMenu(false); }}
-                    className="w-full py-5 rounded-[2rem] border-2 border-gray-900 text-gray-900 font-extrabold text-lg hover:bg-gray-900 hover:text-white transition-all"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    Log In
-                  </motion.button>
-                  <motion.button
-                    onClick={(e) => { handleGetStartedClick(e); setShowMobileMenu(false); }}
-                    className="w-full py-5 rounded-[2rem] bg-[#FF6B35] text-white font-extrabold text-lg shadow-xl shadow-orange-100 hover:bg-orange-600 transition-all"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    Get Started
-                  </motion.button>
-                </div>
+                  {/* Section 2: Hosting/Prominent Action */}
+                  <div className="px-6 py-6 border-b border-gray-100">
+                    <button 
+                      onClick={(e) => { handleGetStartedClick(e); setShowMobileMenu(false); }}
+                      className="w-full text-left flex items-center justify-between group"
+                    >
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors">Become a landlord</h3>
+                        <p className="text-sm text-gray-500 mt-1">It's easy to start listing and find verified tenants.</p>
+                      </div>
+                      <div className="w-12 h-12 flex items-center justify-center opacity-80">
+                        <HomeIcon className="w-8 h-8 text-orange-500/20" />
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Section 3: Navigation Links */}
+                  <div className="px-6 py-4 space-y-1">
+                    {[
+                      { name: 'Browse Properties', href: '/properties' },
+                      { name: 'About HomeSwift', href: '/about' },
+                      { name: 'Contact Support', href: '/faq' },
+                      { name: 'Terms of Service', href: '/terms' },
+                    ].map((item, i) => (
+                      <a
+                        key={item.name}
+                        href={item.href}
+                        className="block py-4 text-lg font-medium text-gray-900 hover:text-orange-600 transition-colors"
+                        onClick={() => setShowMobileMenu(false)}
+                      >
+                        {item.name}
+                      </a>
+                    ))}
+                  </div>
+
+                  {/* Section 4: Auth */}
+                  <div className="mt-4 px-6 py-6 border-t border-gray-100">
+                    <button 
+                      onClick={(e) => { handleLoginClick(e); setShowMobileMenu(false); }}
+                      className="text-xl font-bold text-gray-900 hover:text-orange-600 transition-colors"
+                    >
+                      Log in or sign up
+                    </button>
+                  </div>
+                </nav>
               </div>
 
-              {/* Footer inside menu */}
-              <div className="p-8 border-t border-gray-50 flex items-center justify-between">
+              {/* Footer */}
+              <div className="p-8 border-t border-gray-50 flex items-center justify-between bg-gray-50/50">
                 <div className="flex space-x-4">
                   <a href="#" className="p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-[#FF6B35] transition-colors"><Facebook size={18}/></a>
                   <a href="#" className="p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-[#FF6B35] transition-colors"><Twitter size={18}/></a>
