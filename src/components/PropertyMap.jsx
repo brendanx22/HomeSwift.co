@@ -106,7 +106,7 @@ const PropertyMap = ({
                             type: 'raster',
                             tiles: [mapStyles[currentMapStyle].url],
                             tileSize: 256,
-                            attribution: '© OpenStreetMap contributors © Thunderforest'
+                            attribution: 'Powered by Geoapify | © OpenStreetMap contributors'
                         }
                     },
                     layers: [
