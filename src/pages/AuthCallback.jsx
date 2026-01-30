@@ -278,6 +278,14 @@ const AuthCallback = () => {
         
         console.log(`🔄 User is now '${userType}', redirecting to:`, redirectPath);
         
+        // Set currentRole in localStorage to ensure persistence
+        localStorage.setItem('currentRole', userType);
+        console.log('✅ Set currentRole in localStorage:', userType);
+        
+        // Clear pendingUserType after successful processing
+        localStorage.removeItem('pendingUserType');
+        console.log('🧹 Cleared pendingUserType after successful OAuth');
+        
         // Force state update before redirect
         setTimeout(() => {
           // Dispatch event to update all components
