@@ -6,7 +6,6 @@ import { toast } from 'react-hot-toast';
 import { supabase, ensureSession } from '../lib/supabaseClient';
 import { formatDistanceToNow } from 'date-fns';
 import {
-  Search,
   Bell,
   Plus,
   Home,
@@ -815,21 +814,6 @@ const LandlordDashboard = () => {
               </div>
 
               <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 min-w-0 flex-1 justify-end">
-                {/* Mobile Search Button - Improved */}
-                <button className="sm:hidden p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors shrink-0">
-                  <Search className="w-4 h-4 text-gray-600" />
-                </button>
-
-                {/* Desktop Search Bar - Better mobile responsiveness */}
-                <div className="relative hidden sm:block flex-1 max-w-xs lg:max-w-sm">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Search properties..."
-                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
-                  />
-                </div>
-
                 {/* Notifications - Better mobile styling */}
                 <div className="relative shrink-0">
                   <NotificationCenter />
