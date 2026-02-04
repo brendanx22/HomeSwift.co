@@ -25,6 +25,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useChat } from '../hooks/useRealtimeMessages';
 import { supabase } from '../lib/supabaseClient';
+import { toast } from 'react-hot-toast';
 
 /**
  * Emoji Picker Component
@@ -394,7 +395,7 @@ export default function Messages({ chatId, currentUser, onBack }) {
     for (const file of selected) {
       const maxSize = 25 * 1024 * 1024; // 25MB
       if (file.size > maxSize) {
-        alert(`File too large: ${file.name}`);
+        toast.error(`File too large: ${file.name}. Maximum size is 25MB.`);
         continue;
       }
       const id = `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`;

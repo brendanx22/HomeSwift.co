@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Phone, MapPin, Send, MessageCircle, Clock, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 
 export default function Contact() {
   const navigate = useNavigate();
@@ -39,10 +40,10 @@ export default function Contact() {
         message: ''
       });
 
-      alert('Thank you for your message! We\'ll get back to you soon.');
+      toast.success('Thank you for your message! We\'ll get back to you soon.');
     } catch (error) {
       console.error('Error submitting contact form:', error);
-      alert('Failed to send message. Please try again.');
+      toast.error('Failed to send message. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

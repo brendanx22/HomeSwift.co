@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Plus, Edit, Trash2, Eye } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Plus, Edit, Trash2, Eye, X, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { API } from '../api';
 
 const PropertyCard = ({ property, onDelete }) => {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this property?')) return;
-    
     try {
       setIsDeleting(true);
       const result = await API.deleteProperty(property.id);
@@ -26,6 +25,7 @@ const PropertyCard = ({ property, onDelete }) => {
       toast.error(error.message || 'Failed to delete property');
     } finally {
       setIsDeleting(false);
+      setShowConfirmModal(false);
     }
   };
 
@@ -69,7 +69,7 @@ const PropertyCard = ({ property, onDelete }) => {
             <Edit className="w-4 h-4" />
           </Link>
           <button
-            onClick={handleDelete}
+            onClick={() => setShowConfirmModal(true)}
             disabled={isDeleting}
             className="p-2 text-red-600 hover:bg-red-50 rounded-full disabled:opacity-50"
             title="Delete"
@@ -78,6 +78,58 @@ const PropertyCard = ({ property, onDelete }) => {
           </button>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      <AnimatePresence>
+        {showConfirmModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowConfirmModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+            >
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900">Delete Property?</h3>
+                  <p className="text-sm text-gray-600">Are you sure you want to delete this property? This action cannot be undone.</p>
+                </div>
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Property'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

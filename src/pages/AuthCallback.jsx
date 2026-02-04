@@ -9,16 +9,7 @@ const AuthCallback = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Basic component mount logging
-  console.log('🔐 AuthCallback component mounted');
-  console.log('  - Search params:', searchParams.toString());
-  console.log('  - Current URL:', window.location.href);
-  
-  // Add alert to verify component is mounting
-  alert('AuthCallback component mounted! URL: ' + window.location.href);
-
   useEffect(() => {
-    console.log('🔄 AuthCallback useEffect triggered');
     const handleAuthCallback = async () => {
       try {
         console.log('Auth callback triggered');

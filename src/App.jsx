@@ -65,22 +65,8 @@ const AppLayout = () => {
   const navigate = useNavigate();
   const isMounted = React.useRef(true);
 
-  // Basic component mount logging
-  console.log(' AppLayout component mounted');
-  console.log('  - Loading:', loading);
-  console.log('  - Is Authenticated:', isAuthenticated);
-  console.log('  - User:', user ? 'exists' : 'null');
-  console.log('  - Current Role:', currentRole);
-  console.log('  - Roles:', roles);
-  
-  // Add alert to verify component is mounting
-  alert('AppLayout component mounted! Path: ' + location.pathname);
-
   // Handle redirects after login
   React.useEffect(() => {
-    console.log(' AppLayout useEffect triggered');
-    console.log('  - Dependencies changed:', { user: !!user, loading, isAuthenticated, path: location.pathname, roles: roles?.length, currentRole });
-    
     // Cleanup function to prevent state updates after unmount
     return () => {
       isMounted.current = false;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { 
   Paperclip, 
   Send, 
@@ -246,7 +247,7 @@ const Messages = () => {
     for (const file of selected) {
       const maxSize = 25 * 1024 * 1024; // 25MB
       if (file.size > maxSize) {
-        alert(`File too large: ${file.name}`);
+        toast.error(`File too large: ${file.name}. Maximum size is 25MB.`);
         continue;
       }
       const id = `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`;
