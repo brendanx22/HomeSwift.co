@@ -248,9 +248,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Fetch user roles from the database
-  const fetchUserRoles = async (userId) => {
+  const fetchUserRoles = async (userId, preferredRole = null) => {
     try {
-      console.log(`Fetching roles for user ${userId}`);
+      console.log(`Fetching roles for user ${userId}${preferredRole ? ` with preference: ${preferredRole}` : ''}`);
 
       // First, try to get roles directly from the user_roles table
       const { data: directRoles, error: directError } = await supabase
@@ -262,12 +262,26 @@ export const AuthProvider = ({ children }) => {
       if (!directError && directRoles?.length > 0) {
         console.log('Direct roles from user_roles table:', directRoles);
 
-        // Update roles in state and localStorage
-        setRoles(directRoles);
-        localStorage.setItem('userRoles', JSON.stringify(directRoles));
+        let rolesToSet = directRoles;
+        let primaryRole = directRoles.find(r => r.is_primary)?.role;
+        
+        // If we have a preferred role that exists in the user's roles, prioritize it
+        if (preferredRole && directRoles.some(r => r.role === preferredRole)) {
+          console.log(`🔒 Applying preference override: ${preferredRole}`);
+          primaryRole = preferredRole;
+          
+          // Reorder/update local representation to reflect this preference
+          rolesToSet = directRoles.map(r => ({
+            ...r,
+            is_primary: r.role === preferredRole
+          })).sort((a, b) => b.is_primary - a.is_primary);
+        } else if (!primaryRole) {
+          primaryRole = directRoles[0]?.role;
+        }
 
-        // Find the primary role or use the first role if no primary is set
-        let primaryRole = directRoles.find(r => r.is_primary)?.role || directRoles[0]?.role;
+        // Update roles in state and localStorage
+        setRoles(rolesToSet);
+        localStorage.setItem('userRoles', JSON.stringify(rolesToSet));
 
         // Ensure we have a valid role
         if (!primaryRole) {
@@ -300,11 +314,26 @@ export const AuthProvider = ({ children }) => {
           });
         } else if (roles?.length > 0) {
           console.log('Setting roles in state from RPC:', roles);
-          setRoles(roles);
-          const primaryRole = roles.find(r => r.is_primary)?.role || roles[0]?.role;
-          console.log('Setting primary role to:', primaryRole);
+          
+          let rolesToSet = roles;
+          let primaryRole = roles.find(r => r.is_primary)?.role;
+          
+          // Apply preference override for RPC results too
+          if (preferredRole && roles.some(r => r.role === preferredRole)) {
+            console.log(`🔒 Applying preference override (RPC): ${preferredRole}`);
+            primaryRole = preferredRole;
+            
+            rolesToSet = roles.map(r => ({
+              ...r,
+              is_primary: r.role === preferredRole
+            })).sort((a, b) => b.is_primary - a.is_primary);
+          } else if (!primaryRole) {
+            primaryRole = roles[0]?.role;
+          }
+          
+          setRoles(rolesToSet);
           setCurrentRole(primaryRole);
-          localStorage.setItem('userRoles', JSON.stringify(roles));
+          localStorage.setItem('userRoles', JSON.stringify(rolesToSet));
           localStorage.setItem('currentRole', primaryRole);
           return true;
         }
@@ -519,7 +548,9 @@ export const AuthProvider = ({ children }) => {
           console.log('🔄 User roles updated:', payload);
 
           // Refetch all roles when any role changes
-          const rolesUpdated = await fetchUserRoles(user.id);
+          // Pass currentRole as preference to prevent switching away from active role during background updates
+          const currentRole = localStorage.getItem('currentRole');
+          const rolesUpdated = await fetchUserRoles(user.id, currentRole);
 
           // Force a state update to trigger re-renders
           if (rolesUpdated) {
@@ -544,7 +575,8 @@ export const AuthProvider = ({ children }) => {
       console.log('🔄 Roles updated event received:', event.detail);
       if (event.detail?.userId && user?.id === event.detail.userId) {
         console.log('🔄 Refetching roles after update...');
-        await fetchUserRoles(event.detail.userId);
+        // Pass the new Role as preferred/priority if available
+        await fetchUserRoles(event.detail.userId, event.detail.newRole);
       }
     };
 
@@ -635,9 +667,12 @@ export const AuthProvider = ({ children }) => {
           setUser(session.user);
 
           // Always fetch roles after a valid session, with timeout protection
+          // Prioritize pendingUserType (from OAuth) or currentRole (from persisted session)
+          const preferredRole = pendingUserType || localStorage.getItem('currentRole');
+          
           try {
             await Promise.race([
-              fetchUserRoles(session.user.id),
+              fetchUserRoles(session.user.id, preferredRole),
               new Promise((_, reject) => 
                 setTimeout(() => reject(new Error('Role fetch timeout')), 5000)
               )
