@@ -75,7 +75,7 @@ const ImageGallery = ({ images, title, alt }) => {
   return (
     <>
       {/* Thumbnail Gallery */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-8">
         {images.map((image, index) => (
           <motion.div
             key={index}
