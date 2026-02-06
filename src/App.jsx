@@ -67,11 +67,12 @@ const AppLayout = () => {
 
   // Handle redirects after login
   React.useEffect(() => {
-    // Cleanup function to prevent state updates after unmount
+    // Track mounted state only on mount/unmount to avoid disabling redirects on auth changes
+    isMounted.current = true;
     return () => {
       isMounted.current = false;
     };
-  }, [user, loading, isAuthenticated, location.pathname, roles, currentRole]);
+  }, []);
 
   // Handle authentication state changes
   React.useEffect(() => {
