@@ -157,7 +157,7 @@ const Home = () => {
   return (
     <div className="bg-[#FAF9F6] pt-8">
       <div
-        className="h-screen w-full bg-cover bg-center hero-container flex flex-col overflow-hidden relative sticky top-0 z-0"
+        className="h-screen w-full bg-cover bg-center hero-container flex flex-col overflow-hidden relative -mt-8 z-0"
         data-theme-color="#FAF9F6"
         style={{
           backgroundImage: 'url("/images/hero-bg-new.png")',

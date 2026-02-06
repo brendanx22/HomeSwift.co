@@ -125,13 +125,15 @@ const AppLayout = () => {
       
       // CRITICAL FIX: Always prioritize pendingUserType first, regardless of page
       // This ensures OAuth callbacks work correctly
+      // Special handling for landlord login page - if coming from landlord login, prioritize landlord role
+      const isFromLandlordLogin = isLandlordLoginPage || (pendingUserType === 'landlord');
       const detectedRole = pendingUserType || 
                           localStorageCurrentRole || 
                           currentRole || 
                           primaryRole || 
                           firstRole || 
                           userType || 
-                          'renter';
+                          (isFromLandlordLogin ? 'landlord' : 'renter');
 
       // Enhanced debug logging
       console.log('🎯 AppLayout Role Detection:');
