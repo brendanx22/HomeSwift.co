@@ -835,9 +835,9 @@ export const AuthProvider = ({ children }) => {
       // Fallback to RPC if direct insert fails
       try {
         const { data, error: rpcError } = await supabase.rpc('add_user_role', {
-          user_id_param: targetUserId,
-          role_name: role,
-          make_primary: true
+          p_user_id: targetUserId,
+          p_role: role,
+          p_is_primary: true
         });
 
         if (rpcError) throw rpcError;
@@ -946,6 +946,14 @@ export const AuthProvider = ({ children }) => {
       const { user, session } = data;
 
       if (user) {
+        const expectedRole = credentials.userType === 'landlord' ? 'landlord' : 'renter';
+
+        if (credentials.userType) {
+          console.log(`🔄 Setting current role to login intent: ${expectedRole}`);
+          setCurrentRole(expectedRole);
+          localStorage.setItem('currentRole', expectedRole);
+        }
+
         // Ensure we have the latest user data
         const { data: { user: updatedUser } } = await supabase.auth.getUser();
 
