@@ -16,6 +16,8 @@ const AuthCallback = () => {
         
         // Clear any existing errors
         setError('');
+        const pendingUserType = localStorage.getItem('pendingUserType');
+        const fallbackLoginPath = pendingUserType === 'landlord' ? '/landlord/login' : '/login';
 
         // Helper to get session with retries
         const getSessionWithRetry = async (retries = 3, delay = 1000) => {
@@ -42,7 +44,7 @@ const AuthCallback = () => {
           console.error('Auth callback error:', sessionError);
           setError('Authentication failed. Please try again.');
           toast.error('Authentication failed. Please try again.');
-          setTimeout(() => navigate('/login'), 3000);
+          setTimeout(() => navigate(fallbackLoginPath), 3000);
           return;
         }
 
@@ -52,7 +54,6 @@ const AuthCallback = () => {
         const user = data.session.user;
 
         // Check for pending user type from Google OAuth flow
-        const pendingUserType = localStorage.getItem('pendingUserType');
         console.log('🔍 Pending user type from OAuth:', pendingUserType);
 
         // Check if user profile exists
@@ -352,7 +353,9 @@ const AuthCallback = () => {
       } catch (err) {
         console.error('Unexpected error in auth callback:', err);
         setError('An unexpected error occurred. Please try again.');
-        setTimeout(() => navigate('/login'), 3000);
+        const pendingUserType = localStorage.getItem('pendingUserType');
+        const fallbackLoginPath = pendingUserType === 'landlord' ? '/landlord/login' : '/login';
+        setTimeout(() => navigate(fallbackLoginPath), 3000);
       } finally {
         setLoading(false);
       }
